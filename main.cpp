@@ -37,6 +37,8 @@ size_t resolve_spin_num(std::string const& file_name){
         return 2;
     } else if(token_num == 31) {
         return 3;
+    } else {
+        return 999;
     }
 }
 
