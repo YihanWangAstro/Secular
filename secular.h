@@ -277,13 +277,13 @@ template<size_t SpinNum>
               L2{d[6], d[7], d[8]},
               e2{d[9], d[10], d[11]} 
         {
-            if constexpr(SpinNum > 0) {
+            if (SpinNum > 0) {
                 s[0].x = d[12], s[0].y = d[13], s[0].z = d[14];
             }
-            if constexpr (SpinNum > 1) {
+            if (SpinNum > 1) {
                 s[1].x = d[15], s[1].y = d[16], s[1].z = d[17];
             } 
-            if constexpr (SpinNum > 2) {
+            if (SpinNum > 2) {
                 s[2].x = d[18], s[2].y = d[19], s[2].z = d[20];
             }      
         } 
