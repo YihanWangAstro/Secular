@@ -1,5 +1,7 @@
 #!/bin/bash
 
-git clone https://github.com/YihanWangAstro/SpaceHub.git
+cd SpaceHub
+git pull origin master
+cd ..
 
 rm secular

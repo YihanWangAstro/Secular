@@ -302,13 +302,13 @@ template<size_t SpinNum>
             e1.x = d[3], e1.y = d[4], e1.z = d[5];
             L2.x = d[6], L2.y = d[7], L2.z = d[8];
             e2.x = d[9], e2.y = d[10], e2.z = d[11];
-            if constexpr(SpinNum > 0) {
+            if (SpinNum > 0) {
                 s[0].x = d[12], s[0].y = d[13], s[0].z = d[14];
             }
-            if constexpr (SpinNum > 1) {
+            if  (SpinNum > 1) {
                 s[1].x = d[15], s[1].y = d[16], s[1].z = d[17];
             } 
-            if constexpr (SpinNum > 2) {
+            if (SpinNum > 2) {
                 s[2].x = d[18], s[2].y = d[19], s[2].z = d[20];
             }     
             return *this;
@@ -319,13 +319,13 @@ template<size_t SpinNum>
             x[3] = d.e1.x, x[4] = d.e1.y, x[5] = d.e1.z;
             x[6] = d.L2.x, x[7] = d.L2.y, x[8] = d.L2.z;
             x[9] = d.e2.x, x[10] = d.e2.y, x[11] = d.e2.z;
-            if constexpr(SpinNum > 0) {
+            if (SpinNum > 0) {
                 x[12] = d.s[0].x, x[13] = d.s[0].y, x[14] = d.s[0].z;
             }
-            if constexpr (SpinNum > 1) {
+            if  (SpinNum > 1) {
                 x[15] = d.s[1].x, x[16] = d.s[1].y, x[17] = d.s[1].z;
             } 
-            if constexpr (SpinNum > 2) {
+            if  (SpinNum > 2) {
                 x[18] = d.s[2].x, x[19] = d.s[2].y, x[20] = d.s[2].z;
             } 
         }  
