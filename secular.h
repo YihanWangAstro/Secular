@@ -484,19 +484,19 @@ template<size_t SpinNum>
             }
 
             //Spin
-            if constexpr(SpinNum > 0){
+            if (SpinNum > 0){
                 d_args.s[0] = calc_coupling_dsdt(args.s[0], n1, a_in, c_in, S_1_L_in_coef);
                 if (ctrl.SL_out) {
                     d_args.s[0] += calc_coupling_dsdt(args.s[0], n2, a_out, c_out, S_1_L_out_coef);
                 }
             }
-            if constexpr(SpinNum > 1){
+            if (SpinNum > 1){
                 d_args.s[1] = calc_coupling_dsdt(args.s[1], n1, a_in, c_in, S_2_L_in_coef);
                 if (ctrl.SL_out) {
                     d_args.s[1] += calc_coupling_dsdt(args.s[1], n2, a_out, c_out, S_2_L_out_coef);
                 }
             }
-            if constexpr(SpinNum > 2){
+            if (SpinNum > 2){
                 d_args.s[2] = calc_coupling_dsdt(args.s[2], n2, a_out, c_out, S_3_L_out_coef);
 
                 d_args.L2 -= d_args.s[2];

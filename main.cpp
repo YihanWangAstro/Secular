@@ -5,7 +5,6 @@
 #include "SpaceHub/src/tools/config-reader.hpp"
 #include "SpaceHub/src/tools/timer.hpp"
 #include "boost/numeric/odeint.hpp"
-#include <fstream>
 #include <iomanip>
 #include <cstdlib>
 #include <algorithm>
@@ -67,8 +66,8 @@ void single_thread_job(std::string work_dir, ConcurrentFile input,  ConcurrentFi
 
 int main(int argc, char **argv) {
 
-    space::tools::ConfigReader config("config.txt");
-    int_error = config.get<double>("error");
+    //space::tools::ConfigReader config("config.txt");
+    //int_error = config.get<double>("error");
 
     //reading configure file name, and input file name from command line
     std::string input_file_name;
