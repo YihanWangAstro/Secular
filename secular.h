@@ -8,10 +8,11 @@
 #include <memory>
 #include <cmath>
 #include <iomanip>
+#include <boost/numeric/odeint.hpp>
 #include "vector3d.h"
 #include "SpaceHub/src/multi-thread/multi-thread.hpp"
 #include "SpaceHub/src/dev-tools.hpp"
-#include "boost/numeric/odeint.hpp"
+
 
 /*
 template<size_t SpinNum>
