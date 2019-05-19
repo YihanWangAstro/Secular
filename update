@@ -1,7 +1,5 @@
 #!/bin/bash
 
-cd SpaceHub
 git pull origin master
-cd ..
 
 rm secular
