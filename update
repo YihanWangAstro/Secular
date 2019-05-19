@@ -1,0 +1,5 @@
+#!/bin/bash
+
+git clone https://github.com/YihanWangAstro/SpaceHub.git
+
+rm secular
