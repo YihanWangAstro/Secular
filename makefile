@@ -1,6 +1,6 @@
 all: secular
 
-PATH_TO_BOOST=./boost_1_60_0/
+PATH_TO_BOOST=./boost_1_70_0/
 PATH_TO_SPACEHUB=./
 CXX=g++
 secular:
