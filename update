@@ -3,3 +3,5 @@
 git pull origin master
 
 rm secular
+source ~/.bashrc
+make
