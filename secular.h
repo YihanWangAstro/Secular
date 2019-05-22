@@ -13,18 +13,6 @@
 #include "SpaceHub/src/multi-thread/multi-thread.hpp"
 #include "SpaceHub/src/dev-tools.hpp"
 
-template <size_t SpinNum, size_t S>
-struct State_wrapper : public std::array<double, S>
-{
-   
-
-    Vec3d L1;
-    Vec3d e1;
-    Vec3d L2;
-    Vec3d e2;
-    std::array<Vec3d, SpinNum> s;
-};
-
 namespace secular
 {
 
@@ -403,6 +391,18 @@ public:
         d_args.e1 = coef * c_in * (dn1n2 * ce1n2 + 2 * cn1e1 - 5 * de1n2 * cn1n2);
 
         d_args.e2 = coef * (L_in / L_out) / c_out * ( (5 * de1n2) * ce1e2 + (c_in_sqr * dn1n2) * ce2n1 - (0.5 - 3 * de1e1 + 12.5 * de1n2 * de1n2 - 2.5 * c_in_sqr * dn1n2 * dn1n2) * cn2e2);
+
+        //Octupole 
+
+        if(ctrl.Oct) {
+            d_args.L1 += Vec3d(0);
+
+            d_args.L2 += Vec3d(0);
+
+            d_args.e1 += Vec3d(0);
+
+            d_args.e2 += Vec3d(0);
+        }
 
         //GW radiation
         if (ctrl.GW)
