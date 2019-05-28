@@ -43,21 +43,22 @@ size_t resolve_spin_num(std::string const& file_name){
 }
 
 template<size_t spin_num>
-void single_thread_job(std::string work_dir, ConcurrentFile input,  ConcurrentFile output, ConcurrentFile log) {
+void single_thread_job(std::string work_dir, ConcurrentFile input, size_t start_id, size_t end_id, ConcurrentFile output, ConcurrentFile log) {
     using Sys = secular::Secular<spin_num, secular::Controler>;
     using stepper_type = boost::numeric::odeint::runge_kutta_fehlberg78<typename Sys::Container>;
     double ini_dt = 0.1 * secular::year;
     secular::Task<spin_num> task;
     for(;;) {
         if(input >> task) {
-            //std::cout << task << '\n';
-            secular::deg_to_rad(task.obt_args);
-            Sys eqns{work_dir, output, task.obt_args, task.ctrl};
-            try{
-                boost::numeric::odeint::integrate_adaptive(boost::numeric::odeint::make_controlled(int_error ,int_error , stepper_type() ), eqns, eqns.initial_conds, 0.0, eqns.ctrl.end_time, ini_dt, eqns);
-            } catch (secular::StopFlag flag) {
-                if(flag == secular::StopFlag::shrink) {
+            if(start_id <= task.ctrl.id && task.ctrl.id <= end_id) {
+                secular::deg_to_rad(task.obt_args);
+                Sys eqns{work_dir, output, task.obt_args, task.ctrl};
+                try{
+                    boost::numeric::odeint::integrate_adaptive(boost::numeric::odeint::make_controlled(int_error ,int_error , stepper_type() ), eqns, eqns.initial_conds, 0.0, eqns.ctrl.end_time, ini_dt, eqns);
+                } catch (secular::StopFlag flag) {
+                    if(flag == secular::StopFlag::shrink) {
                     //
+                    }
                 }
             }
         } else {
@@ -74,7 +75,9 @@ int main(int argc, char **argv) {
     //reading configure file name, and input file name from command line
     std::string input_file_name;
     std::string work_dir;
-    space::tools::read_command_line(argc, argv, input_file_name, work_dir);
+    size_t start_task_id, end_task_id;
+
+    space::tools::read_command_line(argc, argv, input_file_name, start_task_id, end_task_id, work_dir);
 
     const int dir_err = system( ("mkdir -p " + work_dir).c_str() );
     if (dir_err == -1)
@@ -98,13 +101,13 @@ int main(int argc, char **argv) {
     space::tools::Timer timer;
     timer.start();
     if(spin_num == 0) {
-        space::multiThread::auto_multi_thread(single_thread_job<0>, work_dir, input_file, output_file, log_file);
+        space::multiThread::auto_multi_thread(single_thread_job<0>, work_dir, input_file, start_task_id, end_task_id, output_file, log_file);
     } else if(spin_num == 1) {
-        space::multiThread::auto_multi_thread(single_thread_job<1>, work_dir, input_file, output_file, log_file);
+        space::multiThread::auto_multi_thread(single_thread_job<1>, work_dir, input_file, start_task_id, end_task_id, output_file, log_file);
     } else if(spin_num == 2) {
-        space::multiThread::auto_multi_thread(single_thread_job<2>, work_dir, input_file, output_file, log_file);
+        space::multiThread::auto_multi_thread(single_thread_job<2>, work_dir, input_file, start_task_id, end_task_id, output_file, log_file);
     } else if(spin_num == 3) {
-        space::multiThread::auto_multi_thread(single_thread_job<3>, work_dir, input_file, output_file, log_file);
+        space::multiThread::auto_multi_thread(single_thread_job<3>, work_dir, input_file, start_task_id, end_task_id, output_file, log_file);
     } else {
         std::cout << "wrong spin number!\n";
     }
