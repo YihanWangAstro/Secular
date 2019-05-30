@@ -395,13 +395,29 @@ public:
         //Octupole 
 
         if(ctrl.Oct) {
-            d_args.L1 += Vec3d(0);
+            Vec3d u2 = args.e2/sqrt(de2e2);
 
-            d_args.L2 += Vec3d(0);
+            //double de1u2 = dot(args.e1, u2);
 
-            d_args.e1 += Vec3d(0);
+            //double dn1u2 = dot(n1, u2);
 
-            d_args.e2 += Vec3d(0);
+            double C1 = (1.6 * de1e1 - 0.2 - 7 * de1n2 * de1n2 + c_in_sqr * dn1n2 * dn1n2);
+
+            double C2 = de1e2 * dn1n2 + de1n2 * dn1e2;
+
+            double C3 = dn1n2 * dn1e2 - 7 * de1n2 * de1e2;
+
+            double _2c_in_sqr = 2 * c_in_sqr;
+
+            Vec3d  oct_dL1dt = _2c_in_sqr/e2_norm * ( C2 * cn1n2 + C3 * ce1n2 + (de1n2 * dn1n2)* cn1e2 ) + C1 * ce1u2;
+
+            d_args.L1 += oct_dL1dt;
+
+            d_args.L2 -= oct_dL1dt;
+
+            d_args.e1 += 2 * c_in / e2_norm * ( (de1n2 * dn1n2) * ce1e2 + (0.5 * C1) * cn1e2 + C2 * ce1n2 +  c_in_sqr * C3 * cn1n2 + (1.6 * de1e2) * cn1e1);
+
+            d_args.e2 += _2c_in_sqr / e2_norm * ( C2 * ce2n1 + (c_out_sqr * de1n2 * dn1n2) * cn2n1 +  C3 * ce2e1 + (c_out_sqr/_2c_in_sqr * C1) * cn2e1 - (1.6 * de1e2  - 7 * (de1n2 * dn1e2 * dn1n2))* ce2n2  + (7 * de1e2 * (C1 -0.4)/_2c_in_sqr ) * ce2n2);
         }
 
         //GW radiation
@@ -505,7 +521,7 @@ private:
     {
         double e_sqr = 1 - c_in * c_in;
         double r_a = 1.0 / a;
-        return (gw_L_coef * sqrt(r_a * r_a * r_a * r_a * r_a * r_a * r_a) / (c_in * c_in * c_in * c_in) * (1 + 7.0 / 8 * e_sqr)) * n1;
+        return (gw_L_coef * sqrt(r_a * r_a * r_a * r_a * r_a * r_a * r_a) / (c_in * c_in * c_in * c_in) * (1 + 0.875 * e_sqr)) * n1;
         //return (gw_L_coef * pow(a, -3.5) / (c_in * c_in * c_in * c_in) * (1 + 7.0/8 * e_sqr) )* n1;
     }
 
