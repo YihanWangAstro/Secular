@@ -60,6 +60,10 @@ double t_k_quad(double m_in, double m_out, double a_in, double a_out, double c_o
     //return 1.0/sqrt(G) * sqrt(m_in) / m_out * rc * rc * rc * pow(a_in, -1.5);
 }
 
+double normed_oct_epsilon(double m1, double m2, double a_in, double a_out, double c_out_sqr) {
+    return fabs(m1-m2)/(m1+m2)*a_in/a_out/c_out_sqr;
+}
+
 template <typename T, size_t len>
 std::ostream &operator<<(std::ostream &os, std::array<T, len> const &arr)
 {
@@ -364,11 +368,11 @@ public:
 
         double c_in_sqr = 1 - de1e1;
 
-        double c_out_sqrt = 1 - de2e2;
+        double c_out_sqr = 1 - de2e2;
 
         double c_in = sqrt(c_in_sqr);
 
-        double c_out = sqrt(c_out_sqrt);
+        double c_out = sqrt(c_out_sqr);
 
         double L_in = L1_norm / c_in;
 
@@ -382,7 +386,9 @@ public:
         States d_args;
 
         //quadrupole LK
-        double coef = 0.75 / t_k_quad(m1 + m2, m3, a_in, a_out, c_out);
+        double t_k = t_k_quad(m1 + m2, m3, a_in, a_out, c_out);
+
+        double coef = 0.75 / t_k;
         
         d_args.L1 = coef * L_in * ((c_in_sqr * dn1n2) * cn1n2 - (5 * de1n2) * ce1n2);
 
@@ -395,29 +401,31 @@ public:
         //Octupole 
 
         if(ctrl.Oct) {
+            double oct_coef = -75.0/64 * normed_oct_epsilon(m1, m2, a_in, a_out, c_out_sqr)/t_k;
+
             Vec3d u2 = args.e2/sqrt(de2e2);
 
-            //double de1u2 = dot(args.e1, u2);
+            double de1e2 = dot(args.e1, args.e2);
 
-            //double dn1u2 = dot(n1, u2);
+            double dn1e2 = dot(n1, d_args.e2);
 
             double C1 = (1.6 * de1e1 - 0.2 - 7 * de1n2 * de1n2 + c_in_sqr * dn1n2 * dn1n2);
 
             double C2 = de1e2 * dn1n2 + de1n2 * dn1e2;
 
-            double C3 = dn1n2 * dn1e2 - 7 * de1n2 * de1e2;
-
+            double C3 = c_in_sqr * dn1n2 * dn1e2 - 7 * de1n2 * de1e2;
+                  
             double _2c_in_sqr = 2 * c_in_sqr;
 
-            Vec3d  oct_dL1dt = _2c_in_sqr/e2_norm * ( C2 * cn1n2 + C3 * ce1n2 + (de1n2 * dn1n2)* cn1e2 ) + C1 * ce1u2;
+            Vec3d  oct_dL1dt = oct_coef * L_in * (_2c_in_sqr * ( C2 * cn1n2  - (de1n2 * dn1n2) * ce2n1 ) + 2 * C3 * ce1n2 + C1 * ce1e2);
 
             d_args.L1 += oct_dL1dt;
 
             d_args.L2 -= oct_dL1dt;
 
-            d_args.e1 += 2 * c_in / e2_norm * ( (de1n2 * dn1n2) * ce1e2 + (0.5 * C1) * cn1e2 + C2 * ce1n2 +  c_in_sqr * C3 * cn1n2 + (1.6 * de1e2) * cn1e1);
+            d_args.e1 += oct_coef * 2 * c_in * ((de1n2 * dn1n2) * ce1e2 + (0.5 * C1) * ce2n1 + C2 * ce1n2 + C3 * cn1n2 + (1.6 * de1e2) * cn1e1);
 
-            d_args.e2 += _2c_in_sqr / e2_norm * ( C2 * ce2n1 + (c_out_sqr * de1n2 * dn1n2) * cn2n1 +  C3 * ce2e1 + (c_out_sqr/_2c_in_sqr * C1) * cn2e1 - (1.6 * de1e2  - 7 * (de1n2 * dn1e2 * dn1n2))* ce2n2  + (7 * de1e2 * (C1 -0.4)/_2c_in_sqr ) * ce2n2);
+            d_args.e2 += oct_coef * (L_in / L_out) / c_out * (_2c_in_sqr * ( C2 * ce2n1 - (c_out_sqr * de1n2 * dn1n2) * cn1n2) - (c_out_sqr * C1) * ce1n2 - 2 * C3 * ce1e2 + ((0.4 - 3.2*de1e1)*de1e2 + 14*de1n2*dn1e2*dn1n2*c_in_sqr + 7*de1e2*C1) * cn2e2 );
         }
 
         //GW radiation
@@ -491,8 +499,7 @@ public:
                 f_stat_.flush();
             }
 
-            throw StopFlag::shrink;
-        }
+            throw StopFlag::shrink;        }
 
         if (ctrl.write_traj && t >= out_time_)
         {
