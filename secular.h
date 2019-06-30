@@ -423,7 +423,7 @@ public:
 
             d_args.L2 -= oct_dL1dt;
 
-            d_args.e1 += oct_coef * 2 * c_in * ((de1n2 * dn1n2) * ce1e2 + (0.5 * C1) * ce2n1 + C2 * ce1n2 + C3 * cn1n2 + (1.6 * de1e2) * cn1e1);
+            d_args.e1 += oct_coef * 2 * c_in * ((de1n2 * dn1n2) * ce1e2 - (0.5 * C1) * ce2n1 + C2 * ce1n2 + C3 * cn1n2 + (1.6 * de1e2) * cn1e1);
 
             d_args.e2 += oct_coef * (L_in / L_out) / c_out * (_2c_in_sqr * ( C2 * ce2n1 - (c_out_sqr * de1n2 * dn1n2) * cn1n2) - (c_out_sqr * C1) * ce1n2 - 2 * C3 * ce1e2 + ((0.4 - 3.2*de1e1)*de1e2 + 14*de1n2*dn1e2*dn1n2*c_in_sqr + 7*de1e2*C1) * cn2e2 );
         }
