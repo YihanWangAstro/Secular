@@ -61,7 +61,7 @@ double t_k_quad(double m_in, double m_out, double a_in, double a_out, double c_o
 }
 
 double normed_oct_epsilon(double m1, double m2, double a_in, double a_out, double c_out_sqr) {
-    return fabs(m1-m2)/(m1+m2)*a_in/a_out/c_out_sqr;
+    return (m1-m2)/(m1+m2)*a_in/a_out/c_out_sqr;
 }
 
 template <typename T, size_t len>
