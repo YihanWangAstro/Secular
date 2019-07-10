@@ -61,7 +61,7 @@ double t_k_quad(double m_in, double m_out, double a_in, double a_out, double c_o
 }
 
 double normed_oct_epsilon(double m1, double m2, double a_in, double a_out, double c_out_sqr) {
-    return (m1-m2)/(m1+m2)*a_in/a_out/c_out_sqr;
+    return fabs(m1-m2)/(m1+m2)*a_in/a_out/c_out_sqr;
 }
 
 template <typename T, size_t len>
@@ -403,8 +403,6 @@ public:
         if(ctrl.Oct) {
             double oct_coef = -75.0/64 * normed_oct_epsilon(m1, m2, a_in, a_out, c_out_sqr)/t_k;
 
-            Vec3d u2 = args.e2/sqrt(de2e2);
-
             double de1e2 = dot(args.e1, args.e2);
 
             double dn1e2 = dot(n1, d_args.e2);
@@ -414,18 +412,20 @@ public:
             double C2 = de1e2 * dn1n2 + de1n2 * dn1e2;
 
             double C3 = c_in_sqr * dn1n2 * dn1e2 - 7 * de1n2 * de1e2;
+
+            double C4 = de1n2 * dn1n2;
                   
             double _2c_in_sqr = 2 * c_in_sqr;
 
-            Vec3d  oct_dL1dt = oct_coef * L_in * (_2c_in_sqr * ( C2 * cn1n2  - (de1n2 * dn1n2) * ce2n1 ) + 2 * C3 * ce1n2 + C1 * ce1e2);
+            Vec3d  oct_dL1dt = oct_coef * L_in * (_2c_in_sqr * ( C2 * cn1n2  - C4 * ce2n1 ) + 2 * C3 * ce1n2 + C1 * ce1e2);
 
             d_args.L1 += oct_dL1dt;
 
             d_args.L2 -= oct_dL1dt;
 
-            d_args.e1 += oct_coef * 2 * c_in * ((de1n2 * dn1n2) * ce1e2 - (0.5 * C1) * ce2n1 + C2 * ce1n2 + C3 * cn1n2 + (1.6 * de1e2) * cn1e1);
+            d_args.e1 += oct_coef * 2 * c_in * (C4 * ce1e2 - (0.5 * C1) * ce2n1 + C2 * ce1n2 + C3 * cn1n2 + (1.6 * de1e2) * cn1e1);
 
-            d_args.e2 += oct_coef * (L_in / L_out) / c_out * (_2c_in_sqr * ( C2 * ce2n1 - (c_out_sqr * de1n2 * dn1n2) * cn1n2) - (c_out_sqr * C1) * ce1n2 - 2 * C3 * ce1e2 + ((0.4 - 3.2*de1e1)*de1e2 + 14*de1n2*dn1e2*dn1n2*c_in_sqr + 7*de1e2*C1) * cn2e2 );
+            d_args.e2 += oct_coef * (L_in / L_out) / c_out * (_2c_in_sqr * ( C2 * ce2n1 - (c_out_sqr * C4) * cn1n2) - (c_out_sqr * C1) * ce1n2 - 2 * C3 * ce1e2 + ((0.4 - 3.2*de1e1)*de1e2 + 14*dn1e2* C4 *c_in_sqr + 7*de1e2*C1) * cn2e2 );
         }
 
         //GW radiation
