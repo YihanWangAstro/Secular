@@ -258,17 +258,10 @@ struct State
 
     Vec3d L1;
     Vec3d e1;
-    union{
-        struct {
-            Vec3d L2;
-            Vec3d e2;
-        };
-        struct{
-            Vec3d r_out;
-            Vec3d v_out;
-        };
-    };
     
+    Vec3d L2;
+    Vec3d e2;
+        
     std::array<Vec3d, SpinNum> s;
 };
 
