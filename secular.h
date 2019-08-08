@@ -604,7 +604,7 @@ private:
     double out_time_{0};
 };
 
-/* 
+
 template <size_t SpinNum_, typename Ctrl>
 struct Secular_SA
 {
@@ -721,9 +721,9 @@ public:
 
         double coef = 1.5 / t_k;
         
-        d_args.L1 = coef * L_in * (5*de1r*ce1r - c_in_sqr*dn1r*cn1r);               
+        d_args.L1 = coef * L_in * (5*de1r*ce1r - c_in_sqr * dn1r * cn1r);               
 
-        d_args.e1 = coef * c_in * (5*de1r*cn1r - dn1r*ce1r - 2*cn1e1);
+        d_args.e1 = coef * c_in * (5*de1r*cn1r - dn1r * ce1r - 2 * cn1e1);
 
         //d_args.r_out = 0;
 
@@ -874,6 +874,6 @@ private:
     space::multiThread::ConcurrentFile f_stat_;
 
     double out_time_{0};
-};*/
+};
 } // namespace secular
 #endif
