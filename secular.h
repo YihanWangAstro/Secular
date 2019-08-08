@@ -137,7 +137,19 @@ struct Controler
 
     friend std::istream &operator>>(std::istream &is, Controler &t)
     {
-        is >> t.id >> t.write_traj >> t.write_end >> t.end_time >> t.dt_out >> t.Oct >> t.GR >> t.GW >> t.SL_out >> t.LL_couple;
+        double tmp{0};
+        is >> tmp; t.id = static_cast<size_t>(tmp);
+        is >> tmp; t.write_traj = static_cast<bool>(tmp);
+        is >> tmp; t.write_end = static_cast<bool>(tmp);
+        is >> t.end_time;
+        is >> t.dt_out;
+        is >> tmp; t.Oct = static_cast<bool>(tmp);
+        is >> tmp; t.GR = static_cast<bool>(tmp);
+        is >> tmp; t.GW = static_cast<bool>(tmp);
+        is >> tmp; t.SL_out = static_cast<bool>(tmp);
+        is >> tmp; t.LL_couple = static_cast<bool>(tmp);
+
+        //sis >> t.id >> t.write_traj >> t.write_end >> t.end_time >> t.dt_out >> t.Oct >> t.GR >> t.GW >> t.SL_out >> t.LL_couple;
         return is;
     }
 
