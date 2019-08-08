@@ -605,7 +605,7 @@ private:
     double out_time_{0};
 };
 
-
+/* 
 template <size_t SpinNum_, typename Ctrl>
 struct Secular_SA
 {
@@ -875,6 +875,6 @@ private:
     space::multiThread::ConcurrentFile f_stat_;
 
     double out_time_{0};
-};
+};*/
 } // namespace secular
 #endif
