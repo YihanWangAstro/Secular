@@ -356,25 +356,29 @@ public:
 
         Vec3d n2 = args.L2 / L2_norm;
 
-        double de1e1 = norm2(args.e1);
+        Vec3d& e1 = args.e1;
 
-        double de2e2 = norm2(args.e2);
+        Vec3d& e2 = args.e2; 
+
+        double de1e1 = norm2(e1);
+
+        double de2e2 = norm2(e2);
 
         double dn1n2 = dot(n1, n2);
 
-        double de1n2 = dot(args.e1, n2);
+        double de1n2 = dot(e1, n2);
 
         Vec3d cn1n2 = cross(n1, n2);
 
-        Vec3d cn1e1 = cross(n1, args.e1);
+        Vec3d cn1e1 = cross(n1, e1);
 
-        Vec3d ce1n2 = cross(args.e1, n2);
+        Vec3d ce1n2 = cross(e1, n2);
 
-        Vec3d ce2n1 = cross(args.e2, n1);
+        Vec3d ce2n1 = cross(e2, n1);
 
-        Vec3d ce1e2 = cross(args.e1, args.e2);
+        Vec3d ce1e2 = cross(e1, e2);
 
-        Vec3d cn2e2 = cross(n2, args.e2);
+        Vec3d cn2e2 = cross(n2, e2);
 
         double c_in_sqr = 1 - de1e1;
 
@@ -413,9 +417,9 @@ public:
         if(ctrl.Oct) {
             double oct_coef = -75.0/64 * normed_oct_epsilon(m1, m2, a_in, a_out, c_out_sqr)/t_k;
 
-            double de1e2 = dot(args.e1, args.e2);
+            double de1e2 = dot(e1, e2);
 
-            double dn1e2 = dot(n1, d_args.e2);
+            double dn1e2 = dot(n1, e2);
 
             double C1 = (1.6 * de1e1 - 0.2 - 7 * de1n2 * de1n2 + c_in_sqr * dn1n2 * dn1n2);
 
@@ -431,11 +435,11 @@ public:
 
             d_args.L1 += oct_dL1dt;
 
-            //d_args.L2 -= oct_dL1dt;
+            d_args.L2 -= oct_dL1dt;
 
-            //d_args.e1 += oct_coef * 2 * c_in * (C4 * ce1e2 - (0.5 * C1) * ce2n1 + C2 * ce1n2 + C3 * cn1n2 + (1.6 * de1e2) * cn1e1);
+            d_args.e1 += oct_coef * 2 * c_in * (C4 * ce1e2 - (0.5 * C1) * ce2n1 + C2 * ce1n2 + C3 * cn1n2 + (1.6 * de1e2) * cn1e1);
 
-            //d_args.e2 += oct_coef * (L_in / L_out) / c_out * (_2c_in_sqr * ( C2 * ce2n1 - (c_out_sqr * C4) * cn1n2) - (c_out_sqr * C1) * ce1n2 - 2 * C3 * ce1e2 + ((0.4 - 3.2*de1e1)*de1e2 + 14*dn1e2* C4 *c_in_sqr + 7*de1e2*C1) * cn2e2 );*/
+            d_args.e2 += oct_coef * (L_in / L_out) / c_out * (_2c_in_sqr * ( C2 * ce2n1 - (c_out_sqr * C4) * cn1n2) - (c_out_sqr * C1) * ce1n2 - 2 * C3 * ce1e2 + ((0.4 - 3.2*de1e1)*de1e2 + 14*dn1e2* C4 *c_in_sqr + 7*de1e2*C1) * cn2e2 );
         }
 
         //GW radiation
@@ -539,7 +543,6 @@ private:
         double e_sqr = 1 - c_in * c_in;
         double r_a = 1.0 / a;
         return (gw_L_coef * sqrt(r_a * r_a * r_a * r_a * r_a * r_a * r_a) / (c_in * c_in * c_in * c_in) * (1 + 0.875 * e_sqr)) * n1;
-        //return (gw_L_coef * pow(a, -3.5) / (c_in * c_in * c_in * c_in) * (1 + 7.0/8 * e_sqr) )* n1;
     }
 
     inline Vec3d calc_gw_dedt(Vec3d const &e1, double a, double c_in)
@@ -547,28 +550,28 @@ private:
         double e_sqr = norm2(e1);
         double r_c = 1.0 / c_in;
         return (gw_e_coef * (1 + 121.0 / 304 * e_sqr) * (r_c * r_c * r_c * r_c * r_c) / (a * a * a * a)) * e1;
-        //return (gw_e_coef * (1 + 121.0/304 *e_sqr) * pow(c_in, -5) / (a * a * a * a) ) * e1;
+        
     }
 
     inline Vec3d calc_gr_dedt(Vec3d const &cn1e1, double a, double c_in)
     {
         double r_a = 1.0 / a;
         return (gr_coef * sqrt(r_a * r_a * r_a * r_a * r_a) / (c_in * c_in)) * cn1e1;
-        //return (gr_coef * pow(a, -2.5)/ ( c_in * c_in ) ) * cn1e1;
+        
     }
 
     inline Vec3d calc_coupling_dsdt(Vec3d const &S, Vec3d const &n, double a, double cir, double coef)
     {
         double r_a = 1.0 / a;
         return (coef * sqrt(r_a * r_a * r_a * r_a * r_a) / (cir * cir)) * cross(n, S);
-        //return (coef * pow(a, -2.5) / (cir * cir)) * cross(n, S);
+       
     }
 
     inline Vec3d calc_coupling_dedt(Vec3d const &S, Vec3d const &n, Vec3d const &e, double L, double a, double cir, double coef)
     {
         double r_a = 1.0 / a;
         return (coef * sqrt(r_a * r_a * r_a * r_a * r_a) / (cir * cir) / L) * (cross(S, e) - (3 * dot(n, S)) * cross(n, e));
-        //return (coef * pow(a, -2.5) / (cir * cir) / L) * (cross(S, e) - (3 * dot(n, S)) * cross(n, e));
+        
     }
 
 public:
@@ -628,7 +631,7 @@ public:
 
         a_in_coef = 1 / (G * (m1 + m2)) / mu1 / mu1;
 
-        double m12 = m1 + m2;
+        m12 = m1 + m2;
         double C5 = C * C * C * C * C;
         gw_L_coef = -6.4 * pow(G, 3.5) * mu1 * mu1 * pow(m12, 2.5) / C5;
         gw_e_coef = -304.0 / 15 * G * G * G * mu1 * m12 * m12 / C5;
@@ -683,25 +686,38 @@ public:
     {
         States args{x};
         //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-        double L1_norm = norm(args.L1);
+        
+        Vec3d& r_out = args.L2;
 
-        double r_out_norm = norm(args.L2);
+        Vec3d& v_out = args.e2;
+
+        Vec3d& e1 = args.e1;
+
+        double r_out_norm = norm(r_out);
+
+        double r2 = r_out_norm*r_out_norm;
+
+        double r3 = r2*r_out_norm;
+
+        double r4 = r2*r2;
+
+        double L1_norm = norm(args.L1);
 
         Vec3d n1 = args.L1 / L1_norm;
 
-        Vec3d r_out_hat = args.r_out / r_out_norm;
+        Vec3d r_out_hat = r_out / r_out_norm;
 
-        double de1e1 = norm2(args.e1);
+        double de1e1 = norm2(e1);
 
-        double de1r = dot(args.e1, r_out_hat);
+        double de1r = dot(e1, r_out_hat);
 
         double dn1r = dot(n1, r_out_hat);
 
-        Vec3d  ce1r = cross(args.e1, r_out_hat);
+        Vec3d  ce1r = cross(e1, r_out_hat);
 
         Vec3d  cn1r = cross(n1, r_out_hat);
 
-        Vec3d  cn1e1 = cross(n1, args.e1);
+        Vec3d  cn1e1 = cross(n1, e1);
 
         double c_in_sqr = 1 - de1e1;
 
@@ -711,10 +727,13 @@ public:
 
         double a_in = calc_a_in(L_in);
 
-        
         //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
         States d_args;
+
+        Vec3d& d_args_r_out = d_args.L2;
+
+        Vec3d& d_args_v_out = d_args.e2;
 
         //quadrupole LK
         double t_k = t_k_quad(m1 + m2, m3, a_in, r_out_norm);
@@ -725,14 +744,14 @@ public:
 
         d_args.e1 = coef * c_in * (5*de1r*cn1r - dn1r * ce1r - 2 * cn1e1);
 
-        //d_args.r_out = 0;
+        d_args_r_out = v_out;
 
-        //d_args.v_out = 0;
+        d_args_v_out = G*m3/mu2/r3 * ( -m12  - 0.25*mu1*a_in*a_in*( (3 - 18*de1e1)/r2 + (75*de1r*de1r - 15*c_in_sqr*dn1r*dn1r)/r4 ) ) * r_out;
 
         //Octupole 
 
         if(ctrl.Oct) {
-           
+        }
 
         //GW radiation
         if (ctrl.GW)
@@ -852,6 +871,7 @@ private:
     const double m1;
     const double m2;
     const double m3;
+    const double m12;
     const double mu1;
     const double mu2;
     const double a_in_init;
