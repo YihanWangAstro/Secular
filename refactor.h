@@ -217,7 +217,7 @@ public:
 
 
 
-template<typename Args, typename Container>
+template<bool Oct, typename Args, typename Container>
 inline void double_aved_LK(Args const& args, Container const& var, Container& ddt, double t){
     /*---------------------------------------------------------------------------*\
         mapping alias
@@ -347,7 +347,7 @@ inline void double_aved_LK(Args const& args, Container const& var, Container& dd
 }
 
 
-template<typename Args, typename Container>
+template<bool Oct, typename Args, typename Container>
 inline void single_aved_LK(Args const& args, Container const& var, Container& ddt, double t){
     /*---------------------------------------------------------------------------*\
         mapping alias
@@ -602,26 +602,47 @@ inline void spin_evolve(Args const& args, Container const& var, Container& ddt, 
     \*---------------------------------------------------------------------------*/
     
 
-    dL1x += GW_L_coef * n1x;
-
-    dL1y += GW_L_coef * n1y;
-
-    dL1z += GW_L_coef * n1z;
-
-    de1x += GW_e_coef * e1x;
-
-    de1y += GW_e_coef * e1y;
-
-    de1z += GW_e_coef * e1z;
+    
 }
 
+template<typename ...Func>
+inline auto serilize(Func...func) {
+    return [&](auto const&args, auto const&x, auto &dxdt, double t) {
+        (func(args, x, dxdt,t),...);
+    };
+}
 
 template<typename Args, typename ...Func>
-inline auto serilize(Args const& args, Func...func) {
+inline auto wrapper(Args const& args, Func...func) {
     return [&](auto const&x, auto &dxdt, double t) {
         (func(args, x, dxdt,t),...);
     };
 }
+
+template<typename Ctrl, typename Arg, typename Container>
+auto lambda_factory(Ctrl const& s, Arg const& args){
+    if (s.SA == false) {
+        if(s.oct == true){
+            auto LK = serilize(double_aved_LK<true, Arg, Container>);
+            
+            if(s.GR == true) {
+                LK = serilize(LK, GR_precession<Arg, Container>);
+            }
+
+
+        } else {
+            auto LK = serilize(double_aved_LK<false, Arg, Container>);
+        }
+    } else {
+        if(s.oct == true){
+            auto LK = serilize(single_aved_LK<true, Arg, Container>);
+        } else {
+            auto LK = serilize(single_aved_LK<false, Arg, Container>);
+        }
+    }
+}
+
+
 
 } // namespace secular
 #endif
