@@ -1,6 +1,7 @@
 
 #include <iostream>
-#include "secular.h"
+//#include "secular.h"
+#include "refactor.h"
 #include "SpaceHub/src/multi-thread/multi-thread.hpp"
 #include "SpaceHub/src/tools/config-reader.hpp"
 #include "SpaceHub/src/tools/timer.hpp"
@@ -42,6 +43,7 @@ size_t resolve_spin_num(std::string const& file_name){
     }
 }
 
+/*
 template<size_t spin_num>
 void single_thread_job(std::string work_dir, ConcurrentFile input, size_t start_id, size_t end_id, ConcurrentFile output, ConcurrentFile log) {
     using Sys = secular::Secular<spin_num, secular::Controler>;
@@ -66,6 +68,54 @@ void single_thread_job(std::string work_dir, ConcurrentFile input, size_t start_
         } 
   }
 }
+*/
+
+template<typename Container, typename Obt>
+void to_init(Container& c, Obt const& orbit) {
+        Vec3d L1 = secular::calc_angular_mom(orbit.m1, orbit.m2, orbit.a_in) * sqrt(1 - orbit.e_in * orbit.e_in) * secular::unit_j(orbit.i_in, orbit.Omega_in);
+        Vec3d L2 = secular::calc_angular_mom(orbit.m1 + orbit.m2, orbit.m3, orbit.a_out) * sqrt(1 - orbit.e_out * orbit.e_out) * secular::unit_j(orbit.i_out, orbit.Omega_out);
+        Vec3d e1 = orbit.e_in * secular::unit_e(orbit.i_in, orbit.omega_in, orbit.Omega_in);
+        Vec3d e2 = orbit.e_out * secular::unit_e(orbit.i_out, orbit.omega_out, orbit.Omega_out);
+        c[0] = L1.x, c[1] = L1.y, c[2] = L1.z;
+        c[3] = e1.x, c[4] = e1.y, c[5] = e1.z;
+        c[6] = L2.x, c[7] = L2.y, c[8] = L2.z;
+        c[9] = e2.x, c[10] = e2.y, c[11] = e2.z;
+}
+
+template<size_t spin_num>
+void single_thread_job(std::string work_dir, ConcurrentFile input, size_t start_id, size_t end_id, ConcurrentFile output, ConcurrentFile log) {
+    using Container = std::array<double,12>;
+   
+    using stepper_type = boost::numeric::odeint::runge_kutta_fehlberg78<Container>;
+    double ini_dt = 0.1 * secular::year;
+    secular::Task<spin_num> task;
+    for(;;) {
+        if(input >> task) {
+            if(start_id <= task.ctrl.id && task.ctrl.id <= end_id) {
+                secular::deg_to_rad(task.obt_args);
+
+                std::array<double,12> inits;
+
+                to_init(inits, task.obt_args);
+
+                secular::SecularArg args{task.obt_args.m1, task.obt_args.m2, task.obt_args.m3};
+
+                try{
+                    //boost::numeric::odeint::integrate_adaptive(boost::numeric::odeint::make_controlled(int_error ,int_error , stepper_type() ), eqns, inits, 0.0, task.ctrl.end_time, ini_dt, eqns);
+                    boost::numeric::odeint::integrate_adaptive(boost::numeric::odeint::make_controlled(int_error ,int_error , stepper_type() ), secular::serilize(args, secular::quad_kozai<secular::SecularArg, Container>), inits, 0.0, task.ctrl.end_time, ini_dt);
+                } catch (secular::StopFlag flag) {
+                    if(flag == secular::StopFlag::shrink) {
+                    //
+                    }
+                }
+            }
+        } else {
+            break;
+        } 
+  }
+}
+
+
 
 int main(int argc, char **argv) {
 

@@ -12,7 +12,7 @@
 #include <boost/numeric/odeint.hpp>
 #include "SpaceHub/src/multi-thread/multi-thread.hpp"
 #include "SpaceHub/src/dev-tools.hpp"
-
+#include "vector3d.h"
 namespace secular
 {
 
@@ -195,90 +195,431 @@ inline double dot(double x1, double y1, double z1, double x2, double y2, double 
     return x1*x2 + y1*y2 + z1*z2;
 }
 
-inline void cross(double& x3, double& y3, double& z3, double x1, double y1, double z1, double x2, double y2, double z2){
-    x3 =  
-    y3 = 
-    z3 =
+inline auto cross(double x1, double y1, double z1, double x2, double y2, double z2){
+    return std::make_tuple(y1*z2 - y2*z1, z1*x2 -z2*x1, x1*y2-x2*y1);
 }
 
-template <typename Container, typename Args>
-struct Equations
-{
+
+struct SecularArg{
+    SecularArg(double _m1, double _m2, double _m3) : m1{_m1}, m2{_m2}, m3{_m3} {
+        double mu1 = m1 * m2 / (m1 + m2);
+        double mu2 = (m1 + m2) * m3 / (m1 + m2 + m3);
+        a_in_coef = 1 / (G * (m1 + m2)) / mu1 / mu1;
+        a_out_coef = 1 / (G * (m1 + m2 + m3)) / mu2 / mu2; 
+    } 
 public:
-    using Stepper = std::function<void(Args const &, Container const &, Container&, double t)>;
-    using Observer = std::function<void(Args const &, Container const &, double t)>;
-
-    Equations(Args const &_args) : args{_args} {}
-
-    void operator()(Container const &x, Container &dxdt, double t)
-    {
-        dxdt.fill(0);
-
-        args.update(x);
-
-        for(auto const& f: func){
-            f(args, x, dxdt, t);
-        }
-    }
-
-    void operator()(Container const &x, double t)
-    {
-        for(auto const& g: obs){
-            g(args, x, t);
-        }
-    }
-
-private:
-    Args args;
-    std::vector<Stepper> func;
-    std::vector<Observer> obs;
+    double m1;
+    double m2;
+    double m3;
+    double a_in_coef;
+    double a_out_coef;
 };
 
 
 
 template<typename Args, typename Container>
-void DA_quad_kozai(Args const& args, Container const& var, Container& ddt, double t){
-    double& L1x{var[0]};
-    double& L1y{var[1]};
-    double& L1z{var[2]};
+inline void double_aved_LK(Args const& args, Container const& var, Container& ddt, double t){
+    /*---------------------------------------------------------------------------*\
+        mapping alias
+    \*---------------------------------------------------------------------------*/
+    const auto [L1x, L1y, L1z] = std::tie(var[0], var[1], var[2]);
 
-    double& e1x{var[3]};
-    double& e1y{var[4]};
-    double& e1z{var[5]};
+    const auto [e1x, e1y, e1z] = std::tie(var[3], var[4], var[5]);
 
-    double& L2x{var[6]};
-    double& L2y{var[7]};
-    double& L2z{var[8]};
+    const auto [L2x, L2y, L2z] = std::tie(var[6], var[7], var[8]);
 
-    double& e2x{var[9]};
-    double& e2y{var[10]};
-    double& e2z{var[11]};
+    const auto [e2x, e2y, e2z] = std::tie(var[9], var[10], var[11]);
+
+    auto [dL1x, dL1y, dL1z] = std::tie(ddt[0], ddt[1], ddt[2]);
+
+    auto [de1x, de1y, de1z] = std::tie(ddt[3], ddt[4], ddt[5]);
+
+    auto [dL2x, dL2y, dL2z] = std::tie(ddt[6], ddt[7], ddt[8]);
+
+    auto [de2x, de2y, de2z] = std::tie(ddt[9], ddt[10], ddt[11]);
+    
+    /*---------------------------------------------------------------------------*\
+        orbital parameters calculation
+    \*---------------------------------------------------------------------------*/
+    double e1_sqr = norm2(e1x, e1y, e1z);
+
+    double e2_sqr = norm2(e2x, e2y, e2z);
+
+    double j1_sqr = 1 - e1_sqr;
+
+    double j2_sqr = 1 - e2_sqr;
+
+    double j1 = sqrt(j1_sqr);
+
+    double j2 = sqrt(j2_sqr);
 
     double L1_norm = norm(L1x, L1y, L1z);
 
     double L2_norm = norm(L2x, L2y, L2z);
 
-    double de1e1 = norm2(e1x, e1y, e1z);
+    double L_in = L1_norm / j1;
 
-    double a_out_eff = args.a_out * args.j2;
+    double L_out = L2_norm / j2;
 
-    double quad_coef = 0.75 / t_k_quad(args.m1 + args.m2, args.m3, args.a_in, a_out_eff);
+    double a_in = args.a_in_coef * L_in * L_in;
+
+    double a_out = args.a_out_coef * L_out * L_out;
+    /*---------------------------------------------------------------------------*\
+        unit vectors
+    \*---------------------------------------------------------------------------*/
+    double n1x = L1x/L1_norm, n1y = L1y/L1_norm, n1z = L1z/L1_norm;
+
+    double n2x = L2x/L2_norm, n2y = L2y/L2_norm, n2z = L2z/L2_norm;
+    /*---------------------------------------------------------------------------*\
+        dot production
+    \*---------------------------------------------------------------------------*/
+    double dn1n2 = dot(n1x, n1y, n1z, n2x, n2y, n2z);
+
+    double de1n2 = dot(e1x, e1y, e1z, n2x, n2y, n2z);
+    /*---------------------------------------------------------------------------*\
+        cross production
+    \*---------------------------------------------------------------------------*/
+    auto const [cn1n2_x, cn1n2_y, cn1n2_z] = cross(n1x, n1y, n1z, n2x, n2y, n2z);
+
+    auto const [cn1e1_x, cn1e1_y, cn1e1_z] = cross(n1x, n1y, n1z, e1x, e1y, e1z);
+
+    auto const [ce1n2_x, ce1n2_y, ce1n2_z] = cross(e1x, e1y, e1z, n2x, n2y, n2z);
+
+    auto const [ce2n1_x, ce2n1_y, ce2n1_z] = cross(e2x, e2y, e2z, n1x, n1y, n1z);
+
+    auto const [ce1e2_x, ce1e2_y, ce1e2_z] = cross(e1x, e1y, e1z, e2x, e2y, e2z);
+
+    auto const [cn2e2_x, cn2e2_y, cn2e2_z] = cross(n2x, n2y, n2z, e2x, e2y, e2z);
+    /*---------------------------------------------------------------------------*\
+        combinations
+    \*---------------------------------------------------------------------------*/
+    double a_out_eff = a_out * j2;
+
+    double quad_coef = 0.75 / t_k_quad(args.m1 + args.m2, args.m3, a_in, a_out_eff);
+
+
+    double A = quad_coef * L_in;
+
+    double A1 = A * j1_sqr * dn1n2;
+
+    double A2 = -A * 5 * de1n2;
+    
+
+    double B = quad_coef * j1;
+
+    double B1 = B * dn1n2;
+
+    double B2 = B * 2;
+
+    double B3 = B * de1n2 * (-5);
+
+    
+    double C = quad_coef * L_in / L2_norm;
+
+    double C1 = C * 5 * de1n2;
+
+    double C2 = C * j1_sqr * dn1n2;
+
+    double C3 = -C * (0.5 - 3 * e1_sqr + 12.5 * de1n2 * de1n2 - 2.5 * j1_sqr * dn1n2 * dn1n2);
+
+
+    double dLx = A1*cn1n2_x + A2*ce1n2_x;
+
+    double dLy = A1*cn1n2_y + A2*ce1n2_y;
+
+    double dLz = A1*cn1n2_z + A2*ce1n2_z;
+
+    dL1x = dLx; dL1y = dLy; dL1z = dLz;
+
+    dL2x = -dLx; dL2y = -dLy; dL2z = -dLz;
+
+    de1x = B1*ce1n2_x + B2*cn1e1_x + B3*cn1n2_x;
+
+    de1y = B1*ce1n2_y + B2*cn1e1_y + B3*cn1n2_y;
+
+    de1z = B1*ce1n2_z + B2*cn1e1_z + B3*cn1n2_z;
+
+    de2x = C1*ce1e2_x + C2*ce2n1_x + C3*cn2e2_x;
+
+    de2y = C1*ce1e2_y + C2*ce2n1_y + C3*cn2e2_y;
+
+    de2z = C1*ce1e2_z + C2*ce2n1_z + C3*cn2e2_z;
 }
 
-template<typename Args, typename Container, typename ...Func>
-auto serilize(Func&&...func){
-    return [=](Container const &x, Container &dxdt, double t){ 
-        (func(),...);
-    };
+
+template<typename Args, typename Container>
+inline void single_aved_LK(Args const& args, Container const& var, Container& ddt, double t){
+    /*---------------------------------------------------------------------------*\
+        mapping alias
+    \*---------------------------------------------------------------------------*/
+    const auto [L1x, L1y, L1z] = std::tie(var[0], var[1], var[2]);
+
+    const auto [e1x, e1y, e1z] = std::tie(var[3], var[4], var[5]);
+
+    const auto [rx, ry, rz] = std::tie(var[6], var[7], var[8]);
+
+    const auto [vx, vy, vz] = std::tie(var[9], var[10], var[11]);
+
+    auto [dL1x, dL1y, dL1z] = std::tie(ddt[0], ddt[1], ddt[2]);
+
+    auto [de1x, de1y, de1z] = std::tie(ddt[3], ddt[4], ddt[5]);
+
+    auto [drx, dry, drz] = std::tie(ddt[6], ddt[7], ddt[8]);
+
+    auto [dvx, dvy, dvz] = std::tie(ddt[9], ddt[10], ddt[11]);
+    
+    /*---------------------------------------------------------------------------*\
+        orbital parameters calculation
+    \*---------------------------------------------------------------------------*/
+    double e1_sqr = norm2(e1x, e1y, e1z);
+
+    double r2 = norm2(rx, ry, rz);
+
+    double j1_sqr = 1 - e1_sqr;
+
+    double j1 = sqrt(j1_sqr);
+
+    double r = sqrt(r2);
+
+    double L1_norm = norm(L1x, L1y, L1z);
+
+    double L_in = L1_norm / j1;
+
+    double a_in = args.a_in_coef * L_in * L_in;
+    /*---------------------------------------------------------------------------*\
+        unit vectors
+    \*---------------------------------------------------------------------------*/
+    double n1x = L1x/L1_norm, n1y = L1y/L1_norm, n1z = L1z/L1_norm;
+
+    double rhox = rx/r, rhoy = ry/r, rhoz = rz/r;
+    /*---------------------------------------------------------------------------*\
+        dot production
+    \*---------------------------------------------------------------------------*/
+    double dn1r = dot(n1x, n1y, n1z, rx, ry, rz);
+
+    double de1r = dot(e1x, e1y, e1z, rx, ry, rz);
+    /*---------------------------------------------------------------------------*\
+        cross production
+    \*---------------------------------------------------------------------------*/
+    auto const [cn1r_x, cn1r_y, cn1r_z] = cross(n1x, n1y, n1z, rx, ry, rz);
+
+    auto const [cn1e1_x, cn1e1_y, cn1e1_z] = cross(n1x, n1y, n1z, e1x, e1y, e1z);
+
+    auto const [ce1r_x, ce1r_y, ce1r_z] = cross(e1x, e1y, e1z, rx, ry, rz);
+    /*---------------------------------------------------------------------------*\
+        combinations
+    \*---------------------------------------------------------------------------*/
+    double quad_coef = 1.5 / t_k_quad(args.m1 + args.m2, args.m3, a_in, r);
+
+    double A = quad_coef * L_in;
+
+    double A1 = A * 5 * de1r;
+
+    double A2 = -A * j1_sqr * dn1r;
+    
+    double B = quad_coef * j1;
+
+    double B1 = B * 5 * de1r;
+
+    double B2 = -B * dn1r;
+
+    double B3 = -2 * B;
+
+    double r3 = r2*r;
+
+    double r4 = r2*r2;
+
+    double acc = G*args.m3/args.mu2/r3 * ( -args.m12  - 0.25*args.mu1*a_in*a_in*( (3 - 18*e1_sqr)/r2 + (75*de1r*de1r - 15*j1_sqr*dn1r*dn1r)/r4 ) );
+
+    dL1x = A1*ce1r_x + A2*cn1r_x;
+
+    dL1y = A1*ce1r_y + A2*cn1r_y;
+
+    dL1z = A1*ce1r_z + A2*cn1r_z;
+
+    de1x = B1*cn1r_x + B2*ce1r_x + B3*cn1e1_x;
+
+    de1y = B1*cn1r_y + B2*ce1r_y + B3*cn1e1_y;
+
+    de1z = B1*cn1r_z + B2*ce1r_z + B3*cn1e1_z;
+
+    drx = vx, dry = vy, drz = vz;
+
+    dvx = acc*rx, dvy = acc*ry, dvz = acc*rz;
+}
+
+template<typename Args, typename Container>
+inline void GR_precession(Args const& args, Container const& var, Container& ddt, double t){
+    /*---------------------------------------------------------------------------*\
+        mapping alias
+    \*---------------------------------------------------------------------------*/
+    const auto [L1x, L1y, L1z] = std::tie(var[0], var[1], var[2]);
+
+    const auto [e1x, e1y, e1z] = std::tie(var[3], var[4], var[5]);
+
+    auto [de1x, de1y, de1z] = std::tie(ddt[3], ddt[4], ddt[5]);
+    /*---------------------------------------------------------------------------*\
+        orbital parameters calculation
+    \*---------------------------------------------------------------------------*/
+    double e1_sqr = norm2(e1x, e1y, e1z);
+
+    double j1_sqr = 1 - e1_sqr;
+
+    double j1 = sqrt(j1_sqr);
+
+    double L1_norm = norm(L1x, L1y, L1z);
+
+    double L_in = L1_norm / j1;
+
+    double a_in = args.a_in_coef * L_in * L_in;
+    /*---------------------------------------------------------------------------*\
+        unit vectors
+    \*---------------------------------------------------------------------------*/
+    double n1x = L1x/L1_norm, n1y = L1y/L1_norm, n1z = L1z/L1_norm;
+    /*---------------------------------------------------------------------------*\
+        cross production
+    \*---------------------------------------------------------------------------*/
+    auto const [cn1e1_x, cn1e1_y, cn1e1_z] = cross(n1x, n1y, n1z, e1x, e1y, e1z);
+    /*---------------------------------------------------------------------------*\
+        combinations
+    \*---------------------------------------------------------------------------*/
+    double r_a = 1.0 / a_in;
+
+    double GR_coef = args.GR_coef * sqrt(r_a * r_a * r_a * r_a * r_a)/ j1_sqr;
+
+    de1x += GR_coef * cn1e1_x;
+
+    de1y += GR_coef * cn1e1_y;
+
+    de1z += GR_coef * cn1e1_z;
 }
 
 
-template <typename ... Args>
-auto f(Args&& ... args){
-    return [args = std::make_tuple(std::forward<Args>(args) ...)]()mutable{
-        return std::apply([](auto&& ... args){
-            // use args
-        }, std::move(args));
+template<typename Args, typename Container>
+inline void GW_radiation(Args const& args, Container const& var, Container& ddt, double t){
+    /*---------------------------------------------------------------------------*\
+        mapping alias
+    \*---------------------------------------------------------------------------*/
+    const auto [L1x, L1y, L1z] = std::tie(var[0], var[1], var[2]);
+
+    const auto [e1x, e1y, e1z] = std::tie(var[3], var[4], var[5]);
+
+    auto [dL1x, dL1y, dL1z] = std::tie(ddt[0], ddt[1], ddt[2]);
+
+    auto [de1x, de1y, de1z] = std::tie(ddt[3], ddt[4], ddt[5]);
+    /*---------------------------------------------------------------------------*\
+        orbital parameters calculation
+    \*---------------------------------------------------------------------------*/
+    double e1_sqr = norm2(e1x, e1y, e1z);
+
+    double j1_sqr = 1 - e1_sqr;
+
+    double j1 = sqrt(j1_sqr);
+
+    double L1_norm = norm(L1x, L1y, L1z);
+
+    double L_in = L1_norm / j1;
+
+    double a_in = args.a_in_coef * L_in * L_in;
+    /*---------------------------------------------------------------------------*\
+        unit vectors
+    \*---------------------------------------------------------------------------*/
+    double n1x = L1x/L1_norm, n1y = L1y/L1_norm, n1z = L1z/L1_norm;
+    /*---------------------------------------------------------------------------*\
+        combinations
+    \*---------------------------------------------------------------------------*/
+    double r_a = 1.0 / a_in;
+
+    double r_a2 = r_a * r_a;
+
+    double r_a4 = r_a2 * r_a2;
+
+    double r_a7 = r_a4 * r_a2 * r_a;
+
+    double r_j2 = 1.0/ j1_sqr;
+
+    double r_j4 = r_j2 * r_j2;
+
+    double r_j5 = r_j4 / j1;
+
+    double GW_L_coef = args.GW_L_coef * sqrt(r_a7) * r_j4 * (1 + 0.875 * e1_sqr);
+
+    double GW_e_coef = args.GW_e_coef * r_a4 * r_j5  * (1 + 121.0/304 * e1_sqr);
+
+    dL1x += GW_L_coef * n1x;
+
+    dL1y += GW_L_coef * n1y;
+
+    dL1z += GW_L_coef * n1z;
+
+    de1x += GW_e_coef * e1x;
+
+    de1y += GW_e_coef * e1y;
+
+    de1z += GW_e_coef * e1z;
+}
+
+inline double dsdt_coupling_coef(double C, double a, double j_sqr){
+    double r_a = 1.0/a;
+    double r_a2 = r_a * r_a;
+    double r_a4 = r_a2 * r_a2;
+    double r_a5 = r_a4 * r_a;
+    return C*sqrt(r_a5)/j_sqr;
+}
+
+template<typename Args, typename Container>
+inline void spin_evolve(Args const& args, Container const& var, Container& ddt, double t){
+    /*---------------------------------------------------------------------------*\
+        mapping alias
+    \*---------------------------------------------------------------------------*/
+    const auto [L1x, L1y, L1z] = std::tie(var[0], var[1], var[2]);
+
+    const auto [e1x, e1y, e1z] = std::tie(var[3], var[4], var[5]);
+
+    auto [dL1x, dL1y, dL1z] = std::tie(ddt[0], ddt[1], ddt[2]);
+
+    auto [de1x, de1y, de1z] = std::tie(ddt[3], ddt[4], ddt[5]);
+    /*---------------------------------------------------------------------------*\
+        orbital parameters calculation
+    \*---------------------------------------------------------------------------*/
+    double e1_sqr = norm2(e1x, e1y, e1z);
+
+    double j1_sqr = 1 - e1_sqr;
+
+    double j1 = sqrt(j1_sqr);
+
+    double L1_norm = norm(L1x, L1y, L1z);
+
+    double L_in = L1_norm / j1;
+
+    double a_in = args.a_in_coef * L_in * L_in;
+    /*---------------------------------------------------------------------------*\
+        unit vectors
+    \*---------------------------------------------------------------------------*/
+    double n1x = L1x/L1_norm, n1y = L1y/L1_norm, n1z = L1z/L1_norm;
+    /*---------------------------------------------------------------------------*\
+        combinations
+    \*---------------------------------------------------------------------------*/
+    
+
+    dL1x += GW_L_coef * n1x;
+
+    dL1y += GW_L_coef * n1y;
+
+    dL1z += GW_L_coef * n1z;
+
+    de1x += GW_e_coef * e1x;
+
+    de1y += GW_e_coef * e1y;
+
+    de1z += GW_e_coef * e1z;
+}
+
+
+template<typename Args, typename ...Func>
+inline auto serilize(Args const& args, Func...func) {
+    return [&](auto const&x, auto &dxdt, double t) {
+        (func(args, x, dxdt,t),...);
     };
 }
 
