@@ -76,7 +76,7 @@ std::ostream &operator<<(std::ostream &os, std::array<T, len> const &arr)
     }
     return os;
 }
-
+ 
 template <size_t SpinNum_>
 struct OrbitArgs
 {
@@ -240,7 +240,6 @@ inline auto cross(double x1, double y1, double z1, double x2, double y2, double 
     return std::make_tuple(y1*z2 - y2*z1, z1*x2 -z2*x1, x1*y2-x2*y1);
 }
 
-
 struct SecularArg{
     SecularArg(double _m1, double _m2, double _m3) : m1{_m1}, m2{_m2}, m3{_m3} {
         mu1 = m1 * m2 / (m1 + m2);
@@ -261,7 +260,21 @@ public:
     double GW_e_coef{0};
 };
 
+inline auto calc_orbit_args(double C, double lx, double ly, double lz, double ex, double ey, double ez) {
+    double e_sqr = norm2(ex, ey, ez);
 
+    double j_sqr = 1 - e_sqr;
+
+    double j = sqrt(j_sqr);
+
+    double L_norm = norm(lx, ly, lz);
+
+    double L = L_norm / j;
+
+    double a = C * L * L;
+
+    return std::make_tuple(e_sqr, j_sqr, j, L_norm, L, a);
+}
 
 template<bool Oct, typename Args, typename Container>
 inline void double_aved_LK(Args const& args, Container const& var, Container& ddt, double t){
@@ -283,33 +296,12 @@ inline void double_aved_LK(Args const& args, Container const& var, Container& dd
     auto [dL2x, dL2y, dL2z] = std::tie(ddt[6], ddt[7], ddt[8]);
 
     auto [de2x, de2y, de2z] = std::tie(ddt[9], ddt[10], ddt[11]);
-    
     /*---------------------------------------------------------------------------*\
         orbital parameters calculation
     \*---------------------------------------------------------------------------*/
-    double e1_sqr = norm2(e1x, e1y, e1z);
+    auto [e1_sqr, j1_sqr, j1, L1_norm, L_in, a_in] = calc_orbit_args(args.a_in_coef, L1x, L1y, L1z, e1x, e1y, e1z);
 
-    double e2_sqr = norm2(e2x, e2y, e2z);
-
-    double j1_sqr = 1 - e1_sqr;
-
-    double j2_sqr = 1 - e2_sqr;
-
-    double j1 = sqrt(j1_sqr);
-
-    double j2 = sqrt(j2_sqr);
-
-    double L1_norm = norm(L1x, L1y, L1z);
-
-    double L2_norm = norm(L2x, L2y, L2z);
-
-    double L_in = L1_norm / j1;
-
-    double L_out = L2_norm / j2;
-
-    double a_in = args.a_in_coef * L_in * L_in;
-
-    double a_out = args.a_out_coef * L_out * L_out;
+    auto [e2_sqr, j2_sqr, j2, L2_norm, L_out, a_out] = calc_orbit_args(args.a_out_coef, L2x, L2y, L2z, e2x, e2y, e2z);
     /*---------------------------------------------------------------------------*\
         unit vectors
     \*---------------------------------------------------------------------------*/
@@ -409,25 +401,14 @@ inline void single_aved_LK(Args const& args, Container const& var, Container& dd
     auto [drx, dry, drz] = std::tie(ddt[6], ddt[7], ddt[8]);
 
     auto [dvx, dvy, dvz] = std::tie(ddt[9], ddt[10], ddt[11]);
-    
     /*---------------------------------------------------------------------------*\
         orbital parameters calculation
     \*---------------------------------------------------------------------------*/
-    double e1_sqr = norm2(e1x, e1y, e1z);
-
+    auto [e1_sqr, j1_sqr, j1, L1_norm, L_in, a_in] = calc_orbit_args(args.a_in_coef, L1x, L1y, L1z, e1x, e1y, e1z);
+    
     double r2 = norm2(rx, ry, rz);
 
-    double j1_sqr = 1 - e1_sqr;
-
-    double j1 = sqrt(j1_sqr);
-
     double r = sqrt(r2);
-
-    double L1_norm = norm(L1x, L1y, L1z);
-
-    double L_in = L1_norm / j1;
-
-    double a_in = args.a_in_coef * L_in * L_in;
     /*---------------------------------------------------------------------------*\
         unit vectors
     \*---------------------------------------------------------------------------*/
@@ -504,7 +485,6 @@ inline void single_aved_LK(Args const& args, Container const& var, Container& dd
 
 template<typename Args, typename Container>
 inline void GR_precession(Args const& args, Container const& var, Container& ddt, double t){
-    
         /*---------------------------------------------------------------------------*\
             mapping alias
         \*---------------------------------------------------------------------------*/
@@ -516,17 +496,7 @@ inline void GR_precession(Args const& args, Container const& var, Container& ddt
         /*---------------------------------------------------------------------------*\
             orbital parameters calculation
         \*---------------------------------------------------------------------------*/
-        double e1_sqr = norm2(e1x, e1y, e1z);
-
-        double j1_sqr = 1 - e1_sqr;
-
-        double j1 = sqrt(j1_sqr);
-
-        double L1_norm = norm(L1x, L1y, L1z);
-
-        double L_in = L1_norm / j1;
-
-        double a_in = args.a_in_coef * L_in * L_in;
+        auto [e1_sqr, j1_sqr, j1, L1_norm, L_in, a_in] = calc_orbit_args(args.a_in_coef, L1x, L1y, L1z, e1x, e1y, e1z);
         /*---------------------------------------------------------------------------*\
             unit vectors
         \*---------------------------------------------------------------------------*/
@@ -549,7 +519,6 @@ inline void GR_precession(Args const& args, Container const& var, Container& ddt
         de1z += GR_coef * cn1e1_z;
 }
 
-
 template<typename Args, typename Container>
 inline void GW_radiation(Args const& args, Container const& var, Container& ddt, double t){
         /*---------------------------------------------------------------------------*\
@@ -565,17 +534,7 @@ inline void GW_radiation(Args const& args, Container const& var, Container& ddt,
         /*---------------------------------------------------------------------------*\
             orbital parameters calculation
         \*---------------------------------------------------------------------------*/
-        double e1_sqr = norm2(e1x, e1y, e1z);
-
-        double j1_sqr = 1 - e1_sqr;
-
-        double j1 = sqrt(j1_sqr);
-
-        double L1_norm = norm(L1x, L1y, L1z);
-
-        double L_in = L1_norm / j1;
-
-        double a_in = args.a_in_coef * L_in * L_in;
+        auto [e1_sqr, j1_sqr, j1, L1_norm, L_in, a_in] = calc_orbit_args(args.a_in_coef, L1x, L1y, L1z, e1x, e1y, e1z);
         /*---------------------------------------------------------------------------*\
             unit vectors
         \*---------------------------------------------------------------------------*/
@@ -614,12 +573,33 @@ inline void GW_radiation(Args const& args, Container const& var, Container& ddt,
         de1z += GW_e_coef * e1z;
 }
 
-inline double dsdt_coupling_coef(double C, double a, double j_sqr){
+inline double dsdt_coupling(double C, double a, double j_sqr){
     double r_a = 1.0/a;
     double r_a2 = r_a * r_a;
     double r_a4 = r_a2 * r_a2;
     double r_a5 = r_a4 * r_a;
     return C*sqrt(r_a5)/j_sqr;
+}
+
+inline auto self_deSitter(double Omega, double nx, double ny, double nz, double sx, double sy, double sz){
+    auto const [cns_x, cns_y, cns_z] = cross(nx, ny, nz, sx, sy, sz);
+    return std::make_tuple(Omega*cns_x, Omega*cns_y, Omega*cns_z);
+}
+
+template<typename Container>
+constexpr size_t spin_num(Container const& d){
+    if constexpr (d.size() == 12) {
+        return 0;
+    } else if constexpr (d.size() == 15) {
+        return 1;
+    } else if constexpr (d.size() == 18) {
+        return 2;
+    } else if constexpr (d.size() == 21) {
+        return 3;
+    } else {
+        std::cout << "Wrong Spin Num!\n";
+        exit(0);
+    }
 }
 
 template<bool LL, bool SL, typename Args, typename Container>
@@ -630,32 +610,73 @@ inline void deSitter_precession(Args const& args, Container const& var, Containe
         const auto [L1x, L1y, L1z] = std::tie(var[0], var[1], var[2]);
 
         const auto [e1x, e1y, e1z] = std::tie(var[3], var[4], var[5]);
-
-        auto [dL1x, dL1y, dL1z] = std::tie(ddt[0], ddt[1], ddt[2]);
-
-        auto [de1x, de1y, de1z] = std::tie(ddt[3], ddt[4], ddt[5]);
         /*---------------------------------------------------------------------------*\
             orbital parameters calculation
         \*---------------------------------------------------------------------------*/
-        double e1_sqr = norm2(e1x, e1y, e1z);
-
-        double j1_sqr = 1 - e1_sqr;
-
-        double j1 = sqrt(j1_sqr);
-
-        double L1_norm = norm(L1x, L1y, L1z);
-
-        double L_in = L1_norm / j1;
-
-        double a_in = args.a_in_coef * L_in * L_in;
+        auto [e1_sqr, j1_sqr, j1, L1_norm, L_in, a_in] = calc_orbit_args(args.a_in_coef, L1x, L1y, L1z, e1x, e1y, e1z);
         /*---------------------------------------------------------------------------*\
             unit vectors
         \*---------------------------------------------------------------------------*/
-        double n1x = L1x/L1_norm, n1y = L1y/L1_norm, n1z = L1z/L1_norm;
-
+        double n1x = L1x/L1_norm, n1y = L1y/L1_norm, n1z = L1z/L1_norm;  
         /*---------------------------------------------------------------------------*\
             combinations
-        \*---------------------------------------------------------------------------*/  
+        \*---------------------------------------------------------------------------*/
+
+        if constexpr(spin_num(var) == 1){
+            
+            const auto [s1x, s1y, s1z] = std::tie(var[12], var[13], var[14]);
+
+            auto [ds1x, ds1y, ds1z] = std::tie(ddt[12], ddt[13], ddt[14]);
+
+            std::tie(ds1x, ds1y, ds1z) = self_deSitter(dsdt_coupling(args.S_1_L_in_coef, a_in, j1_sqr), n1x, n1y, n1z, s1x, s1y, s1z);
+        } 
+        
+        if constexpr(spin_num(var) == 2) {
+            const auto [s2x, s2y, s2z] = std::tie(var[15], var[16], var[17]);
+
+            auto [ds2x, ds2y, ds2z] = std::tie(ddt[15], ddt[16], ddt[17]);
+
+            std::tie(ds2x, ds2y, ds2z) = self_deSitter(dsdt_coupling(args.S_2_L_in_coef, a_in, j1_sqr), n1x, n1y, n1z, s2x, s2y, s2z);
+        } 
+        
+        if constexpr(spin_num(var) == 3) {
+            const auto [s3x, s3y, s3z] = std::tie(var[18], var[19], var[20]);
+
+            auto [ds3x, ds3y, ds3z] = std::tie(ddt[18], ddt[19], ddt[20]);
+
+            std::tie(ds3x, ds3y, ds3z) = self_deSitter(dsdt_coupling(args.S_3_L_out_coef, a_out, j2_sqr), n2x, n2y, n2z, s3x, s3y, s3z);
+        }
+
+        if constexpr(SL || LL) {
+            /*---------------------------------------------------------------------------*\
+                mapping alias
+            \*---------------------------------------------------------------------------*/
+            const auto [L2x, L2y, L2z] = std::tie(var[6], var[7], var[8]);
+
+            const auto [e2x, e2y, e2z] = std::tie(var[9], var[10], var[11]);
+            /*---------------------------------------------------------------------------*\
+                orbital parameters calculation
+            \*---------------------------------------------------------------------------*/
+            auto [e2_sqr, j2_sqr, j2, L2_norm, L_out, a_out] = calc_orbit_args(args.a_out_coef, L2x, L2y, L2z, e2x, e2y, e2z);
+            /*---------------------------------------------------------------------------*\
+                unit vectors
+            \*---------------------------------------------------------------------------*/
+            double n2x = L2x/L2_norm, n2y = L2y/L2_norm, n2z = L2z/L2_norm;
+            /*---------------------------------------------------------------------------*\
+                combinations
+            \*---------------------------------------------------------------------------*/
+            if constexpr(var.size() >= 15){
+                auto [ds1x_, ds1y_, ds1z_] = self_deSitter(dsdt_coupling(args.S_1_L_out_coef, a_out, j2_sqr), n2x, n2y, n2z, s1x, s1y, s1z);
+
+                ds1x += ds1x_, ds1y += ds1y_, ds1z += ds1z_; 
+            }
+
+            if constexpr(var.size() >= 18){
+                auto [ds2x_, ds2y_, ds2z_] = self_deSitter(dsdt_coupling(args.S_2_L_out_coef, a_out, j2_sqr), n2x, n2y, n2z, s2x, s2y, s2z);
+
+                ds2x += ds2x_, ds2y += ds2y_, ds2z += ds2z_;
+            }
+        } 
 }
 
 
@@ -722,8 +743,12 @@ inline auto serilize(Args const& args, Func...func) {
 
 template<typename Ctrl>
 int ctrl_to_int(Ctrl const& c) {
-    return static_cast<int>(c.DA) + (static_cast<int>(c.Oct) << 1) + (static_cast<int>(c.GR) << 2) + (static_cast<int>(c.GW) << 3)
-    + (static_cast<int>(c.LL) << 4) + (static_cast<int>(c.SL) << 5);
+    return static_cast<int>(c.DA) 
+    + (static_cast<int>(c.Oct) << 1) 
+    + (static_cast<int>(c.GR) << 2) 
+    + (static_cast<int>(c.GW) << 3)
+    + (static_cast<int>(c.LL) << 4)
+    + (static_cast<int>(c.SL) << 5);
 }
 
 template<typename Ctrl, typename Args, typename Container>
