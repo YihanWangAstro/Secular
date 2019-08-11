@@ -141,8 +141,8 @@ struct Controler
     bool Oct;
     bool GR;
     bool GW;
-    bool SL_out;
-    bool LL_couple;
+    bool SL;
+    bool LL;
 
     friend std::istream &operator>>(std::istream &is, Controler &t)
     {
@@ -156,8 +156,8 @@ struct Controler
         is >> tmp; t.Oct = static_cast<bool>(tmp);
         is >> tmp; t.GR = static_cast<bool>(tmp);
         is >> tmp; t.GW = static_cast<bool>(tmp);
-        is >> tmp; t.SL_out = static_cast<bool>(tmp);
-        is >> tmp; t.LL_couple = static_cast<bool>(tmp);
+        is >> tmp; t.SL = static_cast<bool>(tmp);
+        is >> tmp; t.LL = static_cast<bool>(tmp);
 
         //sis >> t.id >> t.write_traj >> t.write_end >> t.end_time >> t.dt_out >> t.Oct >> t.GR >> t.GW >> t.SL_out >> t.LL_couple;
         return is;
@@ -165,7 +165,7 @@ struct Controler
 
     friend std::ostream &operator<<(std::ostream &os, Controler const &t)
     {
-        os << t.id << ' ' << t.write_traj << ' ' << t.write_end << ' ' << t.end_time << ' ' << t.dt_out << ' '<< t.DA << ' ' << t.Oct << ' ' << t.GR << ' ' << t.GW << ' ' << t.SL_out << ' ' << t.LL_couple;
+        os << t.id << ' ' << t.write_traj << ' ' << t.write_end << ' ' << t.end_time << ' ' << t.dt_out << ' '<< t.DA << ' ' << t.Oct << ' ' << t.GR << ' ' << t.GW << ' ' << t.SL << ' ' << t.LL;
         return os;
     }
 };
@@ -217,8 +217,6 @@ void initilize_SA(Container& c, OrbitArg const&o){
     c[3] = e1.x, c[4] = e1.y, c[5] = e1.z;
     c[6] = r_out.x, c[7] = r_out.y, c[8] = r_out.z;
     c[9] = -v_out.x, c[10] = v_out.y, c[11] = v_out.z;
-
-    std::cout << L1 << ' ' <<  e1 << ' '<< r_out << ' ' << v_out << "!!\n";
 }
 
 enum class StopFlag
@@ -258,6 +256,9 @@ public:
     double mu2;
     double a_in_coef;
     double a_out_coef;
+    double GR_coef{0};
+    double GW_L_coef{0};
+    double GW_e_coef{0};
 };
 
 
@@ -658,49 +659,42 @@ inline void deSitter_precession(Args const& args, Container const& var, Containe
 }
 
 
-template<typename Args, typename ...Func>
-inline auto serilize(Args const& args, Func...func) {
-    return [&](auto const&x, auto &dxdt, double t) {
-        (func(args, x, dxdt,t),...);
-    };
-}
-
 template<typename Ctrl, typename Args, typename Container>
 struct Dynamic_dispatch{
 
     Dynamic_dispatch(Ctrl const& _ctrl, Args const& _args) : ctrl{&_ctrl}, args{&_args}{}
 
     void operator()(Container const &x, Container &dxdt, double t){
-        if(ctrl.DA == true){
-            if(ctrl.Oct == true) {
+        if(ctrl->DA == true){
+            if(ctrl->Oct == true) {
                 double_aved_LK<true, Args, Container>(*args, x, dxdt, t);
             } else {
                 double_aved_LK<false, Args, Container>(*args, x, dxdt, t);
             }
         } else {
-            if(ctrl.Oct == true) {
+            if(ctrl->Oct == true) {
                 single_aved_LK<true, Args, Container>(*args, x, dxdt, t);
             } else {
                 single_aved_LK<false, Args, Container>(*args, x, dxdt, t);
             }
         }
 
-        if(ctrl.GR == true) {
+        if(ctrl->GR == true) {
             GR_precession(*args, x, dxdt, t);
         }
 
-        if(ctrl.GW == true) {
+        if(ctrl->GW == true) {
             GW_radiation(*args, x, dxdt, t);
         }
 
-        if(ctrl.LL == true) {
-            if(ctrl.LS == true) {
+        if(ctrl->LL == true) {
+            if(ctrl->SL == true) {
                 deSitter_precession<true, true, Args, Container>(*args, x, dxdt, t);
             } else {
                 deSitter_precession<true, false, Args, Container>(*args, x, dxdt, t);
             }
         } else {
-            if(ctrl.LS == true) {
+            if(ctrl->SL == true) {
                 deSitter_precession<false, true, Args, Container>(*args, x, dxdt, t);
             } else {
                 deSitter_precession<false, false, Args, Container>(*args, x, dxdt, t);
@@ -708,48 +702,43 @@ struct Dynamic_dispatch{
         }
     }
 
-    Ctrl* ctrl;
-    Args* args;
+    Ctrl const* ctrl;
+    Args const* args;
 };
 
+/*template< typename ...Func>
+inline auto serilize(Func...func) {
+    return [=](auto const& args, auto const&x, auto &dxdt, double t) {
+        (func(args, x, dxdt,t),...);
+    };
+}*/
+
+template<typename Args, typename ...Func>
+inline auto serilize(Args const& args, Func...func) {
+    return [=,&args](auto const&x, auto &dxdt, double t) {
+        (func(args, x, dxdt,t),...);
+    };
+}
+
+template<typename Ctrl>
+int ctrl_to_int(Ctrl const& c) {
+    return static_cast<int>(c.DA) + (static_cast<int>(c.Oct) << 1) + (static_cast<int>(c.GR) << 2) + (static_cast<int>(c.GW) << 3)
+    + (static_cast<int>(c.LL) << 4) + (static_cast<int>(c.SL) << 5);
+}
+
 template<typename Ctrl, typename Args, typename Container>
-auto Static_dispatch (Ctrl const& ctrl, Args const& args){
-    std::function<void(Container const &x, Container &dxdt, double t)> stepper = [](Container const &x, Container &dxdt, double t){};
+auto Static_dispatch (Ctrl const& c, Args const& args){
+    int patch_id = ctrl_to_int(c);
+    std::cout << patch_id << "!!\n";
+    switch ( patch_id) {
+        case 0: return secular::serilize(args, single_aved_LK<false, Args, Container>);
+            break;
 
-    if(ctrl.DA == true){
-        if(ctrl.Oct == true) {
-            stepper = secular::serilize(args, double_aved_LK<true, Args, Container>);
-        } else {
-            stepper = secular::serilize(args, double_aved_LK<false, Args, Container>);
-        }
-    } else {
-        if(ctrl.Oct == true) {
-            stepper = secular::serilize(args, single_aved_LK<true, Args, Container>);
-        } else {
-            stepper = secular::serilize(args, single_aved_LK<false, Args, Container>);
-        }
-    }
+        case 1: return secular::serilize(args, double_aved_LK<false, Args, Container>);
+            break;
 
-    if(ctrl.GR == true) {
-        stepper = secular::serilize(args, stepper, GR_precession<Args, Container>);
-    }
-
-    if(ctrl.GW == true) {
-        stepper = secular::serilize(args, stepper, GW_radiation<Args, Container>);
-    }
-
-    if(ctrl.LL == true) {
-        if(ctrl.LS == true) {
-            stepper = secular::serilize(args, stepper, deSitter_precession<true, true, Args, Container>);
-        } else {
-            stepper = secular::serilize(args, stepper, deSitter_precession<true, false, Args, Container>);
-        }
-    } else {
-        if(ctrl.LS == true) {
-            stepper = secular::serilize(args, stepper, deSitter_precession<false, true, Args, Container>);
-        } else {
-            stepper = secular::serilize(args, stepper, deSitter_precession<false, false, Args, Container>);
-        }
+        default: std::cout << "wrong dispatch num~\n";
+            exit(0);
     }
 }
 

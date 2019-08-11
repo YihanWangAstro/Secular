@@ -10,7 +10,7 @@
 #include <algorithm>
 using namespace space::multiThread;
 
-double int_error = 1e-15;
+double int_error = 1e-13;
 
 size_t resolve_spin_num(std::string const& file_name, size_t base = 22){
     std::fstream init(file_name, std::fstream::in);
@@ -58,9 +58,15 @@ void single_thread_job(std::string work_dir, ConcurrentFile input, size_t start_
 
                 std::array<double,12> inits;
 
-                initilize_SA(inits, task.obt_args);
+                if(task.ctrl.DA == true){
+                    initilize_DA(inits, task.obt_args);
+                } else {
+                    initilize_SA(inits, task.obt_args);
+                }
+                
                 
                 secular::SecularArg args{task.obt_args.m1, task.obt_args.m2, task.obt_args.m3};
+
                 std::fstream fout_{work_dir + "trajectory_" + std::to_string(task.ctrl.id) + ".txt", std::fstream::out};
 
                 fout_ << std::fixed << std::setprecision(14);
@@ -80,9 +86,14 @@ void single_thread_job(std::string work_dir, ConcurrentFile input, size_t start_
             out_time_ += task.ctrl.dt_out;
         }
                 };
-               
+    
+               //
+               auto func = secular::Dynamic_dispatch<decltype(task.ctrl), decltype(args), Container>(task.ctrl, args);
+
+               //auto func = secular::Static_dispatch<decltype(task.ctrl), decltype(args), Container>(task.ctrl, args);
+
                 try{
-                    boost::numeric::odeint::integrate_adaptive(boost::numeric::odeint::make_controlled(int_error ,int_error , stepper_type() ), secular::serilize(args, secular::single_aved_LK<secular::SecularArg, Container>), inits, 0.0, task.ctrl.end_time, ini_dt, observer);
+                    boost::numeric::odeint::integrate_adaptive(boost::numeric::odeint::make_controlled(int_error ,int_error , stepper_type() ), func, inits, 0.0, task.ctrl.end_time, ini_dt);
                 } catch (secular::StopFlag flag) {
                     if(flag == secular::StopFlag::shrink) {
                     //
@@ -119,7 +130,7 @@ int main(int argc, char **argv) {
 
     auto log_file = make_thread_safe_fstream(work_dir + "log.txt", std::fstream::out);
 
-    size_t spin_num = resolve_spin_num(input_file_name,23);
+    size_t spin_num = resolve_spin_num(input_file_name,24);
 
     std::cout << std::setprecision(15);
 
