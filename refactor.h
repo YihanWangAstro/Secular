@@ -137,6 +137,7 @@ struct Controler
     bool write_end;
     double end_time;
     double dt_out;
+    bool DA;
     bool Oct;
     bool GR;
     bool GW;
@@ -151,6 +152,7 @@ struct Controler
         is >> tmp; t.write_end = static_cast<bool>(tmp);
         is >> t.end_time;
         is >> t.dt_out;
+        is >> tmp; t.DA = static_cast<bool>(tmp);
         is >> tmp; t.Oct = static_cast<bool>(tmp);
         is >> tmp; t.GR = static_cast<bool>(tmp);
         is >> tmp; t.GW = static_cast<bool>(tmp);
@@ -163,7 +165,7 @@ struct Controler
 
     friend std::ostream &operator<<(std::ostream &os, Controler const &t)
     {
-        os << t.id << ' ' << t.write_traj << ' ' << t.write_end << ' ' << t.end_time << ' ' << t.dt_out << ' ' << t.Oct << ' ' << t.GR << ' ' << t.GW << ' ' << t.SL_out << ' ' << t.LL_couple;
+        os << t.id << ' ' << t.write_traj << ' ' << t.write_end << ' ' << t.end_time << ' ' << t.dt_out << ' '<< t.DA << ' ' << t.Oct << ' ' << t.GR << ' ' << t.GW << ' ' << t.SL_out << ' ' << t.LL_couple;
         return os;
     }
 };
@@ -260,7 +262,7 @@ public:
 
 
 
-template<typename Args, typename Container>
+template<bool Oct, typename Args, typename Container>
 inline void double_aved_LK(Args const& args, Container const& var, Container& ddt, double t){
     /*---------------------------------------------------------------------------*\
         mapping alias
@@ -386,7 +388,7 @@ inline void double_aved_LK(Args const& args, Container const& var, Container& dd
 }
 
 
-template<typename Args, typename Container>
+template<bool Oct, typename Args, typename Container>
 inline void single_aved_LK(Args const& args, Container const& var, Container& ddt, double t){
     /*---------------------------------------------------------------------------*\
         mapping alias
@@ -619,8 +621,8 @@ inline double dsdt_coupling_coef(double C, double a, double j_sqr){
     return C*sqrt(r_a5)/j_sqr;
 }
 
-template<typename Args, typename Container>
-inline void spin_evolve(Args const& args, Container const& var, Container& ddt, double t){
+template<bool LL, bool SL, typename Args, typename Container>
+inline void deSitter_precession(Args const& args, Container const& var, Container& ddt, double t){
         /*---------------------------------------------------------------------------*\
             mapping alias
         \*---------------------------------------------------------------------------*/
@@ -663,6 +665,93 @@ inline auto serilize(Args const& args, Func...func) {
     };
 }
 
+template<typename Ctrl, typename Args, typename Container>
+struct Dynamic_dispatch{
+
+    Dynamic_dispatch(Ctrl const& _ctrl, Args const& _args) : ctrl{&_ctrl}, args{&_args}{}
+
+    void operator()(Container const &x, Container &dxdt, double t){
+        if(ctrl.DA == true){
+            if(ctrl.Oct == true) {
+                double_aved_LK<true, Args, Container>(*args, x, dxdt, t);
+            } else {
+                double_aved_LK<false, Args, Container>(*args, x, dxdt, t);
+            }
+        } else {
+            if(ctrl.Oct == true) {
+                single_aved_LK<true, Args, Container>(*args, x, dxdt, t);
+            } else {
+                single_aved_LK<false, Args, Container>(*args, x, dxdt, t);
+            }
+        }
+
+        if(ctrl.GR == true) {
+            GR_precession(*args, x, dxdt, t);
+        }
+
+        if(ctrl.GW == true) {
+            GW_radiation(*args, x, dxdt, t);
+        }
+
+        if(ctrl.LL == true) {
+            if(ctrl.LS == true) {
+                deSitter_precession<true, true, Args, Container>(*args, x, dxdt, t);
+            } else {
+                deSitter_precession<true, false, Args, Container>(*args, x, dxdt, t);
+            }
+        } else {
+            if(ctrl.LS == true) {
+                deSitter_precession<false, true, Args, Container>(*args, x, dxdt, t);
+            } else {
+                deSitter_precession<false, false, Args, Container>(*args, x, dxdt, t);
+            }
+        }
+    }
+
+    Ctrl* ctrl;
+    Args* args;
+};
+
+template<typename Ctrl, typename Args, typename Container>
+auto Static_dispatch (Ctrl const& ctrl, Args const& args){
+    std::function<void(Container const &x, Container &dxdt, double t)> stepper = [](Container const &x, Container &dxdt, double t){};
+
+    if(ctrl.DA == true){
+        if(ctrl.Oct == true) {
+            stepper = secular::serilize(args, double_aved_LK<true, Args, Container>);
+        } else {
+            stepper = secular::serilize(args, double_aved_LK<false, Args, Container>);
+        }
+    } else {
+        if(ctrl.Oct == true) {
+            stepper = secular::serilize(args, single_aved_LK<true, Args, Container>);
+        } else {
+            stepper = secular::serilize(args, single_aved_LK<false, Args, Container>);
+        }
+    }
+
+    if(ctrl.GR == true) {
+        stepper = secular::serilize(args, stepper, GR_precession<Args, Container>);
+    }
+
+    if(ctrl.GW == true) {
+        stepper = secular::serilize(args, stepper, GW_radiation<Args, Container>);
+    }
+
+    if(ctrl.LL == true) {
+        if(ctrl.LS == true) {
+            stepper = secular::serilize(args, stepper, deSitter_precession<true, true, Args, Container>);
+        } else {
+            stepper = secular::serilize(args, stepper, deSitter_precession<true, false, Args, Container>);
+        }
+    } else {
+        if(ctrl.LS == true) {
+            stepper = secular::serilize(args, stepper, deSitter_precession<false, true, Args, Container>);
+        } else {
+            stepper = secular::serilize(args, stepper, deSitter_precession<false, false, Args, Container>);
+        }
+    }
+}
 
 } // namespace secular
 #endif
