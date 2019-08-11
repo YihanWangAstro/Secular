@@ -206,7 +206,7 @@ void initilize_SA(Container& c, OrbitArg const&o){
     
     double E_nu = space::orbit::calc_eccentric_anomaly(o.M_nu, o.e_out);
     double cosE = cos(E_nu);
-    double nu_out = acos( ( cosE - o.e_out)/ (1 - o.e_out*cosE) );
+    double nu_out = space::orbit::calc_true_anomaly(E_nu, o.e_out);//acos( ( cosE - o.e_out)/ (1 - o.e_out*cosE) );
     double r  = o.a_out * (1 - o.e_out * cosE);
     Vec3d r_out = r*secular::unit_e(o.i_out, o.omega_out + nu_out, o.Omega_out);
 
@@ -216,7 +216,9 @@ void initilize_SA(Container& c, OrbitArg const&o){
     c[0] = L1.x, c[1] = L1.y, c[2] = L1.z;
     c[3] = e1.x, c[4] = e1.y, c[5] = e1.z;
     c[6] = r_out.x, c[7] = r_out.y, c[8] = r_out.z;
-    c[9] = -v_out.x, c[10] = v_out.y, c[11] = v_out.z;
+    c[9] = v_out.x, c[10] = v_out.y, c[11] = v_out.z;
+
+    std::cout << r_out << ' ' << v_out << "\n";
 }
 
 enum class StopFlag
@@ -639,13 +641,13 @@ inline void deSitter_precession(Args const& args, Container const& var, Containe
             std::tie(ds2x, ds2y, ds2z) = self_deSitter(dsdt_coupling(args.S_2_L_in_coef, a_in, j1_sqr), n1x, n1y, n1z, s2x, s2y, s2z);
         } 
         
-        if constexpr(spin_num(var) == 3) {
+        /*if constexpr(spin_num(var) == 3) {
             const auto [s3x, s3y, s3z] = std::tie(var[18], var[19], var[20]);
 
             auto [ds3x, ds3y, ds3z] = std::tie(ddt[18], ddt[19], ddt[20]);
 
             std::tie(ds3x, ds3y, ds3z) = self_deSitter(dsdt_coupling(args.S_3_L_out_coef, a_out, j2_sqr), n2x, n2y, n2z, s3x, s3y, s3z);
-        }
+        }*/
 
         if constexpr(SL || LL) {
             /*---------------------------------------------------------------------------*\
@@ -654,6 +656,10 @@ inline void deSitter_precession(Args const& args, Container const& var, Containe
             const auto [L2x, L2y, L2z] = std::tie(var[6], var[7], var[8]);
 
             const auto [e2x, e2y, e2z] = std::tie(var[9], var[10], var[11]);
+
+            const auto [s1x, s1y, s1z] = std::tie(var[12], var[13], var[14]);
+
+            auto [ds1x, ds1y, ds1z] = std::tie(ddt[12], ddt[13], ddt[14]);
             /*---------------------------------------------------------------------------*\
                 orbital parameters calculation
             \*---------------------------------------------------------------------------*/
@@ -665,7 +671,7 @@ inline void deSitter_precession(Args const& args, Container const& var, Containe
             /*---------------------------------------------------------------------------*\
                 combinations
             \*---------------------------------------------------------------------------*/
-            if constexpr(var.size() >= 15){
+            /*if constexpr(var.size() >= 15){
                 auto [ds1x_, ds1y_, ds1z_] = self_deSitter(dsdt_coupling(args.S_1_L_out_coef, a_out, j2_sqr), n2x, n2y, n2z, s1x, s1y, s1z);
 
                 ds1x += ds1x_, ds1y += ds1y_, ds1z += ds1z_; 
@@ -675,7 +681,7 @@ inline void deSitter_precession(Args const& args, Container const& var, Containe
                 auto [ds2x_, ds2y_, ds2z_] = self_deSitter(dsdt_coupling(args.S_2_L_out_coef, a_out, j2_sqr), n2x, n2y, n2z, s2x, s2y, s2z);
 
                 ds2x += ds2x_, ds2y += ds2y_, ds2z += ds2z_;
-            }
+            }*/
         } 
 }
 

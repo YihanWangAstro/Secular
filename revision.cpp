@@ -88,12 +88,12 @@ void single_thread_job(std::string work_dir, ConcurrentFile input, size_t start_
                 };
     
                //
-               auto func = secular::Dynamic_dispatch<decltype(task.ctrl), decltype(args), Container>(task.ctrl, args);
+               //auto func = secular::Dynamic_dispatch<decltype(task.ctrl), decltype(args), Container>(task.ctrl, args);
 
-               //auto func = secular::Static_dispatch<decltype(task.ctrl), decltype(args), Container>(task.ctrl, args);
+               auto func = secular::Static_dispatch<decltype(task.ctrl), decltype(args), Container>(task.ctrl, args);
 
                 try{
-                    boost::numeric::odeint::integrate_adaptive(boost::numeric::odeint::make_controlled(int_error ,int_error , stepper_type() ), func, inits, 0.0, task.ctrl.end_time, ini_dt);
+                    boost::numeric::odeint::integrate_adaptive(boost::numeric::odeint::make_controlled(int_error ,int_error , stepper_type() ), func, inits, 0.0, task.ctrl.end_time, ini_dt, observer);
                 } catch (secular::StopFlag flag) {
                     if(flag == secular::StopFlag::shrink) {
                     //
