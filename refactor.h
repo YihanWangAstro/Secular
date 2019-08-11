@@ -470,13 +470,13 @@ inline void single_aved_LK(Args const& args, Container const& var, Container& dd
 
     double r5 = r2*r3;
 
-    double C = 0.75 * G * args.m3 * args.mu1 / args.mu2  * a_in * a_in;
+    double D = 0.75 * G * args.m3 * args.mu1 / args.mu2  * a_in * a_in;
 
     double acc_r = -G*args.m3/args.mu2/r3 * (args.m1 + args.m2)  - 5 * C * (5*de1r*de1r - j1_sqr*dn1r*dn1r)/r5 ;
 
-    double acc_n = - C * 2 * j1_sqr * dn1r / r4;
+    double acc_n = - D * 2 * j1_sqr * dn1r / r4;
 
-    double acc_e = C * 10 * de1r / r4;
+    double acc_e = D * 10 * de1r / r4;
 
     dL1x = A1*ce1r_x + A2*cn1r_x;
 
