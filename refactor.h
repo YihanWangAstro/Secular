@@ -9,10 +9,12 @@
 #include <cmath>
 #include <functional>
 #include <iomanip>
+#include "vector3d.h"
 #include <boost/numeric/odeint.hpp>
 #include "SpaceHub/src/multi-thread/multi-thread.hpp"
 #include "SpaceHub/src/dev-tools.hpp"
-#include "vector3d.h"
+#include "SpaceHub/src/orbits/orbits.hpp"
+
 namespace secular
 {
 
@@ -92,11 +94,12 @@ struct OrbitArgs
     double Omega_out;
     double i_in;
     double i_out;
+    double M_nu;
     std::array<Vec3d, SpinNum> s;
 
     friend std::istream &operator>>(std::istream &is, OrbitArgs &t)
     {
-        is >> t.m1 >> t.m2 >> t.m3 >> t.a_in >> t.a_out >> t.e_in >> t.e_out >> t.omega_in >> t.omega_out >> t.Omega_in >> t.i_in >> t.i_out;
+        is >> t.m1 >> t.m2 >> t.m3 >> t.a_in >> t.a_out >> t.e_in >> t.e_out >> t.omega_in >> t.omega_out >> t.Omega_in >> t.i_in >> t.i_out >> t.M_nu;
         t.Omega_out = t.Omega_in - 180.0;
         for (auto &ss : t.s)
         {
@@ -106,7 +109,7 @@ struct OrbitArgs
     }
     friend std::ostream &operator<<(std::ostream &os, OrbitArgs const &t)
     {
-        os << t.m1 << ' ' << t.m2 << ' ' << t.m3 << ' ' << t.a_in << ' ' << t.a_out << ' ' << t.e_in << ' ' << t.e_out << ' ' << t.omega_in << ' ' << t.omega_out << ' ' << t.Omega_in << ' ' << t.Omega_out << ' ' << t.i_in << ' ' << t.i_out;
+        os << t.m1 << ' ' << t.m2 << ' ' << t.m3 << ' ' << t.a_in << ' ' << t.a_out << ' ' << t.e_in << ' ' << t.e_out << ' ' << t.omega_in << ' ' << t.omega_out << ' ' << t.Omega_in << ' ' << t.Omega_out << ' ' << t.i_in << ' ' << t.i_out << ' ' << t.M_nu;
         for (auto const &ss : t.s)
         {
             os << ' ' << ss;
@@ -188,6 +191,10 @@ void initilize_DA(Container& c, OrbitArg const&o){
     Vec3d L2 = secular::calc_angular_mom(o.m1 + o.m2, o.m3, o.a_out) * sqrt(1 - o.e_out * o.e_out) * secular::unit_j(o.i_out, o.Omega_out);
     Vec3d e1 = o.e_in * secular::unit_e(o.i_in, o.omega_in, o.Omega_in);
     Vec3d e2 = o.e_out * secular::unit_e(o.i_out, o.omega_out, o.Omega_out);
+    c[0] = L1.x, c[1] = L1.y, c[2] = L1.z;
+    c[3] = e1.x, c[4] = e1.y, c[5] = e1.z;
+    c[6] = L2.x, c[7] = L2.y, c[8] = L2.z;
+    c[9] = e2.x, c[10] = e2.y, c[11] = e2.z;
 }
 
 template<typename Container, typename OrbitArg>
@@ -195,13 +202,21 @@ void initilize_SA(Container& c, OrbitArg const&o){
     Vec3d L1 = secular::calc_angular_mom(o.m1, o.m2, o.a_in) * sqrt(1 - o.e_in * o.e_in) * secular::unit_j(o.i_in, o.Omega_in);
     Vec3d e1 = o.e_in * secular::unit_e(o.i_in, o.omega_in, o.Omega_in);
     
-    double cosE = cos(o.E_nu);
-    double nu_out = arccos( ( cosE - o.e_out)/ (1 - o.e_out*cosE) );
+    double E_nu = space::orbit::calc_eccentric_anomaly(o.M_nu, o.e_out);
+    double cosE = cos(E_nu);
+    double nu_out = acos( ( cosE - o.e_out)/ (1 - o.e_out*cosE) );
     double r  = o.a_out * (1 - o.e_out * cosE);
     Vec3d r_out = r*secular::unit_e(o.i_out, o.omega_out + nu_out, o.Omega_out);
 
     double v = sqrt(G * (o.m1 + o.m2 + o.m3)/(o.a_out*(1 - o.e_out*o.e_out) ));
-    Vec3d v_out = v*(sin(ni_out) * secular::unit_e(o.i_out, o.omega_out, o.Omega_out) + (o.e_out + cos(nu_out)) * secular::unit_peri_v(o.i_out, o.omega_out, o.Omega_out));
+    Vec3d v_out = v*(sin(nu_out) * secular::unit_e(o.i_out, o.omega_out, o.Omega_out) + (o.e_out + cos(nu_out)) * secular::unit_peri_v(o.i_out, o.omega_out, o.Omega_out));
+
+    c[0] = L1.x, c[1] = L1.y, c[2] = L1.z;
+    c[3] = e1.x, c[4] = e1.y, c[5] = e1.z;
+    c[6] = r_out.x, c[7] = r_out.y, c[8] = r_out.z;
+    c[9] = -v_out.x, c[10] = v_out.y, c[11] = v_out.z;
+
+    std::cout << L1 << ' ' <<  e1 << ' '<< r_out << ' ' << v_out << "!!\n";
 }
 
 enum class StopFlag
@@ -228,8 +243,8 @@ inline auto cross(double x1, double y1, double z1, double x2, double y2, double 
 
 struct SecularArg{
     SecularArg(double _m1, double _m2, double _m3) : m1{_m1}, m2{_m2}, m3{_m3} {
-        double mu1 = m1 * m2 / (m1 + m2);
-        double mu2 = (m1 + m2) * m3 / (m1 + m2 + m3);
+        mu1 = m1 * m2 / (m1 + m2);
+        mu2 = (m1 + m2) * m3 / (m1 + m2 + m3);
         a_in_coef = 1 / (G * (m1 + m2)) / mu1 / mu1;
         a_out_coef = 1 / (G * (m1 + m2 + m3)) / mu2 / mu2; 
     } 
@@ -237,6 +252,8 @@ public:
     double m1;
     double m2;
     double m3;
+    double mu1;
+    double mu2;
     double a_in_coef;
     double a_out_coef;
 };
@@ -244,7 +261,7 @@ public:
 
 
 template<typename Args, typename Container>
-inline void double_aved_LK(bool const Oct, Args const& args, Container const& var, Container& ddt, double t){
+inline void double_aved_LK(Args const& args, Container const& var, Container& ddt, double t){
     /*---------------------------------------------------------------------------*\
         mapping alias
     \*---------------------------------------------------------------------------*/
@@ -370,7 +387,7 @@ inline void double_aved_LK(bool const Oct, Args const& args, Container const& va
 
 
 template<typename Args, typename Container>
-inline void single_aved_LK(bool const Oct, Args const& args, Container const& var, Container& ddt, double t){
+inline void single_aved_LK(Args const& args, Container const& var, Container& ddt, double t){
     /*---------------------------------------------------------------------------*\
         mapping alias
     \*---------------------------------------------------------------------------*/
@@ -417,17 +434,17 @@ inline void single_aved_LK(bool const Oct, Args const& args, Container const& va
     /*---------------------------------------------------------------------------*\
         dot production
     \*---------------------------------------------------------------------------*/
-    double dn1r = dot(n1x, n1y, n1z, rx, ry, rz);
+    double dn1r = dot(n1x, n1y, n1z, rhox, rhoy, rhoz);
 
-    double de1r = dot(e1x, e1y, e1z, rx, ry, rz);
+    double de1r = dot(e1x, e1y, e1z, rhox, rhoy, rhoz);
     /*---------------------------------------------------------------------------*\
         cross production
     \*---------------------------------------------------------------------------*/
-    auto const [cn1r_x, cn1r_y, cn1r_z] = cross(n1x, n1y, n1z, rx, ry, rz);
+    auto const [cn1r_x, cn1r_y, cn1r_z] = cross(n1x, n1y, n1z, rhox, rhoy, rhoz);
 
     auto const [cn1e1_x, cn1e1_y, cn1e1_z] = cross(n1x, n1y, n1z, e1x, e1y, e1z);
 
-    auto const [ce1r_x, ce1r_y, ce1r_z] = cross(e1x, e1y, e1z, rx, ry, rz);
+    auto const [ce1r_x, ce1r_y, ce1r_z] = cross(e1x, e1y, e1z, rhox, rhoy, rhoz);
     /*---------------------------------------------------------------------------*\
         combinations
     \*---------------------------------------------------------------------------*/
@@ -451,7 +468,15 @@ inline void single_aved_LK(bool const Oct, Args const& args, Container const& va
 
     double r4 = r2*r2;
 
-    double acc = G*args.m3/args.mu2/r3 * ( -args.m12  - 0.25*args.mu1*a_in*a_in*( (3 - 18*e1_sqr)/r2 + (75*de1r*de1r - 15*j1_sqr*dn1r*dn1r)/r4 ) );
+    double r5 = r2*r3;
+
+    double C = 0.75 * G * args.m3 * args.mu1 / args.mu2  * a_in * a_in;
+
+    double acc_r = -G*args.m3/args.mu2/r3 * (args.m1 + args.m2)  - 5 * C * (5*de1r*de1r - j1_sqr*dn1r*dn1r)/r5 ;
+
+    double acc_n = - C * 2 * j1_sqr * dn1r / r4;
+
+    double acc_e = C * 10 * de1r / r4;
 
     dL1x = A1*ce1r_x + A2*cn1r_x;
 
@@ -467,7 +492,11 @@ inline void single_aved_LK(bool const Oct, Args const& args, Container const& va
 
     drx = vx, dry = vy, drz = vz;
 
-    dvx = acc*rx, dvy = acc*ry, dvz = acc*rz;
+    dvx = acc_r*rx + acc_n * n1x + acc_e*e1x;
+
+    dvy = acc_r*ry + acc_n * n1y + acc_e*e1y;
+
+    dvz = acc_r*rz + acc_n * n1z + acc_e*e1z;
 }
 
 template<typename Args, typename Container>
@@ -626,24 +655,6 @@ inline void spin_evolve(Args const& args, Container const& var, Container& ddt, 
         \*---------------------------------------------------------------------------*/  
 }
 
-template<typename Ctrl, typename Arg, typename Container>
-struct DASecular{
-    Secular(Ctrl const& _ctrl, Arg const& _arg) : ctrl{std::make_unique<Ctrl>(_ctrl)}, args{std::make_unique<Arg>(_arg)} {}
-
-    void operator()(Container const &x, Container &dxdt, double t) {
-        double_aved_LK(ctrl->Oct, *args, x, dxdt, t);
-
-        if(ctrl->GR){
-            GR_precession(*args, x, dxdt, t);
-        }
-
-        if(ctrl->GW){
-            GW_radiation(*args, x, dxdt, t);
-        }
-    }
-    std::unique_ptr<Ctrl> ctrl;
-    std::unique_ptr<Arg> args;
-};
 
 template<typename Args, typename ...Func>
 inline auto serilize(Args const& args, Func...func) {
@@ -651,8 +662,6 @@ inline auto serilize(Args const& args, Func...func) {
         (func(args, x, dxdt,t),...);
     };
 }
-
-serilize(double_aved_LK<Arg, Container>, GR_precession<Arg, Container>, GW_radiation<Arg, Container>, )
 
 
 } // namespace secular
