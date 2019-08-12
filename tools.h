@@ -85,6 +85,10 @@ inline auto cross(double x1, double y1, double z1, double x2, double y2, double 
     return std::make_tuple(y1*z2 - y2*z1, z1*x2 -z2*x1, x1*y2-x2*y1);
 }
 
+inline auto cross_with_coef(double A, double x1, double y1, double z1, double x2, double y2, double z2){
+    return std::make_tuple( A*(y1*z2 - y2*z1), A*(z1*x2 -z2*x1), A*(x1*y2-x2*y1));
+}
+
 inline auto calc_orbit_args(double Coef, double lx, double ly, double lz, double ex, double ey, double ez) {
     double e_sqr = norm2(ex, ey, ez);
 
@@ -99,6 +103,19 @@ inline auto calc_orbit_args(double Coef, double lx, double ly, double lz, double
     double a = Coef * L * L;
 
     return std::make_tuple(e_sqr, j_sqr, j, L_norm, L, a);
+}
+
+
+inline auto calc_a_eff(double Coef, double lx, double ly, double lz, double ex, double ey, double ez) {
+    double e_sqr = norm2(ex, ey, ez);
+
+    double j_sqr = 1 - e_sqr;
+
+    double j = sqrt(j_sqr);
+
+    double L_sqr = norm2(lx, ly, lz);
+
+    return  Coef * L_sqr/ j;
 }
 }
 #endif

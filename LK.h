@@ -154,7 +154,6 @@ inline void double_aved_LK(Args const& args, Container const& var, Container& dd
     de2z = C1*ce1e2_z + C2*ce2n1_z + C3*cn2e2_z;
 }
 
-
 template<bool Oct, typename Args, typename Container>
 inline void single_aved_LK(Args const& args, Container const& var, Container& ddt, double t){
     /*---------------------------------------------------------------------------*\
