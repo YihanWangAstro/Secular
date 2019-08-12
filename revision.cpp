@@ -49,7 +49,7 @@ void single_thread_job(std::string work_dir, ConcurrentFile input, size_t start_
     using Container = std::array<double,12>;
    
     using stepper_type = boost::numeric::odeint::runge_kutta_fehlberg78<Container>;
-    double ini_dt = 0.1 * secular::year;
+    double ini_dt = 0.1 * secular::consts::year;
     secular::Task<spin_num> task;
     for(;;) {
         if(input >> task) {
@@ -65,7 +65,7 @@ void single_thread_job(std::string work_dir, ConcurrentFile input, size_t start_
                 }
                 
                 
-                secular::SecularArg args{task.obt_args.m1, task.obt_args.m2, task.obt_args.m3};
+                secular::SecularArg args{task.ctrl,task.obt_args.m1, task.obt_args.m2, task.obt_args.m3};
 
                 std::fstream fout_{work_dir + "trajectory_" + std::to_string(task.ctrl.id) + ".txt", std::fstream::out};
 

@@ -18,17 +18,18 @@
 namespace secular
 {
 
-constexpr double pi = 3.14159265358979323;
-constexpr double G = 4 * pi * pi;
-constexpr double C = 6.32397263e4;
-constexpr double r_G_sqrt = 1.0 / (2 * pi);
+namespace consts{
+    constexpr double pi = 3.14159265358979323;
+    constexpr double G = 4 * pi * pi;
+    constexpr double C = 6.32397263e4;
+    constexpr double r_G_sqrt = 1.0 / (2 * pi);
 
-constexpr double year = 1;
-
+    constexpr double year = 1;
+}
 double calc_angular_mom(double m_in, double m_out, double a)
 {
     double mu = m_in * m_out / (m_in + m_out);
-    return mu * sqrt(G * (m_in + m_out) * a);
+    return mu * sqrt(consts::G * (m_in + m_out) * a);
 }
 
 Vec3d unit_j(double i, double Omega)
@@ -60,7 +61,7 @@ Vec3d unit_peri_v(double i, double omega, double Omega)
 double t_k_quad(double m_in, double m_out, double a_in, double a_out_eff)
 {
     double ratio = a_out_eff/ sqrt(a_in);
-    return r_G_sqrt * sqrt(m_in) / m_out * ratio * ratio * ratio;
+    return consts::r_G_sqrt * sqrt(m_in) / m_out * ratio * ratio * ratio;
 }
 
 double normed_oct_epsilon(double m1, double m2, double a_in, double a_out, double c_out_sqr) {
@@ -121,13 +122,14 @@ struct OrbitArgs
 template <typename Obt>
 void deg_to_rad(Obt &args)
 {
-    constexpr double rad = pi / 180.0;
+    constexpr double rad = consts::pi / 180.0;
     args.omega_in *= rad;
     args.omega_out *= rad;
     args.Omega_in *= rad;
     args.Omega_out *= rad;
     args.i_in *= rad;
     args.i_out *= rad;
+    args.M_nu *= rad;
 }
 
 struct Controler
@@ -210,7 +212,7 @@ void initilize_SA(Container& c, OrbitArg const&o){
     double r  = o.a_out * (1 - o.e_out * cosE);
     Vec3d r_out = r*secular::unit_e(o.i_out, o.omega_out + nu_out, o.Omega_out);
 
-    double v = sqrt(G * (o.m1 + o.m2 + o.m3)/(o.a_out*(1 - o.e_out*o.e_out) ));
+    double v = sqrt(consts::G * (o.m1 + o.m2 + o.m3)/(o.a_out*(1 - o.e_out*o.e_out) ));
     Vec3d v_out = v*(sin(nu_out) * secular::unit_e(o.i_out, o.omega_out, o.Omega_out) + (o.e_out + cos(nu_out)) * secular::unit_peri_v(o.i_out, o.omega_out, o.Omega_out));
 
     c[0] = L1.x, c[1] = L1.y, c[2] = L1.z;
@@ -247,8 +249,8 @@ struct SecularArg{
     SecularArg(Ctrl const& ctrl, double _m1, double _m2, double _m3) : m1{_m1}, m2{_m2}, m3{_m3} {
         mu1 = m1 * m2 / (m1 + m2);
         mu2 = (m1 + m2) * m3 / (m1 + m2 + m3);
-        a_in_coef = 1 / (G * (m1 + m2)) / mu1 / mu1;
-        a_out_coef = 1 / (G * (m1 + m2 + m3)) / mu2 / mu2; 
+        a_in_coef = 1 / (consts::G * (m1 + m2)) / mu1 / mu1;
+        a_out_coef = 1 / (consts::G * (m1 + m2 + m3)) / mu2 / mu2; 
 
         if(ctrl.GR){
             GR_coef = 0;
@@ -272,7 +274,7 @@ public:
     double GW_e_coef{0};
 };
 
-inline auto calc_orbit_args(double C, double lx, double ly, double lz, double ex, double ey, double ez) {
+inline auto calc_orbit_args(double Coef, double lx, double ly, double lz, double ex, double ey, double ez) {
     double e_sqr = norm2(ex, ey, ez);
 
     double j_sqr = 1 - e_sqr;
@@ -283,7 +285,7 @@ inline auto calc_orbit_args(double C, double lx, double ly, double lz, double ex
 
     double L = L_norm / j;
 
-    double a = C * L * L;
+    double a = Coef * L * L;
 
     return std::make_tuple(e_sqr, j_sqr, j, L_norm, L, a);
 }
@@ -466,13 +468,13 @@ inline void single_aved_LK(Args const& args, Container const& var, Container& dd
 
     double r5 = r2*r3;
 
-    double D = 0.75 * G * args.m3 * args.mu1 / args.mu2  * a_in * a_in;
+    double D = 0.25 * consts::G * args.m3 * args.mu1 / args.mu2  * a_in * a_in;
 
-    double acc_r = -G*args.m3/args.mu2/r3 * (args.m1 + args.m2)  - 5 * C * (5*de1r*de1r - j1_sqr*dn1r*dn1r)/r5 ;
+    double acc_r = -consts::G*args.m3/args.mu2/r3 * (args.m1 + args.m2)  -  D * (75*de1r*de1r - 15*j1_sqr*dn1r*dn1r + 3 - 18*e1_sqr)/r5 ;
 
-    double acc_n = - D * 2 * j1_sqr * dn1r / r4;
+    double acc_n = - D * 6 * j1_sqr * dn1r / r4;
 
-    double acc_e = D * 10 * de1r / r4;
+    double acc_e = D * 30 * de1r / r4;
 
     dL1x = A1*ce1r_x + A2*cn1r_x;
 
