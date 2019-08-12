@@ -252,6 +252,10 @@ struct SecularArg{
         a_in_coef = 1 / (consts::G * (m1 + m2)) / mu1 / mu1;
         a_out_coef = 1 / (consts::G * (m1 + m2 + m3)) / mu2 / mu2; 
 
+        if(!ctrl.DA) {
+            SA_acc_coef = consts::G * m3 / mu2;
+        }
+
         if(ctrl.GR){
             GR_coef = 0;
         }
@@ -269,6 +273,7 @@ public:
     double mu2;
     double a_in_coef;
     double a_out_coef;
+    double SA_acc_coef{0};
     double GR_coef{0};
     double GW_L_coef{0};
     double GW_e_coef{0};
@@ -468,13 +473,13 @@ inline void single_aved_LK(Args const& args, Container const& var, Container& dd
 
     double r5 = r2*r3;
 
-    double D = 0.25 * consts::G * args.m3 * args.mu1 / args.mu2  * a_in * a_in;
+    double D = -0.75*args.SA_acc_coef * args.mu1  * a_in * a_in;
 
-    double acc_r = -consts::G*args.m3/args.mu2/r3 * (args.m1 + args.m2)  -  D * (75*de1r*de1r - 15*j1_sqr*dn1r*dn1r + 3 - 18*e1_sqr)/r5 ;
+    double acc_r = -args.SA_acc_coef * (args.m1 + args.m2)/r3  +  D * (25*de1r*de1r - 5*j1_sqr*dn1r*dn1r + 1 - 6*e1_sqr)/r5 ;
 
-    double acc_n = - D * 6 * j1_sqr * dn1r / r4;
+    double acc_n =  D * 2 * j1_sqr * dn1r / r4;
 
-    double acc_e = D * 30 * de1r / r4;
+    double acc_e = -D * 10 * de1r / r4;
 
     dL1x = A1*ce1r_x + A2*cn1r_x;
 
