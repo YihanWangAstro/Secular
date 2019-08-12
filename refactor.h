@@ -242,12 +242,22 @@ inline auto cross(double x1, double y1, double z1, double x2, double y2, double 
     return std::make_tuple(y1*z2 - y2*z1, z1*x2 -z2*x1, x1*y2-x2*y1);
 }
 
+template<typename Ctrl>
 struct SecularArg{
-    SecularArg(double _m1, double _m2, double _m3) : m1{_m1}, m2{_m2}, m3{_m3} {
+    SecularArg(Ctrl const& ctrl, double _m1, double _m2, double _m3) : m1{_m1}, m2{_m2}, m3{_m3} {
         mu1 = m1 * m2 / (m1 + m2);
         mu2 = (m1 + m2) * m3 / (m1 + m2 + m3);
         a_in_coef = 1 / (G * (m1 + m2)) / mu1 / mu1;
         a_out_coef = 1 / (G * (m1 + m2 + m3)) / mu2 / mu2; 
+
+        if(ctrl.GR){
+            GR_coef = 0;
+        }
+
+        if(ctrl.GW) {
+            GW_L_coef = 0;
+            GW_e_coef = 0;
+        }
     } 
 public:
     double m1;
