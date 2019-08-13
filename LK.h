@@ -63,7 +63,7 @@ namespace secular {
         c[3] = e1.x, c[4] = e1.y, c[5] = e1.z;
 
         c[6] = r_out.x, c[7] = r_out.y, c[8] = r_out.z;
-        
+
         c[9] = v_out.x, c[10] = v_out.y, c[11] = v_out.z;
 
         std::cout << r_out << ' ' << v_out << "\n";
@@ -94,8 +94,7 @@ namespace secular {
         \*---------------------------------------------------------------------------*/
         auto[e1_sqr, j1_sqr, j1, L1_norm, L_in, a_in] = calc_orbit_args(args.a_in_coef, L1x, L1y, L1z, e1x, e1y, e1z);
 
-        auto[e2_sqr, j2_sqr, j2, L2_norm, L_out, a_out] = calc_orbit_args(args.a_out_coef, L2x, L2y, L2z, e2x, e2y,
-                                                                          e2z);
+        auto[e2_sqr, j2_sqr, j2, L2_norm, L_out, a_out] = calc_orbit_args(args.a_out_coef, L2x, L2y, L2z, e2x, e2y, e2z);
         /*---------------------------------------------------------------------------*\
             unit vectors
         \*---------------------------------------------------------------------------*/
@@ -157,13 +156,9 @@ namespace secular {
 
         double dLz = A1 * cn1n2_z + A2 * ce1n2_z;
 
-        dL1x = dLx;
-        dL1y = dLy;
-        dL1z = dLz;
+        dL1x = dLx, dL1y = dLy, dL1z = dLz;
 
-        dL2x = -dLx;
-        dL2y = -dLy;
-        dL2z = -dLz;
+        dL2x = -dLx, dL2y = -dLy, dL2z = -dLz;
 
         de1x = B1 * ce1n2_x + B2 * cn1e1_x + B3 * cn1n2_x;
 

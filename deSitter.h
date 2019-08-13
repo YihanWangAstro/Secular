@@ -21,12 +21,13 @@ namespace secular {
         }
     }
 
-    auto deSitter_increase(double coef, double a_eff, double v1x, double v1y, double v1z, double v2x, double v2y,
-                           double v2z) {
+
+    auto deSitter_increase(double Omega, double v1x, double v1y, double v1z, double v2x, double v2y, double v2z) {
         auto const[c_x, c_y, c_z] = cross(v1x, v1y, v1z, v2x, v2y, v2z);
-        double Omega = coef / (a_eff * a_eff * a_eff);
         return std::make_tuple(Omega * c_x, Omega * c_y, Omega * c_z);
     }
+
+    auto deSitter_e(double Omega, double v1x, double v1y, double v1z, double v2x, double v2y, double v2z)
 
     template<bool DA, bool LL, bool SL, typename Args, typename Container>
     inline void deSitter_precession(Args const &args, Container const &var, Container &ddt, double t) {
@@ -43,7 +44,9 @@ namespace secular {
         \*---------------------------------------------------------------------------*/
         double a_in_eff = calc_a_eff(args.a_in_coef, L1x, L1y, L1z, e1x, e1y, e1z);
 
-        double a_out_eff{0};
+        double r3_a_in_eff = 1/(a_in_eff*a_in_eff*a_in_eff);
+
+        double r3_a_out_eff{0};
 
         if constexpr(LL || SL || spin_num(var) == 3) {//if out orbit is coupled, we need to calculate a_out_eff
             if constexpr(DA) {//double averaged
@@ -51,7 +54,9 @@ namespace secular {
 
                 const auto[e2x, e2y, e2z] = std::tie(var[9], var[10], var[11]);
 
-                a_out_eff = calc_a_eff(args.a_out_coef, L2x, L2y, L2z, e2x, e2y, e2z);
+                double a_out_eff = calc_a_eff(args.a_out_coef, L2x, L2y, L2z, e2x, e2y, e2z);
+
+                r3_a_out_eff = 1/(a_out_eff*a_out_eff*a_out_eff);
             } else {//single averaged
                 const auto[rx, ry, rz] = std::tie(var[6], var[7], var[8]);
 
@@ -59,25 +64,44 @@ namespace secular {
 
                 std::tie(L2x, L2y, L2z) = cross_with_coef(args.mu2, rx, ry, rz, vx, vy, vz);
 
-                a_out_eff = norm(rx, ry, rz);
+                double a_out_eff = norm(rx, ry, rz);
+
+                r3_a_out_eff = 1/(a_out_eff*a_out_eff*a_out_eff);
             }
+        }
+
+        if constexpr (LL) {
+          auto[dL1x, dL1y, dL1z] = std::tie(ddt[0], ddt[1], ddt[2]);
+
+          auto[de1x, de1y, de1z] = std::tie(ddt[3], ddt[4], ddt[5]);
+
+          double Omega_Lin_Lout = args.args.Lin_Lout_coef * r3_a_out_eff;
+
+          auto[dL1x_, dL1y_, dL1z_] = deSitter_increase(Omega_Lin_Lout, L2x, L2y, L2z, L1x, L1y, L1z);
+
+          dL1x += dL1x_, dL1y += dL1y_, dL1z += dL1z_;
+
+          auto[de1x_, de1y_, de1z_] = deSitter_increase(Omega_Lin_Lout, L2x, L2y, L2z, e1x, e1y, e1z);
+
+          de1x += de1x_, de1y += de1y_, de1z += de1z_;
         }
 
         /*---------------------------------------------------------------------------*\
             combinations
         \*---------------------------------------------------------------------------*/
-
         if constexpr(spin_num(var) == 1) {
-
             const auto[s1x, s1y, s1z] = std::tie(var[12], var[13], var[14]);
 
             auto[ds1x, ds1y, ds1z] = std::tie(ddt[12], ddt[13], ddt[14]);
 
-            std::tie(ds1x, ds1y, ds1z) = deSitter_increase(args.S_1_L_in_coef, a_in_eff, L1x, L1y, L1z, s1x, s1y, s1z);
+            double Omega_S1_Lin = args.S1_Lin_coef * r3_a_in_eff;
+
+            std::tie(ds1x, ds1y, ds1z) = deSitter_increase(Omega_S1_Lin, L1x, L1y, L1z, s1x, s1y, s1z);
 
             if constexpr(SL) {
-                auto[ds1x_, ds1y_, ds1z_] = deSitter_increase(args.S_1_L_out_coef, a_out_eff, L2x, L2y, L2z, s1x, s1y,
-                                                              s1z);
+                double Omega_S1_Lout = args.S1_Lout_coef * r3_a_out_eff;
+
+                auto[ds1x_, ds1y_, ds1z_] = deSitter_increase(Omega_S1_Lout, L2x, L2y, L2z, s1x, s1y, s1z);
 
                 ds1x += ds1x_, ds1y += ds1y_, ds1z += ds1z_;
             }
@@ -88,11 +112,14 @@ namespace secular {
 
             auto[ds2x, ds2y, ds2z] = std::tie(ddt[15], ddt[16], ddt[17]);
 
-            std::tie(ds2x, ds2y, ds2z) = deSitter_increase(args.S_2_L_in_coef, a_in_eff, L1x, L1y, L1z, s2x, s2y, s2z);
+            double Omega_S2_Lin = args.S2_Lin_coef * r3_a_in_eff;
+
+            std::tie(ds2x, ds2y, ds2z) = deSitter_increase(Omega_S2_Lin, L1x, L1y, L1z, s2x, s2y, s2z);
 
             if constexpr(SL) {
-                auto[ds2x_, ds2y_, ds2z_] = deSitter_increase(args.S_2_L_out_coef, a_out_eff, L2x, L2y, L2z, s2x, s2y,
-                                                              s2z);
+                double Omega_S2_Lout = args.S2_Lout_coef * r3_a_out_eff;
+
+                auto[ds2x_, ds2y_, ds2z_] = deSitter_increase(Omega_S2_Lout, L2x, L2y, L2z, s2x, s2y, s2z);
 
                 ds2x += ds2x_, ds2y += ds2y_, ds2z += ds2z_;
             }
@@ -103,8 +130,15 @@ namespace secular {
 
             auto[ds3x, ds3y, ds3z] = std::tie(ddt[18], ddt[19], ddt[20]);
 
-            std::tie(ds3x, ds3y, ds3z) = deSitter_increase(args.S_3_L_out_coef, a_out_eff, L2x, L2y, L2z, s3x, s3y,
-                                                           s3z);
+            auto[dL2x, dL2y, dL2z] = std::tie(ddt[6], ddt[7], ddt[8]);
+
+            auto[de2x, de2y, de2z] = std::tie(ddt[9], ddt[10], ddt[11]);
+
+            double Omega_S3_Lout = args.S3_Lout_coef * r3_a_out_eff;
+
+            std::tie(ds3x, ds3y, ds3z) = deSitter_increase(Omega_S3_Lout, L2x, L2y, L2z, s3x, s3y, s3z);
+
+            
         }
     }
 
