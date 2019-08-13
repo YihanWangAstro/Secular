@@ -21,14 +21,51 @@ namespace secular {
         }
     }
 
-    inline auto deSitter_increase(double Omega, double v1x, double v1y, double v1z, double v2x, double v2y, double v2z) {
-        auto const[c_x, c_y, c_z] = cross(v1x, v1y, v1z, v2x, v2y, v2z);
-        return std::make_tuple(Omega * c_x, Omega * c_y, Omega * c_z);
-    }
-
     inline auto deSitter_e_vec(double v1x, double v1y, double v1z, double Lx, double Ly, double Lz) {
         double dot_part = 3*dot(Lx, Ly, Lz, v1x, v1y, v1z)/norm2(Lx, Ly, Lz);
         return std::make_tuple(v1x - dot_part*Lx, v1y - dot_part*Ly, v1z - dot_part*Lz);
+    }
+
+    template<bool BackReaction, typename Container, int s_idx, int L_idx>
+    void SL_coupling(double Omega, Container const& var, Container& ddt) {
+        /*---------------------------------------------------------------------------*\
+            mapping alias
+        \*---------------------------------------------------------------------------*/
+        constexpr size_t L_offset = L_idx*6;
+
+        constexpr size_t S_offset = 12 + s_idx*3;
+
+        const auto[Lx, Ly, Lz] = std::tie(var[L_offset], var[L_offset + 1], var[L_offset + 2]);
+
+        const auto[Sx, Sy, Sz] = std::tie(var[S_offset], var[S_offset + 1], var[S_offset + 2]);
+
+        auto[dSx, dSy, dSz] = std::tie(ddt[S_offset], ddt[S_offset + 1], ddt[S_offset + 2]);
+        /*---------------------------------------------------------------------------*\
+            cross production
+        \*---------------------------------------------------------------------------*/
+        auto const[dSx__, dSy__, dSz__] = cross_with_coef(Omega, Lx, Ly, Lz, Sx, Sy, Sz);
+        /*---------------------------------------------------------------------------*\
+            combinations
+        \*---------------------------------------------------------------------------*/
+        dSx += dSx__, dSy += dSy__, dSz += dSz__;
+
+        if constexpr(BackReaction) {
+          constexpr size_t e_offset = 3 + L_offset;
+
+          const auto[ex, ey, ez] = std::tie(var[e_offset], var[e_offset + 1], var[e_offset + 2]);
+
+          auto[dLx, dLy, dLz] = std::tie(ddt[L_offset], ddt[L_offset + 1], ddt[L_offset + 2]);
+
+          auto[dex, dey, dez] = std::tie(ddt[e_offset], ddt[e_offset + 1], ddt[e_offset + 2]);
+
+          dLx -= dSx__, dLy -= dSy__, dLz -= dSz__;
+
+          auto [nex, ney, nez] = deSitter_e_vec(Sx, Sy, Sz, Lx, Ly, Lz);
+
+          auto const[dex__, dey__, dez__] = cross_with_coef(Omega, nex, ney, nez, ex, ey, ez);
+
+          dex += dex__, dey += dey__, dez += dez__;
+        }
     }
 
     template<bool DA, bool LL, bool SL, typename Args, typename Container>
@@ -71,82 +108,36 @@ namespace secular {
                 r3_a_out_eff = 1/(a_out_eff*a_out_eff*a_out_eff);
             }
         }
-
-        if constexpr (LL) {
-          auto[dL1x, dL1y, dL1z] = std::tie(ddt[0], ddt[1], ddt[2]);
-
-          auto[de1x, de1y, de1z] = std::tie(ddt[3], ddt[4], ddt[5]);
-
-          double Omega_Lin_Lout = args.args.Lin_Lout_coef * r3_a_out_eff;
-
-          auto[dL1x_, dL1y_, dL1z_] = deSitter_increase(Omega_Lin_Lout, L2x, L2y, L2z, L1x, L1y, L1z);
-
-          dL1x += dL1x_, dL1y += dL1y_, dL1z += dL1z_;
-
-          auto[de1x_, de1y_, de1z_] = deSitter_increase(Omega_Lin_Lout, L2x, L2y, L2z, e1x, e1y, e1z);
-
-          de1x += de1x_, de1y += de1y_, de1z += de1z_;
-        }
-
         /*---------------------------------------------------------------------------*\
             combinations
         \*---------------------------------------------------------------------------*/
+        constexpr int Lin_idx = 0;
+        constexpr int Lout_idx = 1;
+        constexpr int S1_idx = 0;
+        constexpr int S2_idx = 1;
+        constexpr int S3_idx = 2;
+
+        if constexpr (LL) {
+            SL_coupling<false, Container, -4, Lout_idx>(args.args.Lin_Lout_coef * r3_a_out_eff, var, ddt);//evolve L1
+            SL_coupling<false, Container, -3, Lout_idx>(args.args.Lin_Lout_coef * r3_a_out_eff, var, ddt);//evolve e1
+        }
+
         if constexpr(spin_num(var) == 1) {
-            const auto[s1x, s1y, s1z] = std::tie(var[12], var[13], var[14]);
-
-            auto[ds1x, ds1y, ds1z] = std::tie(ddt[12], ddt[13], ddt[14]);
-
-            double Omega_S1_Lin = args.S1_Lin_coef * r3_a_in_eff;
-
-            std::tie(ds1x, ds1y, ds1z) = deSitter_increase(Omega_S1_Lin, L1x, L1y, L1z, s1x, s1y, s1z);
-
+            SL_coupling<false, Container, S1_idx, Lin_idx>(args.S1_Lin_coef * r3_a_in_eff, var, ddt);
             if constexpr(SL) {
-                double Omega_S1_Lout = args.S1_Lout_coef * r3_a_out_eff;
-
-                auto[ds1x_, ds1y_, ds1z_] = deSitter_increase(Omega_S1_Lout, L2x, L2y, L2z, s1x, s1y, s1z);
-
-                ds1x += ds1x_, ds1y += ds1y_, ds1z += ds1z_;
+                SL_coupling<false, Container, S1_idx, Lout_idx>(args.S1_Lout_coef * r3_a_out_eff, var, ddt);
             }
         }
 
         if constexpr(spin_num(var) == 2) {
-            const auto[s2x, s2y, s2z] = std::tie(var[15], var[16], var[17]);
-
-            auto[ds2x, ds2y, ds2z] = std::tie(ddt[15], ddt[16], ddt[17]);
-
-            double Omega_S2_Lin = args.S2_Lin_coef * r3_a_in_eff;
-
-            std::tie(ds2x, ds2y, ds2z) = deSitter_increase(Omega_S2_Lin, L1x, L1y, L1z, s2x, s2y, s2z);
-
+            SL_coupling<false, Container, S2_idx, Lin_idx>(args.S2_Lin_coef * r3_a_in_eff, var, ddt);
             if constexpr(SL) {
-                double Omega_S2_Lout = args.S2_Lout_coef * r3_a_out_eff;
-
-                auto[ds2x_, ds2y_, ds2z_] = deSitter_increase(Omega_S2_Lout, L2x, L2y, L2z, s2x, s2y, s2z);
-
-                ds2x += ds2x_, ds2y += ds2y_, ds2z += ds2z_;
+                SL_coupling<false, Container, S2_idx, Lout_idx>(args.S2_Lout_coef * r3_a_out_eff, var, ddt);
             }
         }
 
         if constexpr(spin_num(var) == 3) {
-            const auto[s3x, s3y, s3z] = std::tie(var[18], var[19], var[20]);
-
-            auto[ds3x, ds3y, ds3z] = std::tie(ddt[18], ddt[19], ddt[20]);
-
-            double Omega_S3_Lout = args.S3_Lout_coef * r3_a_out_eff;
-
-            std::tie(ds3x, ds3y, ds3z) = deSitter_increase(Omega_S3_Lout, L2x, L2y, L2z, s3x, s3y, s3z);
-
-            auto[dL2x, dL2y, dL2z] = std::tie(ddt[6], ddt[7], ddt[8]);
-
-            auto[de2x, de2y, de2z] = std::tie(ddt[9], ddt[10], ddt[11]);
-
-            dL2x -= ds3x, dL2y -= ds3y, dL2z -= ds3z;
-
-            auto [nex, ney, nez] = deSitter_e_vec(s3x, s3y, s3z, L2x, L2y, L3z);
-
-            auto [de2x_, de2y_, de2z_] = deSitter_increase(Omega_S3_Lout, nex, ney, nez, e2x, e2y, e2z);
-
-            de2x += de2x_, de2y += de2y_, de2z += de2z_;
+            SL_coupling<true, Container, S3_idx, L_out_idx>(args.S3_Lout_coef * r3_a_out_eff, var, ddt);
         }
     }
 
