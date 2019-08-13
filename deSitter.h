@@ -21,13 +21,15 @@ namespace secular {
         }
     }
 
-
-    auto deSitter_increase(double Omega, double v1x, double v1y, double v1z, double v2x, double v2y, double v2z) {
+    inline auto deSitter_increase(double Omega, double v1x, double v1y, double v1z, double v2x, double v2y, double v2z) {
         auto const[c_x, c_y, c_z] = cross(v1x, v1y, v1z, v2x, v2y, v2z);
         return std::make_tuple(Omega * c_x, Omega * c_y, Omega * c_z);
     }
 
-    auto deSitter_e(double Omega, double v1x, double v1y, double v1z, double v2x, double v2y, double v2z)
+    inline auto deSitter_e_vec(double v1x, double v1y, double v1z, double Lx, double Ly, double Lz) {
+        double dot_part = 3*dot(Lx, Ly, Lz, v1x, v1y, v1z)/norm2(Lx, Ly, Lz);
+        return std::make_tuple(v1x - dot_part*Lx, v1y - dot_part*Ly, v1z - dot_part*Lz);
+    }
 
     template<bool DA, bool LL, bool SL, typename Args, typename Container>
     inline void deSitter_precession(Args const &args, Container const &var, Container &ddt, double t) {
@@ -130,15 +132,21 @@ namespace secular {
 
             auto[ds3x, ds3y, ds3z] = std::tie(ddt[18], ddt[19], ddt[20]);
 
-            auto[dL2x, dL2y, dL2z] = std::tie(ddt[6], ddt[7], ddt[8]);
-
-            auto[de2x, de2y, de2z] = std::tie(ddt[9], ddt[10], ddt[11]);
-
             double Omega_S3_Lout = args.S3_Lout_coef * r3_a_out_eff;
 
             std::tie(ds3x, ds3y, ds3z) = deSitter_increase(Omega_S3_Lout, L2x, L2y, L2z, s3x, s3y, s3z);
 
-            
+            auto[dL2x, dL2y, dL2z] = std::tie(ddt[6], ddt[7], ddt[8]);
+
+            auto[de2x, de2y, de2z] = std::tie(ddt[9], ddt[10], ddt[11]);
+
+            dL2x -= ds3x, dL2y -= ds3y, dL2z -= ds3z;
+
+            auto [nex, ney, nez] = deSitter_e_vec(s3x, s3y, s3z, L2x, L2y, L3z);
+
+            auto [de2x_, de2y_, de2z_] = deSitter_increase(Omega_S3_Lout, nex, ney, nez, e2x, e2y, e2z);
+
+            de2x += de2x_, de2y += de2y_, de2z += de2z_;
         }
     }
 
