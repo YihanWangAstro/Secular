@@ -21,51 +21,114 @@ namespace secular {
         }
     }
 
-    inline auto deSitter_e_vec(double v1x, double v1y, double v1z, double Lx, double Ly, double Lz) {
-        double dot_part = 3*dot(Lx, Ly, Lz, v1x, v1y, v1z)/norm2(Lx, Ly, Lz);
-        return std::make_tuple(v1x - dot_part*Lx, v1y - dot_part*Ly, v1z - dot_part*Lz);
+    template<size_t S_num, size_t L_num>
+    struct SLOmega{
+        double omega[S_num][L_num];
     }
 
-    template<bool BackReaction, typename Container, int s_idx, int L_idx>
-    void SL_coupling(double Omega, Container const& var, Container& ddt) {
-        /*---------------------------------------------------------------------------*\
-            mapping alias
-        \*---------------------------------------------------------------------------*/
-        constexpr size_t L_offset = L_idx*6;
+    template<typename Omega, typename Args, typename Container>
+    void calc_omega(Omega& o, Args const& args, Container const& c) {
 
-        constexpr size_t S_offset = 12 + s_idx*3;
+    }
 
-        const auto[Lx, Ly, Lz] = std::tie(var[L_offset], var[L_offset + 1], var[L_offset + 2]);
 
-        const auto[Sx, Sy, Sz] = std::tie(var[S_offset], var[S_offset + 1], var[S_offset + 2]);
+    template<bool DA, typename Args, typename Container, int S_idx, int L_idx>
+    inline auto SL_coupling(Args const& args, Container const& var){
+      /*---------------------------------------------------------------------------*\
+          mapping alias
+      \*---------------------------------------------------------------------------*/
+      constexpr size_t S_offset = 12 + s_idx * 3;
 
-        auto[dSx, dSy, dSz] = std::tie(ddt[S_offset], ddt[S_offset + 1], ddt[S_offset + 2]);
-        /*---------------------------------------------------------------------------*\
-            cross production
-        \*---------------------------------------------------------------------------*/
-        auto const[dSx__, dSy__, dSz__] = cross_with_coef(Omega, Lx, Ly, Lz, Sx, Sy, Sz);
-        /*---------------------------------------------------------------------------*\
-            combinations
-        \*---------------------------------------------------------------------------*/
-        dSx += dSx__, dSy += dSy__, dSz += dSz__;
+      const auto[Sx, Sy, Sz] = std::tie(var[S_offset], var[S_offset + 1], var[S_offset + 2]);
 
-        if constexpr(BackReaction) {
+      if constexpr(L_idx == 1 && !DA) {
+          const auto[rx, ry, rz] = std::tie(var[6], var[7], var[8]);
+
+          const auto[vx, vy, vz] = std::tie(var[9], var[10], var[11]);
+
+          auto [Lx, Ly, Lz] = cross_with_coef(args.mu[1], rx, ry, rz, vx, vy, vz);
+          /*---------------------------------------------------------------------------*\
+              orbital parameters calculation
+          \*---------------------------------------------------------------------------*/
+          double const a_eff = norm2(rx, ry, rz);
+
+          double const r3_a_eff = 1/(a_eff * a_eff * a_eff);
+          /*---------------------------------------------------------------------------*\
+              combinations
+          \*---------------------------------------------------------------------------*/
+          return cross_with_coef(args.SL[S_idx][L_idx] * r3_a_eff, Lx, Ly, Lz, Sx, Sy, Sz);
+      } else {
+          /*---------------------------------------------------------------------------*\
+              mapping alias
+          \*---------------------------------------------------------------------------*/
+          constexpr size_t L_offset = L_idx * 6;
+
           constexpr size_t e_offset = 3 + L_offset;
 
+          const auto[Lx, Ly, Lz] = std::tie(var[L_offset], var[L_offset + 1], var[L_offset + 2]);
+
           const auto[ex, ey, ez] = std::tie(var[e_offset], var[e_offset + 1], var[e_offset + 2]);
+          /*---------------------------------------------------------------------------*\
+              orbital parameters calculation
+          \*---------------------------------------------------------------------------*/
+          double const a_eff = calc_a_eff(args.a_coef[L_idx], Lx, Ly, Lz, ex, ey, ez);
 
-          auto[dLx, dLy, dLz] = std::tie(ddt[L_offset], ddt[L_offset + 1], ddt[L_offset + 2]);
+          double const r3_a_eff = 1/(a_eff * a_eff * a_eff);
+          /*---------------------------------------------------------------------------*\
+              combinations
+          \*---------------------------------------------------------------------------*/
+          return cross_with_coef(args.SL[S_idx][L_idx] * r3_a_eff, Lx, Ly, Lz, Sx, Sy, Sz);
+      }
 
-          auto[dex, dey, dez] = std::tie(ddt[e_offset], ddt[e_offset + 1], ddt[e_offset + 2]);
+    }
 
-          dLx -= dSx__, dLy -= dSy__, dLz -= dSz__;
+    template<bool DA, typename Args, typename Container, int S_idx, int L_idx>
+    inline auto SL_coupling_bc(Args const& args, Container const& var){
+      /*---------------------------------------------------------------------------*\
+          mapping alias
+      \*---------------------------------------------------------------------------*/
+      constexpr size_t S_offset = 12 + s_idx * 3;
 
+      const auto[Sx, Sy, Sz] = std::tie(var[S_offset], var[S_offset + 1], var[S_offset + 2]);
+
+      if constexpr(L_idx == 1 && !DA) {
+          /*---------------------------------------------------------------------------*\
+              mapping alias
+          \*---------------------------------------------------------------------------*/
+          const auto[rx, ry, rz] = std::tie(var[6], var[7], var[8]);
+
+          const auto[vx, vy, vz] = std::tie(var[9], var[10], var[11]);
+
+          auto [Lx, Ly, Lz] = cross_with_coef(args.mu[1], rx, ry, rz, vx, vy, vz);
+          /*---------------------------------------------------------------------------*\
+              orbital parameters calculation
+          \*---------------------------------------------------------------------------*/
+          double const a_eff = norm2(rx, ry, rz);
+
+          double const r3_a_eff = 1/(a_eff * a_eff * a_eff);
+          ////............
+          return ;
+      } else {
+          constexpr size_t L_offset = L_idx * 6;
+
+          constexpr size_t e_offset = 3 + L_offset;
+
+          const auto[Lx, Ly, Lz] = std::tie(var[L_offset], var[L_offset + 1], var[L_offset + 2]);
+
+          const auto[ex, ey, ez] = std::tie(var[e_offset], var[e_offset + 1], var[e_offset + 2]);
+          /*---------------------------------------------------------------------------*\
+              orbital parameters calculation
+          \*---------------------------------------------------------------------------*/
           auto [nex, ney, nez] = deSitter_e_vec(Sx, Sy, Sz, Lx, Ly, Lz);
 
-          auto const[dex__, dey__, dez__] = cross_with_coef(Omega, nex, ney, nez, ex, ey, ez);
+          double const a_eff = calc_a_eff(args.a_coef[L_idx], Lx, Ly, Lz, ex, ey, ez);
 
-          dex += dex__, dey += dey__, dez += dez__;
-        }
+          double const r3_a_eff = 1/(a_eff * a_eff * a_eff);
+          /*---------------------------------------------------------------------------*\
+              combinations
+          \*---------------------------------------------------------------------------*/
+          return cross_with_coef(args.SL[S_idx][L_idx] * r3_a_eff, nex, ney, nez, ex, ey, ez);
+      }
     }
 
     template<bool DA, bool LL, bool SL, typename Args, typename Container>
@@ -73,41 +136,8 @@ namespace secular {
         /*---------------------------------------------------------------------------*\
             mapping alias
         \*---------------------------------------------------------------------------*/
-        const auto[L1x, L1y, L1z] = std::tie(var[0], var[1], var[2]);
 
-        const auto[e1x, e1y, e1z] = std::tie(var[3], var[4], var[5]);
 
-        double L2x, L2y, L2z;
-        /*---------------------------------------------------------------------------*\
-            orbital parameters calculation
-        \*---------------------------------------------------------------------------*/
-        double a_in_eff = calc_a_eff(args.a_in_coef, L1x, L1y, L1z, e1x, e1y, e1z);
-
-        double r3_a_in_eff = 1/(a_in_eff*a_in_eff*a_in_eff);
-
-        double r3_a_out_eff{0};
-
-        if constexpr(LL || SL || spin_num(var) == 3) {//if out orbit is coupled, we need to calculate a_out_eff
-            if constexpr(DA) {//double averaged
-                L2x = var[6], L2y = var[7], L2z = var[8];
-
-                const auto[e2x, e2y, e2z] = std::tie(var[9], var[10], var[11]);
-
-                double a_out_eff = calc_a_eff(args.a_out_coef, L2x, L2y, L2z, e2x, e2y, e2z);
-
-                r3_a_out_eff = 1/(a_out_eff*a_out_eff*a_out_eff);
-            } else {//single averaged
-                const auto[rx, ry, rz] = std::tie(var[6], var[7], var[8]);
-
-                const auto[vx, vy, vz] = std::tie(var[9], var[10], var[11]);
-
-                std::tie(L2x, L2y, L2z) = cross_with_coef(args.mu2, rx, ry, rz, vx, vy, vz);
-
-                double a_out_eff = norm(rx, ry, rz);
-
-                r3_a_out_eff = 1/(a_out_eff*a_out_eff*a_out_eff);
-            }
-        }
         /*---------------------------------------------------------------------------*\
             combinations
         \*---------------------------------------------------------------------------*/

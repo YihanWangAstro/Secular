@@ -103,10 +103,10 @@ namespace secular {
     template<typename Ctrl>
     struct SecularArg {
         SecularArg(Ctrl const &ctrl, double _m1, double _m2, double _m3) : m1{_m1}, m2{_m2}, m3{_m3} {
-            mu1 = m1 * m2 / (m1 + m2);
-            mu2 = (m1 + m2) * m3 / (m1 + m2 + m3);
-            a_in_coef = 1 / (consts::G * (m1 + m2)) / mu1 / mu1;
-            a_out_coef = 1 / (consts::G * (m1 + m2 + m3)) / mu2 / mu2;
+            mu[0] = m1 * m2 / (m1 + m2);
+            mu[1] = (m1 + m2) * m3 / (m1 + m2 + m3);
+            a_coef[0] = 1 / (consts::G * (m1 + m2)) / mu[0] / mu[0];
+            a_coef[1] = 1 / (consts::G * (m1 + m2 + m3)) / mu[1] / mu[1];
 
             if (!ctrl.DA) {
                 SA_acc_coef = consts::G * m3 / mu2;
@@ -126,10 +126,10 @@ namespace secular {
         double m1;
         double m2;
         double m3;
-        double mu1;
-        double mu2;
-        double a_in_coef;
-        double a_out_coef;
+        double mu[2];
+        double a_coef[2];
+        double SL[3][2];
+
         double SA_acc_coef{0};
         double GR_coef{0};
         double GW_L_coef{0};
