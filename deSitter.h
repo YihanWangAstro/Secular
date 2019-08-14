@@ -21,11 +21,6 @@ namespace secular {
         }
     }
 
-    template<size_t S_num, size_t L_num>
-    struct SLOmega{
-        double omega[S_num][L_num];
-    }
-
     template<typename Omega, typename Args, typename Container>
     void calc_omega(Omega& o, Args const& args, Container const& c) {
 
