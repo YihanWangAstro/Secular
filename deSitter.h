@@ -21,12 +21,6 @@ namespace secular {
         }
     }
 
-    template<typename Omega, typename Args, typename Container>
-    void calc_omega(Omega& o, Args const& args, Container const& c) {
-
-    }
-
-
     template<bool DA, typename Args, typename Container, int S_idx, int L_idx>
     inline auto SL_coupling(Args const& args, Container const& var){
       /*---------------------------------------------------------------------------*\
@@ -45,7 +39,7 @@ namespace secular {
           /*---------------------------------------------------------------------------*\
               orbital parameters calculation
           \*---------------------------------------------------------------------------*/
-          double const a_eff = norm2(rx, ry, rz);
+          double const a_eff = norm(rx, ry, rz);
 
           double const r3_a_eff = 1/(a_eff * a_eff * a_eff);
           /*---------------------------------------------------------------------------*\
@@ -98,7 +92,7 @@ namespace secular {
           /*---------------------------------------------------------------------------*\
               orbital parameters calculation
           \*---------------------------------------------------------------------------*/
-          double const a_eff = norm2(rx, ry, rz);
+          double const a_eff = norm(rx, ry, rz);
 
           double const r3_a_eff = 1/(a_eff * a_eff * a_eff);
           ////............
@@ -128,14 +122,6 @@ namespace secular {
 
     template<bool DA, bool LL, bool SL, typename Args, typename Container>
     inline void deSitter_precession(Args const &args, Container const &var, Container &ddt, double t) {
-        /*---------------------------------------------------------------------------*\
-            mapping alias
-        \*---------------------------------------------------------------------------*/
-
-
-        /*---------------------------------------------------------------------------*\
-            combinations
-        \*---------------------------------------------------------------------------*/
         constexpr int Lin_idx = 0;
         constexpr int Lout_idx = 1;
         constexpr int S1_idx = 0;
@@ -143,26 +129,26 @@ namespace secular {
         constexpr int S3_idx = 2;
 
         if constexpr (LL) {
-            SL_coupling<false, Container, -4, Lout_idx>(args.args.Lin_Lout_coef * r3_a_out_eff, var, ddt);//evolve L1
-            SL_coupling<false, Container, -3, Lout_idx>(args.args.Lin_Lout_coef * r3_a_out_eff, var, ddt);//evolve e1
+            SL_coupling<DA, Container, -4, Lout_idx>(args, var);//evolve L1
+            SL_coupling<DA, Container, -3, Lout_idx>(args, var);//evolve e1
         }
 
-        if constexpr(spin_num(var) == 1) {
-            SL_coupling<false, Container, S1_idx, Lin_idx>(args.S1_Lin_coef * r3_a_in_eff, var, ddt);
+        if constexpr(spin_num(var) >= 1) {
+            std::tie(var[S_offset], var[S_offset + 1], var[S_offset + 2]) =  SL_coupling<DA, Container, S1_idx, Lin_idx>(args, var);
             if constexpr(SL) {
-                SL_coupling<false, Container, S1_idx, Lout_idx>(args.S1_Lout_coef * r3_a_out_eff, var, ddt);
+                SL_coupling<DA, Container, S1_idx, Lout_idx>(args, var);
             }
         }
 
-        if constexpr(spin_num(var) == 2) {
-            SL_coupling<false, Container, S2_idx, Lin_idx>(args.S2_Lin_coef * r3_a_in_eff, var, ddt);
+        if constexpr(spin_num(var) >= 2) {
+            SL_coupling<DA, Container, S2_idx, Lin_idx>(args, var);
             if constexpr(SL) {
-                SL_coupling<false, Container, S2_idx, Lout_idx>(args.S2_Lout_coef * r3_a_out_eff, var, ddt);
+                SL_coupling<DA, Container, S2_idx, Lout_idx>(args, var);
             }
         }
 
         if constexpr(spin_num(var) == 3) {
-            SL_coupling<true, Container, S3_idx, L_out_idx>(args.S3_Lout_coef * r3_a_out_eff, var, ddt);
+            SL_coupling<DA, Container, S3_idx, L_out_idx>(args, var);
         }
     }
 
