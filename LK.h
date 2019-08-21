@@ -92,9 +92,9 @@ namespace secular {
         /*---------------------------------------------------------------------------*\
             orbital parameters calculation
         \*---------------------------------------------------------------------------*/
-        auto[e1_sqr, j1_sqr, j1, L1_norm, L_in, a_in] = calc_orbit_args(args.a_in_coef, L1x, L1y, L1z, e1x, e1y, e1z);
+        auto[e1_sqr, j1_sqr, j1, L1_norm, L_in, a_in] = calc_orbit_args(args.a_coef[0], L1x, L1y, L1z, e1x, e1y, e1z);
 
-        auto[e2_sqr, j2_sqr, j2, L2_norm, L_out, a_out] = calc_orbit_args(args.a_out_coef, L2x, L2y, L2z, e2x, e2y, e2z);
+        auto[e2_sqr, j2_sqr, j2, L2_norm, L_out, a_out] = calc_orbit_args(args.a_coef[1], L2x, L2y, L2z, e2x, e2y, e2z);
         /*---------------------------------------------------------------------------*\
             unit vectors
         \*---------------------------------------------------------------------------*/
@@ -196,7 +196,7 @@ namespace secular {
         /*---------------------------------------------------------------------------*\
             orbital parameters calculation
         \*---------------------------------------------------------------------------*/
-        auto[e1_sqr, j1_sqr, j1, L1_norm, L_in, a_in] = calc_orbit_args(args.a_in_coef, L1x, L1y, L1z, e1x, e1y, e1z);
+        auto[e1_sqr, j1_sqr, j1, L1_norm, L_in, a_in] = calc_orbit_args(args.a_coef[0], L1x, L1y, L1z, e1x, e1y, e1z);
 
         double r2 = norm2(rx, ry, rz);
 
@@ -246,7 +246,7 @@ namespace secular {
 
         double r5 = r2 * r3;
 
-        double D = -0.75 * args.SA_acc_coef * args.mu1 * a_in * a_in;
+        double D = -0.75 * args.SA_acc_coef * args.mu[0] * a_in * a_in;
 
         double acc_r = -args.SA_acc_coef * (args.m1 + args.m2) / r3 +
                        D * (25 * de1r * de1r - 5 * j1_sqr * dn1r * dn1r + 1 - 6 * e1_sqr) / r5;

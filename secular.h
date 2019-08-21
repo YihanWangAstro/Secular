@@ -68,7 +68,7 @@ namespace secular {
         bool LL;
 
         friend std::istream &operator>>(std::istream &is, Controler &t) {
-            is >> t.id >> t.write_traj >> t.write_end >> t.end_time >> t.dt_out >> t.DA >> t.Oct >> t.GR >> t.GW >> t.SL_out >> t.LL_couple;
+            is >> t.id >> t.write_traj >> t.write_end >> t.end_time >> t.dt_out >> t.DA >> t.Oct >> t.GR >> t.GW >> t.SL >> t.LL;
             return is;
         }
 
@@ -109,7 +109,7 @@ namespace secular {
             a_coef[1] = 1 / (consts::G * (m1 + m2 + m3)) / mu[1] / mu[1];
 
             if (!ctrl.DA) {
-                SA_acc_coef = consts::G * m3 / mu2;
+                SA_acc_coef = consts::G * m3 / mu[1];
             }
 
             if (ctrl.GR) {
@@ -129,7 +129,7 @@ namespace secular {
         double mu[2];
         double a_coef[2];
         double SL[3][2];
-
+        double LL;
         double SA_acc_coef{0};
         double GR_coef{0};
         double GW_L_coef{0};

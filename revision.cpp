@@ -87,9 +87,9 @@ single_thread_job(std::string work_dir, ConcurrentFile input, size_t start_id, s
                 };
 
                 //
-                //auto func = secular::Dynamic_dispatch<decltype(task.ctrl), decltype(args), Container>(task.ctrl, args);
+                auto func = secular::Dynamic_dispatch<decltype(task.ctrl), decltype(args), Container>(task.ctrl, args);
 
-                auto func = secular::Static_dispatch<decltype(task.ctrl), decltype(args), Container>(task.ctrl, args);
+                //auto func = secular::Static_dispatch<decltype(task.ctrl), decltype(args), Container>(task.ctrl, args);
 
                 try {
                     boost::numeric::odeint::integrate_adaptive(
