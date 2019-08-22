@@ -130,6 +130,9 @@ namespace secular {
                 GW_e_coef = 0;
             }
 
+            for(size_t i = 0 ; i < spin_num; ++i) {
+                SL[i][0] = deSitter_coef()
+            }
 
         }
 
