@@ -100,7 +100,7 @@ namespace secular {
     };
 
     double deSitter_coef(double m_self, double m_other) {
-            return 0.5*consts::G/consts::C / consts::C*(4 + 3*m_other/m_self);
+        return 0.5*consts::G/consts::C / consts::C*(4 + 3*m_other/m_self);
     };
 
     template<typename Ctrl>
