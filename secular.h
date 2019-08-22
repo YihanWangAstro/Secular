@@ -13,9 +13,11 @@
 
 namespace secular {
 
-    template<size_t SpinNum_>
+    template<size_t spin_num>
     struct OrbitArgs {
-        static constexpr size_t SpinNum{SpinNum_};
+        static_assert(spin_num<=3, "Spin number is not allowed to be larger than 3!");
+
+        static constexpr size_t SpinNum{spin_num};
         double m1;
         double m2;
         double m3;
@@ -81,6 +83,8 @@ namespace secular {
 
     template<size_t spin_num>
     struct Task {
+        static_assert(spin_num<=3, "Spin number is not allowed to be larger than 3!");
+
         Controler ctrl;
         OrbitArgs<spin_num> obt_args;
 
@@ -100,11 +104,13 @@ namespace secular {
     };
 
     double deSitter_coef(double m_self, double m_other) {
-        return 0.5*consts::G/consts::C / consts::C*(4 + 3*m_other/m_self);
+        return 0.5*consts::G/(consts::C * consts::C) * (4 + 3*m_other/m_self);
     };
 
-    template<typename Ctrl>
+    template<typename Ctrl, size_t spin_num>
     struct SecularArg {
+        static_assert(spin_num<=3, "Spin number is not allowed to be larger than 3!");
+
         SecularArg(Ctrl const &ctrl, double _m1, double _m2, double _m3) : m1{_m1}, m2{_m2}, m3{_m3} {
             mu[0] = m1 * m2 / (m1 + m2);
             mu[1] = (m1 + m2) * m3 / (m1 + m2 + m3);
@@ -123,6 +129,8 @@ namespace secular {
                 GW_L_coef = 0;
                 GW_e_coef = 0;
             }
+
+
         }
 
     public:
@@ -131,7 +139,7 @@ namespace secular {
         double m3;
         double mu[2];
         double a_coef[2];
-        double SL[3][2];
+        double SL[spin_num][2];
         double LL;
         double SA_acc_coef{0};
         double GR_coef{0};
