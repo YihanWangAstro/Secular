@@ -10,6 +10,7 @@
 #include "LK.h"
 #include "relativistic.h"
 #include "deSitter.h"
+#include "SpaceHub/src/dev-tools.hpp"
 
 namespace secular {
 
@@ -35,8 +36,7 @@ namespace secular {
         std::array <Vec3d, SpinNum> s;
 
         friend std::istream &operator>>(std::istream &is, OrbitArgs &t) {
-            is >> t.m1 >> t.m2 >> t.m3 >> t.a_in >> t.a_out >> t.e_in >> t.e_out >> t.omega_in >> t.omega_out
-               >> t.Omega_in >> t.i_in >> t.i_out >> t.M_nu;
+            space::input(is, t.m1, t.m2, t.m3, t.a_in, t.a_out, t.e_in, t.e_out, t.omega_in, t.omega_out, t.Omega_in, t.i_in, t.i_out, t.M_nu);
             t.Omega_out = t.Omega_in - 180.0;
             for (auto &ss : t.s) {
                 is >> ss;
@@ -45,16 +45,13 @@ namespace secular {
         }
 
         friend std::ostream &operator<<(std::ostream &os, OrbitArgs const &t) {
-            os << t.m1 << ' ' << t.m2 << ' ' << t.m3 << ' ' << t.a_in << ' ' << t.a_out << ' ' << t.e_in << ' '
-               << t.e_out << ' ' << t.omega_in << ' ' << t.omega_out << ' ' << t.Omega_in << ' ' << t.Omega_out << ' '
-               << t.i_in << ' ' << t.i_out << ' ' << t.M_nu;
+            space::display(os, t.m1, t.m2, t.m3, t.a_in, t.a_out, t.e_in, t.e_out, t.omega_in, t.omega_out, t.Omega_in, t.i_in, t.i_out, t.M_nu);
             for (auto const &ss : t.s) {
                 os << ' ' << ss;
             }
             return os;
         }
     };
-
 
     struct Controler {
         size_t id;
@@ -70,13 +67,12 @@ namespace secular {
         bool LL;
 
         friend std::istream &operator>>(std::istream &is, Controler &t) {
-            is >> t.id >> t.write_traj >> t.write_end >> t.end_time >> t.dt_out >> t.DA >> t.Oct >> t.GR >> t.GW >> t.SL >> t.LL;
+            space::input(is, t.id, t.write_traj, t.write_end, t.end_time, t.dt_out, t.DA, t.Oct, t.GR, t.GW, t.SL, t.LL);
             return is;
         }
 
         friend std::ostream &operator<<(std::ostream &os, Controler const &t) {
-            os << t.id << ' ' << t.write_traj << ' ' << t.write_end << ' ' << t.end_time << ' ' << t.dt_out << ' '
-               << t.DA << ' ' << t.Oct << ' ' << t.GR << ' ' << t.GW << ' ' << t.SL << ' ' << t.LL;
+            space::display(os, t.id, t.write_traj, t.write_end, t.end_time, t.dt_out, t.DA, t.Oct, t.GR, t.GW, t.SL, t.LL);
             return os;
         }
     };
@@ -89,12 +85,12 @@ namespace secular {
         OrbitArgs<spin_num> obt_args;
 
         friend std::istream &operator>>(std::istream &is, Task &t) {
-            is >> t.ctrl >> t.obt_args;
+            space::input(is, t.ctrl, t.obt_args);
             return is;
         }
 
         friend std::ostream &operator<<(std::ostream &os, Task const &t) {
-            os << t.ctrl << ' ' << t.obt_args;
+            space::display(os, t.ctrl, t.obt_args);
             return os;
         }
     };
@@ -103,7 +99,7 @@ namespace secular {
         shrink
     };
 
-    double deSitter_coef(double m_self, double m_other) {
+    inline double deSitter_coef(double m_self, double m_other) {
         return 0.5*consts::G/(consts::C * consts::C) * (4 + 3*m_other/m_self);
     };
 
@@ -112,28 +108,50 @@ namespace secular {
         static_assert(spin_num<=3, "Spin number is not allowed to be larger than 3!");
 
         SecularArg(Ctrl const &ctrl, double _m1, double _m2, double _m3) : m1{_m1}, m2{_m2}, m3{_m3} {
-            mu[0] = m1 * m2 / (m1 + m2);
-            mu[1] = (m1 + m2) * m3 / (m1 + m2 + m3);
-            a_coef[0] = 1 / (consts::G * (m1 + m2)) / mu[0] / mu[0];
-            a_coef[1] = 1 / (consts::G * (m1 + m2 + m3)) / mu[1] / mu[1];
+            double const m12 = m1 + m2;
+
+            mu[0] = m1 * m2 / m12;
+            mu[1] = m12 * m3 / (m12 + m3);
+            a_coef[0] = 1 / (consts::G * m12) / mu[0] / mu[0];
+            a_coef[1] = 1 / (consts::G * (m12 + m3)) / mu[1] / mu[1];
 
             if (!ctrl.DA) {
                 SA_acc_coef = consts::G * m3 / mu[1];
             }
 
             if (ctrl.GR) {
-                GR_coef = 0;
+                GR_coef = 3 * pow(consts::G*m12, 1.5) / (consts::C * consts::C);
             }
 
             if (ctrl.GW) {
-                GW_L_coef = 0;
-                GW_e_coef = 0;
+                constexpr double C5 =  consts::C *consts::C* consts::C* consts::C*consts::C;
+                constexpr double G3 =  consts::G* consts::G*consts::G;
+
+                GW_L_coef = -6.4 * pow(consts::G, 3.5) * mu[0] * mu[0] * pow(m12, 2.5) / C5;
+                GW_e_coef = -304.0 / 15 * G3 * mu[0] * m12 * m12 / C5 ;
             }
 
-            for(size_t i = 0 ; i < spin_num; ++i) {
-                SL[i][0] = deSitter_coef()
+            if constexpr(spin_num >= 1)
+              SL[0][0] = deSitter_coef(m1, m2);
+
+            if constexpr(spin_num >= 2)
+              SL[1][0] = deSitter_coef(m2, m1);
+
+            if(ctrl.SL) {
+                SL[0][1] = deSitter_coef(m12, m3);
+                SL[1][1] = SL[0][1];
             }
 
+            if constexpr(spin_num >= 3){
+                SL[2][0] = 0;
+                SL[2][1] = deSitter_coef(m3, m12);
+            }
+
+            if(ctrl.LL) {
+                LL = deSitter_coef(m12, m3);
+            }
+
+            std::cout << GR_coef << "\n";
         }
 
     public:
@@ -143,7 +161,7 @@ namespace secular {
         double mu[2];
         double a_coef[2];
         double SL[spin_num][2];
-        double LL;
+        double LL{0};
         double SA_acc_coef{0};
         double GR_coef{0};
         double GW_L_coef{0};

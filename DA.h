@@ -264,10 +264,10 @@ struct State
 
     Vec3d L1;
     Vec3d e1;
-    
+
     Vec3d L2;
     Vec3d e2;
-        
+
     std::array<Vec3d, SpinNum> s;
 };
 
@@ -301,7 +301,7 @@ public:
         gw_e_coef = -304.0 / 15 * G * G * G * mu1 * m12 * m12 / C5;
 
         gr_coef = 3 * pow(G * m12, 1.5) / C / C;
-
+        
         auto deSitter = [](double m_self, double m_other) {
             double m_tot = m_self + m_other;
             double mu = m_self * m_other / (m_self + m_other);
@@ -358,7 +358,7 @@ public:
 
         Vec3d& e1 = args.e1;
 
-        Vec3d& e2 = args.e2; 
+        Vec3d& e2 = args.e2;
 
         double de1e1 = norm2(e1);
 
@@ -403,7 +403,7 @@ public:
         double t_k = t_k_quad(m1 + m2, m3, a_in, a_out*c_out);
 
         double coef = 0.75 / t_k;
-        
+
         d_args.L1 = coef * L_in * ((c_in_sqr * dn1n2) * cn1n2 - (5 * de1n2) * ce1n2);
 
         d_args.L2 = -d_args.L1;
@@ -412,7 +412,7 @@ public:
 
         d_args.e2 = coef * (L_in / L_out) / c_out * ( (5 * de1n2) * ce1e2 + (c_in_sqr * dn1n2) * ce2n1 - (0.5 - 3 * de1e1 + 12.5 * de1n2 * de1n2 - 2.5 * c_in_sqr * dn1n2 * dn1n2) * cn2e2);
 
-        //Octupole 
+        //Octupole
 
         if(ctrl.Oct) {
             double oct_coef = -75.0/64 * normed_oct_epsilon(m1, m2, a_in, a_out, c_out_sqr)/t_k;
@@ -428,7 +428,7 @@ public:
             double C3 = c_in_sqr * dn1n2 * dn1e2 - 7 * de1n2 * de1e2;
 
             double C4 = de1n2 * dn1n2;
-                  
+
             double _2c_in_sqr = 2 * c_in_sqr;
 
             Vec3d  oct_dL1dt = oct_coef * L_in * (_2c_in_sqr * ( C2 * cn1n2  - C4 * ce2n1 ) + 2 * C3 * ce1n2  + C1 * ce1e2);
@@ -550,28 +550,28 @@ private:
         double e_sqr = norm2(e1);
         double r_c = 1.0 / c_in;
         return (gw_e_coef * (1 + 121.0 / 304 * e_sqr) * (r_c * r_c * r_c * r_c * r_c) / (a * a * a * a)) * e1;
-        
+
     }
 
     inline Vec3d calc_gr_dedt(Vec3d const &cn1e1, double a, double c_in)
     {
         double r_a = 1.0 / a;
         return (gr_coef * sqrt(r_a * r_a * r_a * r_a * r_a) / (c_in * c_in)) * cn1e1;
-        
+
     }
 
     inline Vec3d calc_coupling_dsdt(Vec3d const &S, Vec3d const &n, double a, double cir, double coef)
     {
         double r_a = 1.0 / a;
         return (coef * sqrt(r_a * r_a * r_a * r_a * r_a) / (cir * cir)) * cross(n, S);
-       
+
     }
 
     inline Vec3d calc_coupling_dedt(Vec3d const &S, Vec3d const &n, Vec3d const &e, double L, double a, double cir, double coef)
     {
         double r_a = 1.0 / a;
         return (coef * sqrt(r_a * r_a * r_a * r_a * r_a) / (cir * cir) / L) * (cross(S, e) - (3 * dot(n, S)) * cross(n, e));
-        
+
     }
 
 public:

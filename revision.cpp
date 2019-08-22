@@ -66,7 +66,7 @@ single_thread_job(std::string work_dir, ConcurrentFile input, size_t start_id, s
                     initilize_SA(inits, task.obt_args);
                 }
 
-                secular::SecularArg args{task.ctrl, task.obt_args.m1, task.obt_args.m2, task.obt_args.m3};
+                secular::SecularArg<decltype(task.ctrl), spin_num> args{task.ctrl, task.obt_args.m1, task.obt_args.m2, task.obt_args.m3};
 
                 std::fstream fout_{work_dir + "trajectory_" + std::to_string(task.ctrl.id) + ".txt", std::fstream::out};
 
@@ -85,7 +85,6 @@ single_thread_job(std::string work_dir, ConcurrentFile input, size_t start_id, s
                         out_time_ += task.ctrl.dt_out;
                     }
                 };
-
                 //
                 auto func = secular::Dynamic_dispatch<decltype(task.ctrl), decltype(args), Container>(task.ctrl, args);
 

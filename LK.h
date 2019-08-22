@@ -55,7 +55,7 @@ namespace secular {
 
         double v = sqrt(consts::G * (o.m1 + o.m2 + o.m3) / (o.a_out * (1 - o.e_out * o.e_out)));
 
-        Vec3d v_out = v * (sin(nu_out) * secular::unit_e(o.i_out, o.omega_out, o.Omega_out) +
+        Vec3d v_out = v * (-sin(nu_out) * secular::unit_e(o.i_out, o.omega_out, o.Omega_out) +
                            (o.e_out + cos(nu_out)) * secular::unit_peri_v(o.i_out, o.omega_out, o.Omega_out));
 
         c[0] = L1.x, c[1] = L1.y, c[2] = L1.z;
@@ -65,8 +65,6 @@ namespace secular {
         c[6] = r_out.x, c[7] = r_out.y, c[8] = r_out.z;
 
         c[9] = v_out.x, c[10] = v_out.y, c[11] = v_out.z;
-
-        std::cout << r_out << ' ' << v_out << "\n";
     }
 
     template<bool Oct, typename Args, typename Container>
