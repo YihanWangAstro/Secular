@@ -12,7 +12,7 @@
 using namespace space::multiThread;
 
 double int_error = 1e-13;
-
+/*
 size_t resolve_spin_num(std::string const &file_name, size_t base = 22) {
     std::fstream init(file_name, std::fstream::in);
     std::string line;
@@ -149,6 +149,125 @@ int main(int argc, char **argv) {
     } else {
         std::cout << "wrong spin number!\n";
     }
+    std::cout << "\r\n Time:" << timer.get_time() << '\n';
+    return 0;
+}*/
+
+void get_line(std::fstream& is, std::string& str) {
+    std::getline(is, str);
+    if(!is)
+      throw secular::StopFlag::eof;
+}
+
+void unpack_args(std::string  const& str, std::vector<double>& vec, bool DA, size_t spin_num) {
+    std::stringstream is{str};
+
+    size_t token_num = 22 + static_cast<size_t>(!DA) + spin_num*3;
+    vec.reserve(token_num);
+
+    double tmp;
+
+    for(size_t i = 0 ;  i < token_num; ++i){
+        is >> tmp;
+        vec.emplace_back(tmp);
+    }
+}
+
+auto resolve_sim_type(std::string const& line) {
+    bool in_space = true;
+    size_t token_num = 0;
+    for (auto c : line) {
+        if (std::isspace(c)) {
+            in_space = true;
+        } else if (in_space) {
+            token_num++;
+            in_space = false;
+        }
+    }
+    constexpr static bool single_average{false};
+    constexpr static bool double_average{true};
+
+    switch(token_num) {
+        case 22 :
+            return std::make_tuple(double_average, 0);
+        case 23 :
+            return std::make_tuple(single_average, 0);
+        case 25 :
+            return std::make_tuple(double_average, 1);
+        case 26 :
+            return std::make_tuple(single_average, 1);
+        case 28 :
+            return std::make_tuple(double_average, 2);
+        case 29 :
+            return std::make_tuple(single_average, 2);
+        case 31 :
+            return std::make_tuple(double_average, 3);
+        case 32 :
+            return std::make_tuple(single_average, 3);
+        default :
+            std::cout << "wrong input format!\n";
+            throw secular::StopFlag::input_err;
+    }
+}
+
+void single_thread_job(std::string work_dir, ConcurrentFile input, size_t start_id, size_t end_id, ConcurrentFile output) {
+    //using Container = std::array<double, 12>;
+    //using stepper_type = boost::numeric::odeint::runge_kutta_fehlberg78<Container>;
+    double ini_dt = 0.1 * secular::consts::year;
+    //secular::Task<spin_num> task;
+    std::string entry;
+    for (;;) {
+        try{
+            input.execute(get_line, entry);
+
+            auto [DA, spin_num] = resolve_sim_type(entry);
+
+            std::vector<double> v;
+
+            unpack_args(entry, v, DA, spin_num);
+
+            if(spin_num == 0) {
+
+            } else if(spin_num == 1){
+
+            } else if(spin_num == 2){
+
+            } else if(spin_num == 3){
+
+            }
+        } catch (secular::StopFlag flag) {
+            if(flag == secular::StopFlag::eof)
+                break;
+        }
+    }
+}
+
+int main(int argc, char **argv) {
+    std::string input_file_name;
+    std::string work_dir;
+    size_t start_task_id, end_task_id;
+
+    space::tools::read_command_line(argc, argv, input_file_name, start_task_id, end_task_id, work_dir);
+
+    const int dir_err = system(("mkdir -p " + work_dir).c_str());
+    if (dir_err == -1) {
+        std::cout << "Error creating directory!\n";
+        exit(1);
+    }
+
+    work_dir += "/";
+
+    auto input_file = make_thread_safe_fstream(input_file_name, std::fstream::in);
+
+    auto output_file = make_thread_safe_fstream(work_dir + "statistics.txt", std::fstream::out);
+
+    //auto log_file = make_thread_safe_fstream(work_dir + "log.txt", std::fstream::out);
+
+    std::cout << std::setprecision(15);
+
+    space::tools::Timer timer;
+    timer.start();
+    space::multiThread::auto_multi_thread(single_thread_job, work_dir, input_file, start_task_id, end_task_id, output_file);
     std::cout << "\r\n Time:" << timer.get_time() << '\n';
     return 0;
 }

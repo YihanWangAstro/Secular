@@ -14,11 +14,8 @@
 
 namespace secular {
 
-    template<size_t spin_num>
-    struct OrbitArgs {
-        static_assert(spin_num<=3, "Spin number is not allowed to be larger than 3!");
 
-        static constexpr size_t SpinNum{spin_num};
+    struct OrbitArgs {
         double m1;
         double m2;
         double m3;
@@ -33,9 +30,9 @@ namespace secular {
         double i_in;
         double i_out;
         double M_nu;
-        std::array <Vec3d, SpinNum> s;
+        std::vector <Vec3d> s;
 
-        friend std::istream &operator>>(std::istream &is, OrbitArgs &t) {
+        /*friend std::istream &operator>>(std::istream &is, OrbitArgs &t) {
             space::input(is, t.m1, t.m2, t.m3, t.a_in, t.a_out, t.e_in, t.e_out, t.omega_in, t.omega_out, t.Omega_in, t.i_in, t.i_out, t.M_nu);
             t.Omega_out = t.Omega_in - 180.0;
             for (auto &ss : t.s) {
@@ -50,7 +47,7 @@ namespace secular {
                 os << ' ' << ss;
             }
             return os;
-        }
+        }*/
     };
 
     struct Controler {
@@ -96,7 +93,7 @@ namespace secular {
     };
 
     enum class StopFlag {
-        shrink
+        shrink, eof, input_err
     };
 
     inline double deSitter_coef(double m_self, double m_other) {
