@@ -11,7 +11,7 @@
 
 using namespace space::multiThread;
 
-double int_error = 1e-13;
+double INT_ERROR = 1e-13;
 /*
 size_t resolve_spin_num(std::string const &file_name, size_t base = 22) {
     std::fstream init(file_name, std::fstream::in);
@@ -212,8 +212,9 @@ auto resolve_sim_type(std::string const& line) {
     }
 }
 
-template<size_t spin_num>
-void call_ode_int(bool DA, secular::Controler const&ctrl, secular::OrbitArgs const& init_args, double t_start, double t_end){
+
+template<size_t spin_num, typename Observer>
+void call_ode_int(bool DA, secular::Controler const&ctrl, secular::OrbitArgs const& init_args, double t_start, double t_end, Observer obsv){
     using Container = std::array<double, 12+spin_num*3>;
     using stepper_type = boost::numeric::odeint::runge_kutta_fehlberg78<Container>;
 
@@ -221,18 +222,54 @@ void call_ode_int(bool DA, secular::Controler const&ctrl, secular::OrbitArgs con
 
     initilize_orbit_args(DA, spin_num, init_cond, init_args);
 
-    secular::SecularArg const_parameters{ctrl, init_args.m1, init_args.m2, init_args.m3};
+    secular::SecularConst const_parameters{ctrl, init_args.m1, init_args.m2, init_args.m3};
 
-    auto func = secular::Dynamic_dispatch<secular::Controler, secular::OrbitArgs, Container>(ctrl, args);
+    auto func = secular::Dynamic_dispatch<Container>(ctrl, const_parameters);
 
     //auto func = secular::Static_dispatch<decltype(task.ctrl), decltype(args), Container>(task.ctrl, args);
     double ini_dt = 0.1 * secular::consts::year;
 
-    boost::numeric::odeint::integrate_adaptive(boost::numeric::odeint::make_controlled(int_error, int_error, stepper_type()), func, init_cond, t_start, t_end, ini_dt, observer);
+    boost::numeric::odeint::integrate_adaptive(boost::numeric::odeint::make_controlled(INT_ERROR, INT_ERROR, stepper_type()), func, init_cond, t_start, t_end, ini_dt, obsv);
 }
 
-constexpr size_t CTRL_OFFSET = 10;
+constexpr size_t TASK_ID_OFFSET = 0;
+constexpr size_t TRAJECTROY_OFFSET = 1;
+constexpr size_t END_STAT_OFFSET = 2;
+constexpr size_t END_TIME_OFFSET = 3;
+constexpr size_t DT_OFFSET = 4;
+constexpr size_t CTRL_OFFSET = 5;
 constexpr size_t ARGS_OFFSET = 10;
+
+
+struct Traj_args{
+    Traj_args(std::string const& work_dir, size_t task_id, double _dt)
+      : dt{_dt},
+        t_output{0},
+        file{work_dir +  "output_" + std::to_string(task_id) + ".txt", std::fstream::out} {
+            file << std::setprecision(6);
+        }
+
+    void move_to_next_output(){ t_output += dt;}
+
+    double dt;
+    double t_output;
+    std::fstream file;
+};
+/*
+auto create_obser(std::shared_ptr<Traj_args>& traj_arg_ptr, std::string const& work_dir, std::vector<double> &input_args ) {
+    bool is_traj = input_args[TRAJECTROY_OFFSET];
+    size_t task_id = input_args[TASK_ID_OFFSET];
+    double dt = input_args[DT_OFFSET];
+
+    traj_arg_ptr = std::make_shared<Traj_args>(work_dir, task_id, dt);
+
+    return [=](auto const& data, double t) {
+        if(is_traj && t > traj_arg_ptr->t_output) {
+            space::display(traj_arg_ptr->file, t, data, "\r\n");
+            traj_arg_ptr->move_to_next_output();
+        }
+    };
+}*/
 
 void single_thread_job(std::string work_dir, ConcurrentFile input, size_t start_id, size_t end_id, ConcurrentFile output) {
     std::string entry;
@@ -246,19 +283,38 @@ void single_thread_job(std::string work_dir, ConcurrentFile input, size_t start_
                 std::vector<double> v;
 
                 unpack_args_from_str(entry, v, DA, spin_num);
-                
+
                 secular::Controler ctrl{v.begin() + CTRL_OFFSET, DA};
 
                 secular::OrbitArgs init_args{v.begin() + ARGS_OFFSET, DA, spin_num};
 
+                double t_end = v[END_TIME_OFFSET];
+
+                space::display(std::cout, task_id, DA, spin_num, ctrl.Oct, ctrl.GR, ctrl.GW, ctrl.SL, ctrl.LL,"\n");
+
+                bool is_traj = v[TRAJECTROY_OFFSET];
+
+                size_t task_id = v[TASK_ID_OFFSET];
+
+                double dt = v[DT_OFFSET];
+
+                Traj_args traj_arg{work_dir, task_id, dt};
+
+                auto observer = [&](auto const& data, double t) {
+                    if(is_traj && t > traj_arg.t_output) {
+                        space::display(traj_arg.file, t, data, "\r\n");
+                        traj_arg.move_to_next_output();
+                    }
+                };
+
                 if(spin_num == 0) {
-                    call_ode_int<0>(DA, ctrl, init_args);
+                    call_ode_int<0>(DA, ctrl, init_args, 0.0, t_end, observer);
                 } else if(spin_num == 1){
-                    call_ode_int<1>(DA, ctrl, init_args);
+                    call_ode_int<1>(DA, ctrl, init_args, 0.0, t_end, observer);
                 } else if(spin_num == 2){
-                    call_ode_int<2>(DA, ctrl, init_args);
+                    call_ode_int<2>(DA, ctrl, init_args, 0.0, t_end, observer);
                 } else if(spin_num == 3){
-                    call_ode_int<3>(DA, ctrl, init_args);
+                    call_ode_int<3>(DA, ctrl, init_args, 0.0, t_end, observer);
                 }
             }
 

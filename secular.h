@@ -34,6 +34,8 @@ namespace secular {
                 M_nu = *iter, iter++;
             }
 
+            deg_to_rad(*this);
+
             s.reserve(spin_num);
             for(size_t i = 0 ; i < spin_num; ++i){
                 s.emplace_back(Vec3d(*(iter+i*3), *(iter+i*3+1), *(iter+i*3+2)));
@@ -84,9 +86,9 @@ namespace secular {
         return 0.5*consts::G/(consts::C * consts::C) * (4 + 3*m_other/m_self);
     };
 
-    struct SecularArg {
+    struct SecularConst {
 
-        SecularArg(Controler const &ctrl, double _m1, double _m2, double _m3) : m1{_m1}, m2{_m2}, m3{_m3} {
+        SecularConst(Controler const &ctrl, double _m1, double _m2, double _m3) : m1{_m1}, m2{_m2}, m3{_m3} {
             double const m12 = m1 + m2;
 
             mu[0] = m1 * m2 / m12;
@@ -142,50 +144,49 @@ namespace secular {
     };
 
 
-    template<typename Ctrl, typename Args, typename Container>
+    template<typename Container>
     struct Dynamic_dispatch {
-
-        Dynamic_dispatch(Ctrl const &_ctrl, Args const &_args) : ctrl{&_ctrl}, args{&_args} {}
+        Dynamic_dispatch(Controler const &_ctrl, SecularConst const &_args) : ctrl{&_ctrl}, args{&_args} {}
 
         void operator()(Container const &x, Container &dxdt, double t) {
             if (ctrl->DA == true) {
                 if (ctrl->Oct == true) {
-                    double_aved_LK<true, Args, Container>(*args, x, dxdt, t);
+                    double_aved_LK<true, SecularConst, Container>(*args, x, dxdt, t);
                 } else {
-                    double_aved_LK<false, Args, Container>(*args, x, dxdt, t);
+                    double_aved_LK<false, SecularConst, Container>(*args, x, dxdt, t);
                 }
 
                 if (ctrl->LL == true) {
                     if (ctrl->SL == true) {
-                        deSitter_precession<true, true, true, Args, Container>(*args, x, dxdt, t);
+                        deSitter_precession<true, true, true, SecularConst, Container>(*args, x, dxdt, t);
                     } else {
-                        deSitter_precession<true, true, false, Args, Container>(*args, x, dxdt, t);
+                        deSitter_precession<true, true, false, SecularConst, Container>(*args, x, dxdt, t);
                     }
                 } else {
                     if (ctrl->SL == true) {
-                        deSitter_precession<true, false, true, Args, Container>(*args, x, dxdt, t);
+                        deSitter_precession<true, false, true, SecularConst, Container>(*args, x, dxdt, t);
                     } else {
-                        deSitter_precession<true, false, false, Args, Container>(*args, x, dxdt, t);
+                        deSitter_precession<true, false, false, SecularConst, Container>(*args, x, dxdt, t);
                     }
                 }
             } else {
                 if (ctrl->Oct == true) {
-                    single_aved_LK<true, Args, Container>(*args, x, dxdt, t);
+                    single_aved_LK<true, SecularConst, Container>(*args, x, dxdt, t);
                 } else {
-                    single_aved_LK<false, Args, Container>(*args, x, dxdt, t);
+                    single_aved_LK<false, SecularConst, Container>(*args, x, dxdt, t);
                 }
 
                 if (ctrl->LL == true) {
                     if (ctrl->SL == true) {
-                        deSitter_precession<false, true, true, Args, Container>(*args, x, dxdt, t);
+                        deSitter_precession<false, true, true, SecularConst, Container>(*args, x, dxdt, t);
                     } else {
-                        deSitter_precession<false, true, false, Args, Container>(*args, x, dxdt, t);
+                        deSitter_precession<false, true, false, SecularConst, Container>(*args, x, dxdt, t);
                     }
                 } else {
                     if (ctrl->SL == true) {
-                        deSitter_precession<false, false, true, Args, Container>(*args, x, dxdt, t);
+                        deSitter_precession<false, false, true, SecularConst, Container>(*args, x, dxdt, t);
                     } else {
-                        deSitter_precession<false, false, false, Args, Container>(*args, x, dxdt, t);
+                        deSitter_precession<false, false, false, SecularConst, Container>(*args, x, dxdt, t);
                     }
                 }
             }
@@ -199,8 +200,8 @@ namespace secular {
             }
         }
 
-        Ctrl const *ctrl;
-        Args const *args;
+        Controler const *ctrl;
+        SecularConst const *args;
     };
 
 /*template< typename ...Func>

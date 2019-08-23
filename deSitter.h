@@ -91,6 +91,11 @@ namespace secular {
 
     }
 
+    inline auto deSitter_e_vec(double v1x, double v1y, double v1z, double Lx, double Ly, double Lz) {
+        double dot_part = 3*dot(Lx, Ly, Lz, v1x, v1y, v1z)/norm2(Lx, Ly, Lz);
+        return std::make_tuple(v1x - dot_part*Lx, v1y - dot_part*Ly, v1z - dot_part*Lz);
+    }
+
     template<bool DA, typename Args, typename Container, int S_idx, int L_idx>
     inline auto SL_coupling_bc(Args const& args, Container const& var){
       /*---------------------------------------------------------------------------*\
@@ -195,11 +200,11 @@ namespace secular {
 
             std::tie(dS3x, dS3y, dS3z) = SL_coupling<DA, Args, Container, S3_idx, Lout_idx>(args, var);
 
-            dL2x -= dS3x, dL2y -= dS3y, dL2z -= dS3z;
+            //dL2x -= dS3x, dL2y -= dS3y, dL2z -= dS3z;
 
-            auto [dex, dey, dez] = SL_coupling_bc<DA, Args, Container, S3_idx, Lout_idx>(args, var);
+            /*auto [dex, dey, dez] = SL_coupling_bc<DA, Args, Container, S3_idx, Lout_idx>(args, var);
 
-            de2x += dex, de2y += dey, de2z += dez;
+            de2x += dex, de2y += dey, de2z += dez;*/
         }
 
         if constexpr (LL) {

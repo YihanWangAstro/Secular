@@ -43,6 +43,12 @@ namespace secular {
         c[6] = L2.x, c[7] = L2.y, c[8] = L2.z;
 
         c[9] = e2.x, c[10] = e2.y, c[11] = e2.z;
+
+        for(size_t i = 0 ; i < spin_num; ++i){
+            c[12+i*3]   = o.s[i].x;
+            c[12+i*3+1] = o.s[i].y;
+            c[12+i*3+2] = o.s[i].z;
+        }
     }
 
     template<typename Container, typename OrbitArg>
@@ -74,6 +80,12 @@ namespace secular {
         c[6] = r_out.x, c[7] = r_out.y, c[8] = r_out.z;
 
         c[9] = v_out.x, c[10] = v_out.y, c[11] = v_out.z;
+
+        for(size_t i = 0 ; i < spin_num; ++i){
+            c[12+i*3]   = o.s[i].x;
+            c[12+i*3+1] = o.s[i].y;
+            c[12+i*3+2] = o.s[i].z;
+        }
     }
 
     template<bool Oct, typename Args, typename Container>
