@@ -159,14 +159,14 @@ void get_line(std::fstream& is, std::string& str) {
       throw secular::StopFlag::eof;
 }
 
-void unpack_args(std::string  const& str, std::vector<double>& vec, bool DA, size_t spin_num) {
+void unpack_args_from_str(std::string  const& str, std::vector<double>& vec, bool DA, size_t spin_num) {
     std::stringstream is{str};
 
     size_t token_num = 22 + static_cast<size_t>(!DA) + spin_num*3;
-    vec.reserve(token_num);
 
     double tmp;
 
+    vec.reserve(token_num);
     for(size_t i = 0 ;  i < token_num; ++i){
         is >> tmp;
         vec.emplace_back(tmp);
@@ -187,54 +187,81 @@ auto resolve_sim_type(std::string const& line) {
     constexpr static bool single_average{false};
     constexpr static bool double_average{true};
 
+    size_t id = std::stoi(line);
+
     switch(token_num) {
         case 22 :
-            return std::make_tuple(double_average, 0);
+            return std::make_tuple(id, double_average, 0u);
         case 23 :
-            return std::make_tuple(single_average, 0);
+            return std::make_tuple(id, single_average, 0u);
         case 25 :
-            return std::make_tuple(double_average, 1);
+            return std::make_tuple(id, double_average, 1u);
         case 26 :
-            return std::make_tuple(single_average, 1);
+            return std::make_tuple(id, single_average, 1u);
         case 28 :
-            return std::make_tuple(double_average, 2);
+            return std::make_tuple(id, double_average, 2u);
         case 29 :
-            return std::make_tuple(single_average, 2);
+            return std::make_tuple(id, single_average, 2u);
         case 31 :
-            return std::make_tuple(double_average, 3);
+            return std::make_tuple(id, double_average, 3u);
         case 32 :
-            return std::make_tuple(single_average, 3);
+            return std::make_tuple(id, single_average, 3u);
         default :
             std::cout << "wrong input format!\n";
             throw secular::StopFlag::input_err;
     }
 }
 
-void single_thread_job(std::string work_dir, ConcurrentFile input, size_t start_id, size_t end_id, ConcurrentFile output) {
-    //using Container = std::array<double, 12>;
-    //using stepper_type = boost::numeric::odeint::runge_kutta_fehlberg78<Container>;
+template<size_t spin_num>
+void call_ode_int(bool DA, secular::Controler const&ctrl, secular::OrbitArgs const& init_args, double t_start, double t_end){
+    using Container = std::array<double, 12+spin_num*3>;
+    using stepper_type = boost::numeric::odeint::runge_kutta_fehlberg78<Container>;
+
+    Container init_cond;
+
+    initilize_orbit_args(DA, spin_num, init_cond, init_args);
+
+    secular::SecularArg const_parameters{ctrl, init_args.m1, init_args.m2, init_args.m3};
+
+    auto func = secular::Dynamic_dispatch<secular::Controler, secular::OrbitArgs, Container>(ctrl, args);
+
+    //auto func = secular::Static_dispatch<decltype(task.ctrl), decltype(args), Container>(task.ctrl, args);
     double ini_dt = 0.1 * secular::consts::year;
-    //secular::Task<spin_num> task;
+
+    boost::numeric::odeint::integrate_adaptive(boost::numeric::odeint::make_controlled(int_error, int_error, stepper_type()), func, init_cond, t_start, t_end, ini_dt, observer);
+}
+
+constexpr size_t CTRL_OFFSET = 10;
+constexpr size_t ARGS_OFFSET = 10;
+
+void single_thread_job(std::string work_dir, ConcurrentFile input, size_t start_id, size_t end_id, ConcurrentFile output) {
     std::string entry;
     for (;;) {
         try{
             input.execute(get_line, entry);
 
-            auto [DA, spin_num] = resolve_sim_type(entry);
+            auto [task_id, DA, spin_num] = resolve_sim_type(entry);
 
-            std::vector<double> v;
+            if(start_id<=task_id && task_id <= end_id){
+                std::vector<double> v;
 
-            unpack_args(entry, v, DA, spin_num);
+                unpack_args_from_str(entry, v, DA, spin_num);
+                
+                secular::Controler ctrl{v.begin() + CTRL_OFFSET, DA};
 
-            if(spin_num == 0) {
+                secular::OrbitArgs init_args{v.begin() + ARGS_OFFSET, DA, spin_num};
 
-            } else if(spin_num == 1){
-
-            } else if(spin_num == 2){
-
-            } else if(spin_num == 3){
-
+                if(spin_num == 0) {
+                    call_ode_int<0>(DA, ctrl, init_args);
+                } else if(spin_num == 1){
+                    call_ode_int<1>(DA, ctrl, init_args);
+                } else if(spin_num == 2){
+                    call_ode_int<2>(DA, ctrl, init_args);
+                } else if(spin_num == 3){
+                    call_ode_int<3>(DA, ctrl, init_args);
+                }
             }
+
         } catch (secular::StopFlag flag) {
             if(flag == secular::StopFlag::eof)
                 break;

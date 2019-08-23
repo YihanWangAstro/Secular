@@ -16,7 +16,16 @@ namespace secular {
     }
 
     template<typename Container, typename OrbitArg>
-    void initilize_DA(Container &c, OrbitArg const &o) {
+    void initilize_orbit_args(bool DA, size_t spin_num, Container &c, OrbitArg const &o) {
+        if(DA){
+            initilize_DA(spin_num, c, o);
+        } else {
+            initilize_SA(spin_num, c, o);
+        }
+    }
+
+    template<typename Container, typename OrbitArg>
+    void initilize_DA(size_t spin_num, Container &c, OrbitArg const &o) {
         Vec3d L1 = secular::calc_angular_mom(o.m1, o.m2, o.a_in) * sqrt(1 - o.e_in * o.e_in) *
                    secular::unit_j(o.i_in, o.Omega_in);
 
@@ -37,7 +46,7 @@ namespace secular {
     }
 
     template<typename Container, typename OrbitArg>
-    void initilize_SA(Container &c, OrbitArg const &o) {
+    void initilize_SA(size_t spin_num, Container &c, OrbitArg const &o) {
         Vec3d L1 = secular::calc_angular_mom(o.m1, o.m2, o.a_in) * sqrt(1 - o.e_in * o.e_in) *
                    secular::unit_j(o.i_in, o.Omega_in);
 

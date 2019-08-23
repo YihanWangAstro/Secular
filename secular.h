@@ -14,8 +14,32 @@
 
 namespace secular {
 
-
     struct OrbitArgs {
+        template<typename Iter>
+        OrbitArgs(Iter iter, bool DA, size_t spin_num) {
+            m1 = *iter, iter++;
+            m2 = *iter, iter++;
+            m3 = *iter, iter++;
+            a_in = *iter, iter++;
+            a_out = *iter, iter++;
+            e_in = *iter, iter++;
+            e_out = *iter, iter++;
+            omega_in = *iter, iter++;
+            omega_out = *iter, iter++;
+            Omega_in = *iter, iter++;
+            Omega_out = Omega_in - 180.0;
+            i_in = *iter, iter++;
+            i_out = *iter, iter++;
+            if(!DA) {
+                M_nu = *iter, iter++;
+            }
+
+            s.reserve(spin_num);
+            for(size_t i = 0 ; i < spin_num; ++i){
+                s.emplace_back(Vec3d(*(iter+i*3), *(iter+i*3+1), *(iter+i*3+2)));
+            }
+        }
+
         double m1;
         double m2;
         double m3;
@@ -29,67 +53,27 @@ namespace secular {
         double Omega_out;
         double i_in;
         double i_out;
-        double M_nu;
+        double M_nu{0};
         std::vector <Vec3d> s;
-
-        /*friend std::istream &operator>>(std::istream &is, OrbitArgs &t) {
-            space::input(is, t.m1, t.m2, t.m3, t.a_in, t.a_out, t.e_in, t.e_out, t.omega_in, t.omega_out, t.Omega_in, t.i_in, t.i_out, t.M_nu);
-            t.Omega_out = t.Omega_in - 180.0;
-            for (auto &ss : t.s) {
-                is >> ss;
-            }
-            return is;
-        }
-
-        friend std::ostream &operator<<(std::ostream &os, OrbitArgs const &t) {
-            space::display(os, t.m1, t.m2, t.m3, t.a_in, t.a_out, t.e_in, t.e_out, t.omega_in, t.omega_out, t.Omega_in, t.i_in, t.i_out, t.M_nu);
-            for (auto const &ss : t.s) {
-                os << ' ' << ss;
-            }
-            return os;
-        }*/
     };
 
     struct Controler {
-        size_t id;
-        bool write_traj;
-        bool write_end;
-        double end_time;
-        double dt_out;
+        template<typename Iter>
+        Controler(Iter iter, bool _DA) {
+            DA = _DA;
+            Oct = *iter, iter++;
+            GR = *iter, iter++;
+            GW = *iter, iter++;
+            SL = *iter, iter++;
+            LL = *iter;
+        }
+
         bool DA;
         bool Oct;
         bool GR;
         bool GW;
         bool SL;
         bool LL;
-
-        friend std::istream &operator>>(std::istream &is, Controler &t) {
-            space::input(is, t.id, t.write_traj, t.write_end, t.end_time, t.dt_out, t.DA, t.Oct, t.GR, t.GW, t.SL, t.LL);
-            return is;
-        }
-
-        friend std::ostream &operator<<(std::ostream &os, Controler const &t) {
-            space::display(os, t.id, t.write_traj, t.write_end, t.end_time, t.dt_out, t.DA, t.Oct, t.GR, t.GW, t.SL, t.LL);
-            return os;
-        }
-    };
-
-    template<size_t spin_num>
-    struct Task {
-        static_assert(spin_num<=3, "Spin number is not allowed to be larger than 3!");
-
-        Controler ctrl;
-        OrbitArgs<spin_num> obt_args;
-
-        friend std::istream &operator>>(std::istream &is, Task &t) {
-            space::input(is, t.ctrl, t.obt_args);
-            return is;
-        }
-
-        friend std::ostream &operator<<(std::ostream &os, Task const &t) {
-            space::display(os, t.ctrl, t.obt_args);
-            return os;
-        }
     };
 
     enum class StopFlag {
@@ -100,11 +84,9 @@ namespace secular {
         return 0.5*consts::G/(consts::C * consts::C) * (4 + 3*m_other/m_self);
     };
 
-    template<typename Ctrl, size_t spin_num>
     struct SecularArg {
-        static_assert(spin_num<=3, "Spin number is not allowed to be larger than 3!");
 
-        SecularArg(Ctrl const &ctrl, double _m1, double _m2, double _m3) : m1{_m1}, m2{_m2}, m3{_m3} {
+        SecularArg(Controler const &ctrl, double _m1, double _m2, double _m3) : m1{_m1}, m2{_m2}, m3{_m3} {
             double const m12 = m1 + m2;
 
             mu[0] = m1 * m2 / m12;
@@ -128,27 +110,21 @@ namespace secular {
                 GW_e_coef = -304.0 / 15 * G3 * mu[0] * m12 * m12 / C5 ;
             }
 
-            if constexpr(spin_num >= 1)
-              SL[0][0] = deSitter_coef(m1, m2);
 
-            if constexpr(spin_num >= 2)
-              SL[1][0] = deSitter_coef(m2, m1);
+            SL[0][0] = deSitter_coef(m1, m2);
+            SL[1][0] = deSitter_coef(m2, m1);
 
             if(ctrl.SL) {
                 SL[0][1] = deSitter_coef(m12, m3);
                 SL[1][1] = SL[0][1];
             }
 
-            if constexpr(spin_num >= 3){
-                SL[2][0] = 0;
-                SL[2][1] = deSitter_coef(m3, m12);
-            }
+            SL[2][0] = 0;
+            SL[2][1] = deSitter_coef(m3, m12);
 
             if(ctrl.LL) {
                 LL = deSitter_coef(m12, m3);
             }
-
-            std::cout << GR_coef << "\n";
         }
 
     public:
@@ -157,7 +133,7 @@ namespace secular {
         double m3;
         double mu[2];
         double a_coef[2];
-        double SL[spin_num][2];
+        double SL[3][2];
         double LL{0};
         double SA_acc_coef{0};
         double GR_coef{0};

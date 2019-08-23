@@ -17,25 +17,28 @@ namespace secular {
       \*---------------------------------------------------------------------------*/
       constexpr size_t v_offset = 3*var_idx;
 
-      constexpr size_t L_offset = 6;
-
-      constexpr size_t e_offset = 9;
-
       const auto[Sx, Sy, Sz] = std::tie(var[v_offset], var[v_offset + 1], var[v_offset + 2]);
 
-      const auto[Lx, Ly, Lz] = std::tie(var[L_offset], var[L_offset + 1], var[L_offset + 2]);
+          /*---------------------------------------------------------------------------*\
+              mapping alias
+          \*---------------------------------------------------------------------------*/
+          constexpr size_t L_offset = 6;
 
-      const auto[ex, ey, ez] = std::tie(var[e_offset], var[e_offset + 1], var[e_offset + 2]);
-      /*---------------------------------------------------------------------------*\
-          orbital parameters calculation
-      \*---------------------------------------------------------------------------*/
-      double const a_eff = calc_a_eff(args.a_coef[1], Lx, Ly, Lz, ex, ey, ez);
+          constexpr size_t e_offset = 9;
 
-      double const r3_a_eff = 1/(a_eff * a_eff * a_eff);
-      /*---------------------------------------------------------------------------*\
-          combinations
-      \*---------------------------------------------------------------------------*/
-      return cross_with_coef(args.LL * r3_a_eff, Lx, Ly, Lz, Sx, Sy, Sz);
+          const auto[Lx, Ly, Lz] = std::tie(var[L_offset], var[L_offset + 1], var[L_offset + 2]);
+
+          const auto[ex, ey, ez] = std::tie(var[e_offset], var[e_offset + 1], var[e_offset + 2]);
+          /*---------------------------------------------------------------------------*\
+              orbital parameters calculation
+          \*---------------------------------------------------------------------------*/
+          double const a_eff = calc_a_eff(args.a_coef[1], Lx, Ly, Lz, ex, ey, ez);
+
+          double const r3_a_eff = 1/(a_eff * a_eff * a_eff);
+          /*---------------------------------------------------------------------------*\
+              combinations
+          \*---------------------------------------------------------------------------*/
+          return cross_with_coef(args.LL * r3_a_eff, Lx, Ly, Lz, Sx, Sy, Sz);
     }
 
     template<bool DA, typename Args, typename Container, int S_idx, int L_idx>
@@ -46,7 +49,7 @@ namespace secular {
       constexpr size_t S_offset = 12 + S_idx * 3;
 
       const auto[Sx, Sy, Sz] = std::tie(var[S_offset], var[S_offset + 1], var[S_offset + 2]);
-      std::cout << "!\n";
+
       if constexpr(L_idx == 1 && !DA) {
           const auto[rx, ry, rz] = std::tie(var[6], var[7], var[8]);
 
