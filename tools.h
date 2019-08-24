@@ -77,7 +77,7 @@ namespace secular {
     inline auto calc_orbit_args(double Coef, double lx, double ly, double lz, double ex, double ey, double ez) {
         double e_sqr = norm2(ex, ey, ez);
 
-        double j_sqr = 1 - e_sqr;
+        double j_sqr = fabs(1 - e_sqr);
 
         double j = sqrt(j_sqr);
 
@@ -90,11 +90,29 @@ namespace secular {
         return std::make_tuple(e_sqr, j_sqr, j, L_norm, L, a);
     }
 
+  /*  inline auto calc_orbit_args(double Coef, double lx, double ly, double lz, double ex, double ey, double ez) {
+        double e_sqr = norm2(ex, ey, ez);
+
+        double j_sqr = 1 - e_sqr;
+
+        double j = sqrt(j_sqr);
+
+        double L2 = norm2(lx, ly, lz);
+
+        double L_norm = sqrt(L2);
+
+        double L = L_norm / j;
+
+        double a = Coef * L2/j_sqr;
+
+        return std::make_tuple(e_sqr, j_sqr, j, L_norm, L, a);
+    }*/
+
 
     inline auto calc_a_eff(double Coef, double lx, double ly, double lz, double ex, double ey, double ez) {
         double e_sqr = norm2(ex, ey, ez);
 
-        double j_sqr = 1 - e_sqr;
+        double j_sqr = fabs(1 - e_sqr);
 
         double j = sqrt(j_sqr);
 

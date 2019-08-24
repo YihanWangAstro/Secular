@@ -220,6 +220,7 @@ namespace secular {
         double r2 = norm2(rx, ry, rz);
 
         double r = sqrt(r2);
+        //space::display(std::cout, r, e1_sqr, j1_sqr, j1, L1_norm, L_in, a_in);
         /*---------------------------------------------------------------------------*\
             unit vectors
         \*---------------------------------------------------------------------------*/
@@ -267,8 +268,7 @@ namespace secular {
 
         double D = -0.75 * args.SA_acc_coef * args.mu[0] * a_in * a_in;
 
-        double acc_r = -args.SA_acc_coef * (args.m1 + args.m2) / r3 +
-                       D * (25 * de1r * de1r - 5 * j1_sqr * dn1r * dn1r + 1 - 6 * e1_sqr) / r5;
+        double acc_r = -args.SA_acc_coef * (args.m1 + args.m2) / r3 +D * (25 * de1r * de1r - 5 * j1_sqr * dn1r * dn1r + 1 - 6 * e1_sqr) / r5;
 
         double acc_n = D * 2 * j1_sqr * dn1r / r4;
 

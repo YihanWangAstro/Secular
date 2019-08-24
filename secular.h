@@ -124,7 +124,6 @@ namespace secular {
                 GW_e_coef = -304.0 / 15 * G3 * mu[0] * m12 * m12 / C5 ;
             }
 
-
             SL[0][0] = deSitter_coef(m1, m2);
             SL[1][0] = deSitter_coef(m2, m1);
 

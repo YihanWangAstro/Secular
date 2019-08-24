@@ -107,9 +107,9 @@ namespace secular {
 
     }
 
-    inline auto deSitter_e_vec(double v1x, double v1y, double v1z, double Lx, double Ly, double Lz) {
-        double dot_part = 3*dot(Lx, Ly, Lz, v1x, v1y, v1z)/norm2(Lx, Ly, Lz);
-        return std::make_tuple(v1x - dot_part*Lx, v1y - dot_part*Ly, v1z - dot_part*Lz);
+    inline auto deSitter_e_vec(double S1x, double S1y, double S1z, double Lx, double Ly, double Lz) {
+        double dot_part = 3*dot(Lx, Ly, Lz, S1x, S1y, S1z)/norm2(Lx, Ly, Lz);
+        return std::make_tuple(S1x - dot_part*Lx, S1y - dot_part*Ly, S1z - dot_part*Lz);
     }
 
     template<bool DA, typename Args, typename Container, int S_idx, int L_idx>

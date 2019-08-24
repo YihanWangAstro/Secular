@@ -167,6 +167,7 @@ void single_thread_job(std::string work_dir, ConcurrentFile input, size_t start_
 
                 Traj_args traj_arg{work_dir, task_id, dt};
 
+
                 auto observer = [&](auto const& data, double t) {
                     if(is_traj && t > traj_arg.t_output) {
                         traj_arg.file << t << ' ';
