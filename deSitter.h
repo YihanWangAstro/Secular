@@ -81,9 +81,6 @@ namespace secular {
 
     template<bool DA, typename Args, typename Container, size_t var_idx>
     inline auto LL_coupling(Args const& args, Container const& var){
-      /*---------------------------------------------------------------------------*\
-          mapping alias
-      \*---------------------------------------------------------------------------*/
       constexpr size_t v_offset = 3*var_idx;
 
       const auto[Sx, Sy, Sz] = std::tie(var[v_offset], var[v_offset + 1], var[v_offset + 2]);
@@ -93,9 +90,6 @@ namespace secular {
 
     template<bool DA, typename Args, typename Container, int S_idx, int L_idx>
     inline auto SL_coupling(Args const& args, Container const& var){
-      /*---------------------------------------------------------------------------*\
-          mapping alias
-      \*---------------------------------------------------------------------------*/
       constexpr size_t S_offset = 12 + S_idx * 3;
 
       const auto[Sx, Sy, Sz] = std::tie(var[S_offset], var[S_offset + 1], var[S_offset + 2]);
