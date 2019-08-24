@@ -215,48 +215,70 @@ namespace secular {
         SecularConst const *args;
     };
 
-/*template< typename ...Func>
-inline auto serilize(Func...func) {
-    return [=](auto const& args, auto const&x, auto &dxdt, double t) {
-        (func(args, x, dxdt,t),...);
-    };
-}*/
+    template<typename Container, bool DA, bool Oct, bool GR, bool GW, bool SL, bool LL>
+    struct Static_dispatch{
+        Static_dispatch(SecularConst const &_args) : args{&_args} {}
 
-    template<typename Args, typename ...Func>
-    inline auto serilize(Args const &args, Func...func) {
-        return [=, &args](auto const &x, auto &dxdt, double t) {
-            (func(args, x, dxdt, t), ...);
-        };
-    }
+        void operator()(Container const &x, Container &dxdt, double t) {
+            if constexpr(DA == true) {
+                if constexpr(Oct == true) {
+                    double_aved_LK<true, SecularConst, Container>(*args, x, dxdt, t);
+                } else {
+                    double_aved_LK<false, SecularConst, Container>(*args, x, dxdt, t);
+                }
 
-    template<typename Ctrl>
-    int ctrl_to_int(Ctrl const &c) {
-        return static_cast<int>(c.DA)
-               + (static_cast<int>(c.Oct) << 1)
-               + (static_cast<int>(c.GR) << 2)
-               + (static_cast<int>(c.GW) << 3)
-               + (static_cast<int>(c.LL) << 4)
-               + (static_cast<int>(c.SL) << 5);
-    }
+                if constexpr (LL == true) {
+                    if constexpr(SL == true) {
+                        deSitter_precession<true, true, true, SecularConst, Container>(*args, x, dxdt, t);
+                    } else {
+                        deSitter_precession<true, true, false, SecularConst, Container>(*args, x, dxdt, t);
+                    }
+                } else {
+                    if constexpr(SL == true) {
+                        deSitter_precession<true, false, true, SecularConst, Container>(*args, x, dxdt, t);
+                    } else {
+                        deSitter_precession<true, false, false, SecularConst, Container>(*args, x, dxdt, t);
+                    }
+                }
+            } else {
+                if constexpr(Oct == true) {
+                    single_aved_LK<true, SecularConst, Container>(*args, x, dxdt, t);
+                } else {
+                    single_aved_LK<false, SecularConst, Container>(*args, x, dxdt, t);
+                }
 
-    template<typename Ctrl, typename Args, typename Container>
-    auto Static_dispatch(Ctrl const &c, Args const &args) {
-        int patch_id = ctrl_to_int(c);
-        std::cout << patch_id << "!!\n";
-        switch (patch_id) {
-            case 0:
-                return secular::serilize(args, single_aved_LK<false, Args, Container>);
-                break;
+                if constexpr(LL == true) {
+                    if constexpr(SL == true) {
+                        deSitter_precession<false, true, true, SecularConst, Container>(*args, x, dxdt, t);
+                    } else {
+                        deSitter_precession<false, true, false, SecularConst, Container>(*args, x, dxdt, t);
+                    }
+                } else {
+                    if constexpr(SL == true) {
+                        deSitter_precession<false, false, true, SecularConst, Container>(*args, x, dxdt, t);
+                    } else {
+                        deSitter_precession<false, false, false, SecularConst, Container>(*args, x, dxdt, t);
+                    }
+                }
+            }
 
-            case 1:
-                return secular::serilize(args, double_aved_LK<false, Args, Container>);
-                break;
+            if constexpr(GR == true) {
+                GR_precession(*args, x, dxdt, t);
+            }
 
-            default:
-                std::cout << "wrong dispatch num~\n";
-                exit(0);
+            if constexpr(GW == true) {
+                GW_radiation(*args, x, dxdt, t);
+            }
         }
-    }
+
+        SecularConst const *args;
+    };
+
+
+
+
+
+
 
 } // namespace secular
 #endif
