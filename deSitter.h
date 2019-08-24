@@ -10,7 +10,7 @@ namespace secular {
         static constexpr size_t size{(std::tuple_size<Container>::value - 12)/3 };
     };
 
-    template<typename Args, typename Container, size_t var_idx>
+    template<bool DA, typename Args, typename Container, size_t var_idx>
     inline auto LL_coupling(Args const& args, Container const& var){
       /*---------------------------------------------------------------------------*\
           mapping alias
@@ -19,6 +19,7 @@ namespace secular {
 
       const auto[Sx, Sy, Sz] = std::tie(var[v_offset], var[v_offset + 1], var[v_offset + 2]);
 
+      if constexpr (DA) {
           /*---------------------------------------------------------------------------*\
               mapping alias
           \*---------------------------------------------------------------------------*/
@@ -39,6 +40,21 @@ namespace secular {
               combinations
           \*---------------------------------------------------------------------------*/
           return cross_with_coef(args.LL * r3_a_eff, Lx, Ly, Lz, Sx, Sy, Sz);
+      } else {
+          const auto[rx, ry, rz] = std::tie(var[6], var[7], var[8]);
+
+          const auto[vx, vy, vz] = std::tie(var[9], var[10], var[11]);
+
+          auto [Lx, Ly, Lz] = cross_with_coef(args.mu[1], rx, ry, rz, vx, vy, vz);
+          /*---------------------------------------------------------------------------*\
+              orbital parameters calculation
+          \*---------------------------------------------------------------------------*/
+          double const a_eff = norm(rx, ry, rz);
+
+          double const r3_a_eff = 1/(a_eff * a_eff * a_eff);
+
+          return cross_with_coef(args.LL * r3_a_eff, Lx, Ly, Lz, Sx, Sy, Sz);
+      }
     }
 
     template<bool DA, typename Args, typename Container, int S_idx, int L_idx>
@@ -113,7 +129,7 @@ namespace secular {
 
           const auto[vx, vy, vz] = std::tie(var[9], var[10], var[11]);
 
-          auto [Lx, Ly, Lz] = cross_with_coef(args.mu[L_idx], rx, ry, rz, vx, vy, vz);
+          auto [crvx, crvy, crvz] = cross(rx, ry, rz, vx, vy, vz);
           /*---------------------------------------------------------------------------*\
               orbital parameters calculation
           \*---------------------------------------------------------------------------*/
@@ -123,7 +139,7 @@ namespace secular {
 
           double const r5_a_eff = 1/(a_eff * a_eff * a_eff * a_eff * a_eff);
 
-          double const acc_coef = args.SL[S_idx][L_idx]*r5_a_eff/args.mu[L_idx];
+          double const acc_coef = args.SL[S_idx][L_idx]*r5_a_eff;
 
           auto [csvx, csvy, csvz] = cross(Sx, Sy, Sz, vx, vy, vz);
 
@@ -131,7 +147,7 @@ namespace secular {
 
           double dvr = dot(vx, vy, vz, rx, ry, rz);
 
-          double tri_dot = dot(Sx, Sy, Sz, Lx, Ly, Lz)/args.mu[L_idx];
+          double tri_dot = dot(Sx, Sy, Sz, crvx, crvy, crvz);
 
           double acc_x = acc_coef *( 3 * tri_dot * rx + 2 * r2*csvx - 3 * dvr * csrx);
 
@@ -194,17 +210,25 @@ namespace secular {
         if constexpr(spin_num<Container>::size == 3) {
             auto [dS3x, dS3y, dS3z] = std::tie(ddt[18], ddt[19], ddt[20]);
 
-            auto [dL2x, dL2y, dL2z] = std::tie(ddt[6], ddt[7], ddt[8]);
-
-            auto [de2x, de2y, de2z] = std::tie(ddt[9], ddt[10], ddt[11]);
-
             std::tie(dS3x, dS3y, dS3z) = SL_coupling<DA, Args, Container, S3_idx, Lout_idx>(args, var);
 
-            //dL2x -= dS3x, dL2y -= dS3y, dL2z -= dS3z;
+            if constexpr(DA){
+                auto [dL2x, dL2y, dL2z] = std::tie(ddt[6], ddt[7], ddt[8]);
 
-            /*auto [dex, dey, dez] = SL_coupling_bc<DA, Args, Container, S3_idx, Lout_idx>(args, var);
+                auto [de2x, de2y, de2z] = std::tie(ddt[9], ddt[10], ddt[11]);
 
-            de2x += dex, de2y += dey, de2z += dez;*/
+                dL2x -= dS3x, dL2y -= dS3y, dL2z -= dS3z;
+
+                auto [dex, dey, dez] = SL_coupling_bc<DA, Args, Container, S3_idx, Lout_idx>(args, var);
+
+                de2x += dex, de2y += dey, de2z += dez;
+            } else{
+                auto[dvx, dvy, dvz] = std::tie(ddt[9], ddt[10], ddt[11]);
+
+                auto [ax, ay, az] = SL_coupling_bc<DA, Args, Container, S3_idx, Lout_idx>(args, var);
+
+                dvx += ax, dvy += ay, dvz += az;
+            }
         }
 
         if constexpr (LL) {
@@ -212,9 +236,9 @@ namespace secular {
 
             auto [de1x, de1y, de1z] = std::tie(ddt[3], ddt[4], ddt[5]);
 
-            auto [dLx, dLy, dLz] = LL_coupling<Args, Container, 0>(args, var);//evolve L1
+            auto [dLx, dLy, dLz] = LL_coupling<DA, Args, Container, 0>(args, var);//evolve L1
 
-            auto [dex, dey, dez] = LL_coupling<Args, Container, 1>(args, var);//evolve e1
+            auto [dex, dey, dez] = LL_coupling<DA, Args, Container, 1>(args, var);//evolve e1
 
             dL1x += dLx, dL1y += dLy, dL1z += dLz;
 
