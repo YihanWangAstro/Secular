@@ -136,7 +136,7 @@ auto create_obser(std::shared_ptr<Traj_args>& traj_arg_ptr, std::string const& w
     };
 }*/
 
-void single_thread_job(std::string work_dir, ConcurrentFile input, size_t start_id, size_t end_id, ConcurrentFile output) {
+void single_thread_job(std::string work_dir, ConcurrentFile input, size_t start_id, size_t end_id, ConcurrentFile output, ConcurrentFile log) {
     std::string entry;
     for (;;) {
         try{
@@ -151,11 +151,13 @@ void single_thread_job(std::string work_dir, ConcurrentFile input, size_t start_
 
                 secular::Controler ctrl{v.begin() + CTRL_OFFSET, DA};
 
+                log << get_log_title(task_id, DA, ctrl, spin_num);
+
                 secular::OrbitArgs init_args{v.begin() + ARGS_OFFSET, DA, spin_num};
 
                 double t_end = v[END_TIME_OFFSET];
 
-                space::display(std::cout, task_id, DA, spin_num, ctrl.Oct, ctrl.GR, ctrl.GW, ctrl.SL, ctrl.LL,"\n");
+                //space::display(std::cout, task_id, DA, spin_num, ctrl.Oct, ctrl.GR, ctrl.GW, ctrl.SL, ctrl.LL,"\n");
 
                 bool is_traj = v[TRAJECTROY_OFFSET];
 
@@ -167,7 +169,11 @@ void single_thread_job(std::string work_dir, ConcurrentFile input, size_t start_
 
                 auto observer = [&](auto const& data, double t) {
                     if(is_traj && t > traj_arg.t_output) {
-                        space::display(traj_arg.file, t, data, "\r\n");
+                        traj_arg.file << t << ' ';
+                        for(auto d : data) {
+                            traj_arg.file << d << ' ';
+                        }
+                        traj_arg.file <<  "\r\n";
                         traj_arg.move_to_next_output();
                     }
                 };
@@ -208,13 +214,13 @@ int main(int argc, char **argv) {
 
     auto output_file = make_thread_safe_fstream(work_dir + "statistics.txt", std::fstream::out);
 
-    //auto log_file = make_thread_safe_fstream(work_dir + "log.txt", std::fstream::out);
+    auto log_file = make_thread_safe_fstream(work_dir + "log.txt", std::fstream::out);
 
     std::cout << std::setprecision(15);
 
     space::tools::Timer timer;
     timer.start();
-    space::multiThread::auto_multi_thread(single_thread_job, work_dir, input_file, start_task_id, end_task_id, output_file);
+    space::multiThread::auto_multi_thread(single_thread_job, work_dir, input_file, start_task_id, end_task_id, output_file, log_file);
     std::cout << "\r\n Time:" << timer.get_time() << '\n';
     return 0;
 }

@@ -63,11 +63,11 @@ namespace secular {
         template<typename Iter>
         Controler(Iter iter, bool _DA) {
             DA = _DA;
-            Oct = *iter, iter++;
-            GR = *iter, iter++;
-            GW = *iter, iter++;
-            SL = *iter, iter++;
-            LL = *iter;
+            Oct = static_cast<bool>(*iter), iter++;
+            GR = static_cast<bool>(*iter), iter++;
+            GW = static_cast<bool>(*iter), iter++;
+            SL = static_cast<bool>(*iter), iter++;
+            LL = static_cast<bool>(*iter);
         }
 
         bool DA;
@@ -77,6 +77,18 @@ namespace secular {
         bool SL;
         bool LL;
     };
+
+    const std::string str_ave[2]={":SA",":DA"};
+    const std::string str_pole[2]={"|quad", "| oct"};
+    const std::string str_gr[2]={"", "|GR"};
+    const std::string str_gw[2]={"", "|GW"};
+    const std::string str_sl[2]={"", "|S_{in}L_{out}"};
+    const std::string str_ll[2]={"", "|LL"};
+    const std::string str_s[4] ={"", "|S_{1}L_{in}", "|S_{1}L_{in}|S_{2}L_{in}", "|S_{1}L_{in}|S_{2}L_{in}|S_{3}L_{out}"};
+
+    std::string get_log_title(size_t task_id, bool DA, Controler const& ctrl, size_t spin_num){
+        return std::to_string(task_id) + str_ave[DA] + str_pole[ctrl.Oct] + str_gr[ctrl.GR] + str_gw[ctrl.GW] + str_sl[ctrl.SL] + str_ll[ctrl.LL] +str_s[spin_num] + "\n";
+    }
 
     enum class StopFlag {
         shrink, eof, input_err

@@ -42,14 +42,6 @@ namespace secular {
         return cross(unit_j(i, Omega), unit_e(i, omega, Omega));
     }
 
-    template<typename T, size_t len>
-    std::ostream &operator<<(std::ostream &os, std::array <T, len> const &arr) {
-        for (auto const &c : arr) {
-            os << c << ' ';
-        }
-        return os;
-    }
-
     template<typename Obt>
     void deg_to_rad(Obt &args) {
         constexpr double rad = consts::pi / 180.0;
