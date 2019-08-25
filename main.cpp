@@ -91,12 +91,13 @@ void call_ode_int(bool DA, secular::Controler const&ctrl, secular::OrbitArgs con
 
     secular::SecularConst const_parameters{ctrl, init_args.m1, init_args.m2, init_args.m3};
 
-    auto func = secular::Dynamic_dispatch<Container>(ctrl, const_parameters);
-
-    //auto func = secular::Static_dispatch<Container>(ctrl, const_parameters);
     double ini_dt = 0.1 * secular::consts::year;
 
+    auto func = secular::Dynamic_dispatch<Container>(ctrl, const_parameters);
+
     boost::numeric::odeint::integrate_adaptive(stepper_type{INT_ERROR, INT_ERROR}, func, init_cond, t_start, t_end, ini_dt, obsv);
+    //STATIC_DISPATH(ctrl, const_parameters, boost::numeric::odeint::integrate_adaptive(stepper_type{INT_ERROR, INT_ERROR}, func, init_cond, t_start, t_end, ini_dt, obsv);)
+
     //boost::numeric::odeint::integrate_adaptive(boost::numeric::odeint::make_controlled(INT_ERROR, INT_ERROR, stepper_type()), func, init_cond, t_start, t_end, ini_dt, obsv);
 }
 
@@ -109,11 +110,12 @@ constexpr size_t CTRL_OFFSET = 5;
 constexpr size_t ARGS_OFFSET = 10;
 
 struct Traj_args{
-    Traj_args(std::string const& work_dir, size_t task_id, double _dt)
-      : dt{_dt},
-        t_output{0},
-        file{work_dir +  "output_" + std::to_string(task_id) + ".txt", std::fstream::out} {
-            file << std::setprecision(15);
+    Traj_args(bool open, std::string const& work_dir, size_t task_id, double _dt)
+      : dt{_dt}, t_output{0} {
+            if(open){
+                file.open(work_dir +  "output_" + std::to_string(task_id) + ".txt", std::fstream::out);
+                file << std::setprecision(15);
+            }
         }
 
     void move_to_next_output(){ t_output += dt;}
@@ -167,8 +169,7 @@ void single_thread_job(std::string work_dir, ConcurrentFile input, size_t start_
 
                 double dt = v[DT_OFFSET];
 
-                Traj_args traj_arg{work_dir, task_id, dt};
-
+                Traj_args traj_arg{is_traj, work_dir, task_id, dt};
 
                 auto observer = [&](auto const& data, double t) {
                     if(is_traj && t > traj_arg.t_output) {
