@@ -58,7 +58,7 @@ namespace secular {
 
         Vec3d e1 = o.e_in * secular::unit_e(o.i_in, o.omega_in, o.Omega_in);
 
-        double E_nu = space::orbit::calc_eccentric_anomaly(o.M_nu, o.e_out);
+        double E_nu = o.M_nu==0?0:space::orbit::calc_eccentric_anomaly(o.M_nu, o.e_out);
 
         double cosE = cos(E_nu);
 

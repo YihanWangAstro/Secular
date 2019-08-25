@@ -5,7 +5,7 @@
 #include <array>
 #include <tuple>
 #include <memory>
-
+#include <sstream>
 
 #include "LK.h"
 #include "relativistic.h"
@@ -87,7 +87,7 @@ namespace secular {
     const std::string str_s[4] ={"", "|S_{1}L_{in}", "|S_{1}L_{in}|S_{2}L_{in}", "|S_{1}L_{in}|S_{2}L_{in}|S_{3}L_{out}"};
 
     std::string get_log_title(size_t task_id, bool DA, Controler const& ctrl, size_t spin_num){
-        return std::to_string(task_id) + str_ave[DA] + str_pole[ctrl.Oct] + str_gr[ctrl.GR] + str_gw[ctrl.GW] + str_sl[ctrl.SL] + str_ll[ctrl.LL] +str_s[spin_num] + "\n";
+        return std::to_string(task_id) + str_ave[DA] + str_pole[ctrl.Oct] + str_gr[ctrl.GR] + str_gw[ctrl.GW] + str_sl[ctrl.SL] + str_ll[ctrl.LL] +str_s[spin_num];
     }
 
     enum class StopFlag {
