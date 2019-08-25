@@ -5,6 +5,46 @@
 #include "SpaceHub/src/orbits/orbits.hpp"
 
 namespace secular {
+  inline calc_a_coef(double m, double mu){
+      return 1 / (consts::G * m) / mu / mu;
+  }
+
+  class BasicConst{
+  public:
+      BasicConst(double _m1, double _m2, double _m3)
+        : m1_{_m1},
+          m2_{_m2},
+          m3_{_m3},
+          m12_{_m1+_m2},
+          m_tot_{_m1+_m2+_m3},
+          mu_in_{_m1 *_m2/(_m1 + _m2)},
+          mu_out_{(_m1+_m2)*_m3/(_m1 + _m2 + _m3)},
+          a_in_coef_{calc_a_coef(m12_, mu_in_)},
+          a_out_coef_{calc_a_coef(m_tot_, mu_out_)}{}
+          
+      BasicConst() = default;
+
+      STD_ACCESSOR(double, m1, m1_);
+      STD_ACCESSOR(double, m2, m2_);
+      STD_ACCESSOR(double, m3, m3_);
+      STD_ACCESSOR(double, m12, m12_);
+      STD_ACCESSOR(double, m_tot, m_tot_);
+      STD_ACCESSOR(double, mu_in, mu_in_);
+      STD_ACCESSOR(double, m_out, mu_out_);
+      STD_ACCESSOR(double, a_in_coef, a_in_coef_);
+      STD_ACCESSOR(double, a_out_coef_, a_out_coef_);
+  private:
+      double m1_{0};
+      double m2_{0};
+      double m3_{0};
+      double m12_{0};
+      double m_tot_{0};
+      double mu_in_{0};
+      double mu_out_{0};
+      double a_in_coef_{0};
+      double a_out_coef_{0};
+  };
+
 
     double t_k_quad(double m_in, double m_out, double a_in, double a_out_eff) {
         double ratio = a_out_eff / sqrt(a_in);

@@ -20,83 +20,48 @@ namespace secular {
     public:
         SecularArray() = default;
 
-        STD_ACCESSOR(double, L1x, (*this)[0]);
-        STD_ACCESSOR(double, L1y, (*this)[1]);
-        STD_ACCESSOR(double, L1z, (*this)[2]);
-        STD_ACCESSOR(double, e1x, (*this)[3]);
-        STD_ACCESSOR(double, e1y, (*this)[4]);
-        STD_ACCESSOR(double, e1z, (*this)[5]);
-        STD_ACCESSOR(double, L2x, (*this)[6]);
-        STD_ACCESSOR(double, L2y, (*this)[7]);
-        STD_ACCESSOR(double, L2z, (*this)[8]);
-        STD_ACCESSOR(double, e2x, (*this)[9]);
-        STD_ACCESSOR(double, e2y, (*this)[10]);
-        STD_ACCESSOR(double, e2z, (*this)[11]);
+        READ_GETTER(double, L1x, (*this)[0]);
+        READ_GETTER(double, L1y, (*this)[1]);
+        READ_GETTER(double, L1z, (*this)[2]);
+        READ_GETTER(double, e1x, (*this)[3]);
+        READ_GETTER(double, e1y, (*this)[4]);
+        READ_GETTER(double, e1z, (*this)[5]);
+        READ_GETTER(double, L2x, (*this)[6]);
+        READ_GETTER(double, L2y, (*this)[7]);
+        READ_GETTER(double, L2z, (*this)[8]);
+        READ_GETTER(double, e2x, (*this)[9]);
+        READ_GETTER(double, e2y, (*this)[10]);
+        READ_GETTER(double, e2z, (*this)[11]);
 
-        STD_ACCESSOR(double, rx, (*this)[6]);
-        STD_ACCESSOR(double, ry, (*this)[7]);
-        STD_ACCESSOR(double, rz, (*this)[8]);
-        STD_ACCESSOR(double, vx, (*this)[9]);
-        STD_ACCESSOR(double, vy, (*this)[10]);
-        STD_ACCESSOR(double, vz, (*this)[11]);
+        READ_GETTER(double, rx, (*this)[6]);
+        READ_GETTER(double, ry, (*this)[7]);
+        READ_GETTER(double, rz, (*this)[8]);
+        READ_GETTER(double, vx, (*this)[9]);
+        READ_GETTER(double, vy, (*this)[10]);
+        READ_GETTER(double, vz, (*this)[11]);
 
-        OPT_ACCESSOR(spin_num>0, double, S1x, (*this)[12]);
-        OPT_ACCESSOR(spin_num>0, double, S1y, (*this)[13]);
-        OPT_ACCESSOR(spin_num>0, double, S1z, (*this)[14]);
+        STD_3WAY_SETTER(L1, (*this)[0], (*this)[1], (*this)[2]);
+        STD_3WAY_SETTER(e1, (*this)[3], (*this)[4], (*this)[5]);
+        STD_3WAY_SETTER(L2, (*this)[6], (*this)[7], (*this)[8]);
+        STD_3WAY_SETTER(e2, (*this)[9], (*this)[10], (*this)[11]);
+        STD_3WAY_SETTER(r, (*this)[6], (*this)[7], (*this)[8]);
+        STD_3WAY_SETTER(v, (*this)[9], (*this)[10], (*this)[11]);
 
-        OPT_ACCESSOR(spin_num>1, double, S2x, (*this)[15]);
-        OPT_ACCESSOR(spin_num>1, double, S2y, (*this)[16]);
-        OPT_ACCESSOR(spin_num>1, double, S2z, (*this)[17]);
+        OPT_READ_GETTER(spin_num>0, double, S1x, (*this)[12]);
+        OPT_READ_GETTER(spin_num>0, double, S1y, (*this)[13]);
+        OPT_READ_GETTER(spin_num>0, double, S1z, (*this)[14]);
 
-        OPT_ACCESSOR(spin_num>2, double, S3x, (*this)[18]);
-        OPT_ACCESSOR(spin_num>2, double, S3y, (*this)[19]);
-        OPT_ACCESSOR(spin_num>2, double, S3z, (*this)[20]);
-    };
+        OPT_READ_GETTER(spin_num>1, double, S2x, (*this)[15]);
+        OPT_READ_GETTER(spin_num>1, double, S2y, (*this)[16]);
+        OPT_READ_GETTER(spin_num>1, double, S2z, (*this)[17]);
 
+        OPT_READ_GETTER(spin_num>2, double, S3x, (*this)[18]);
+        OPT_READ_GETTER(spin_num>2, double, S3y, (*this)[19]);
+        OPT_READ_GETTER(spin_num>2, double, S3z, (*this)[20]);
 
-    struct OrbitArgs {
-        template<typename Iter>
-        OrbitArgs(Iter iter, bool DA, size_t spin_num) {
-            m1 = *iter, iter++;
-            m2 = *iter, iter++;
-            m3 = *iter, iter++;
-            a_in = *iter, iter++;
-            a_out = *iter, iter++;
-            e_in = *iter, iter++;
-            e_out = *iter, iter++;
-            omega_in = *iter, iter++;
-            omega_out = *iter, iter++;
-            Omega_in = *iter, iter++;
-            Omega_out = Omega_in - 180.0;
-            i_in = *iter, iter++;
-            i_out = *iter, iter++;
-            if(!DA) {
-                M_nu = *iter, iter++;
-            }
-
-            deg_to_rad(*this);
-
-            s.reserve(spin_num);
-            for(size_t i = 0 ; i < spin_num; ++i){
-                s.emplace_back(Vec3d(*(iter+i*3), *(iter+i*3+1), *(iter+i*3+2)));
-            }
-        }
-
-        double m1;
-        double m2;
-        double m3;
-        double a_in;
-        double a_out;
-        double e_in;
-        double e_out;
-        double omega_in;
-        double omega_out;
-        double Omega_in;
-        double Omega_out;
-        double i_in;
-        double i_out;
-        double M_nu{0};
-        std::vector <Vec3d> s;
+        OPT_3WAY_SETTER(spin_num>0, S1, (*this)[12], (*this)[13], (*this)[14]);
+        OPT_3WAY_SETTER(spin_num>1, S2, (*this)[15], (*this)[16], (*this)[17]);
+        OPT_3WAY_SETTER(spin_num>2, S3, (*this)[18], (*this)[19], (*this)[20]);
     };
 
     struct Controler {
@@ -117,18 +82,6 @@ namespace secular {
         bool SL;
         bool LL;
     };
-
-    const std::string str_ave[2]={":SA",":DA"};
-    const std::string str_pole[2]={"|quad", "| oct"};
-    const std::string str_gr[2]={"", "|GR"};
-    const std::string str_gw[2]={"", "|GW"};
-    const std::string str_sl[2]={"", "|S_{in}L_{out}"};
-    const std::string str_ll[2]={"", "|LL"};
-    const std::string str_s[4] ={"", "|S_{1}L_{in}", "|S_{1}L_{in}|S_{2}L_{in}", "|S_{1}L_{in}|S_{2}L_{in}|S_{3}L_{out}"};
-
-    std::string get_log_title(size_t task_id, bool DA, Controler const& ctrl, size_t spin_num){
-        return std::to_string(task_id) + str_ave[DA] + str_pole[ctrl.Oct] + str_gr[ctrl.GR] + str_gw[ctrl.GW] + str_sl[ctrl.SL] + str_ll[ctrl.LL] +str_s[spin_num];
-    }
 
     enum class StopFlag {
         shrink, eof, input_err
