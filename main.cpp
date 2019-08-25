@@ -82,7 +82,8 @@ auto resolve_sim_type(std::string const& line) {
 template<size_t spin_num, typename Observer>
 void call_ode_int(bool DA, secular::Controler const&ctrl, secular::OrbitArgs const& init_args, double t_start, double t_end, Observer obsv){
     using Container = std::array<double, 12+spin_num*3>;
-    using stepper_type = boost::numeric::odeint::runge_kutta_fehlberg78<Container>;
+    //using stepper_type = boost::numeric::odeint::runge_kutta_fehlberg78<Container>;
+    using stepper_type = boost::numeric::odeint::bulirsch_stoer<Container>;
 
     Container init_cond;
 
@@ -95,7 +96,8 @@ void call_ode_int(bool DA, secular::Controler const&ctrl, secular::OrbitArgs con
     //auto func = secular::Static_dispatch<Container>(ctrl, const_parameters);
     double ini_dt = 0.1 * secular::consts::year;
 
-    boost::numeric::odeint::integrate_adaptive(boost::numeric::odeint::make_controlled(INT_ERROR, INT_ERROR, stepper_type()), func, init_cond, t_start, t_end, ini_dt, obsv);
+    boost::numeric::odeint::integrate_adaptive(stepper_type{INT_ERROR, INT_ERROR}, func, init_cond, t_start, t_end, ini_dt, obsv);
+    //boost::numeric::odeint::integrate_adaptive(boost::numeric::odeint::make_controlled(INT_ERROR, INT_ERROR, stepper_type()), func, init_cond, t_start, t_end, ini_dt, obsv);
 }
 
 constexpr size_t TASK_ID_OFFSET = 0;
