@@ -14,6 +14,46 @@
 
 namespace secular {
 
+    template<size_t spin_num>
+    class SecularArray : public std::array<double, 12+3*spin_num>{
+        static_assert(spin_num<=3, "The max spin number is 3!");
+    public:
+        SecularArray() = default;
+
+        STD_ACCESSOR(double, L1x, (*this)[0]);
+        STD_ACCESSOR(double, L1y, (*this)[1]);
+        STD_ACCESSOR(double, L1z, (*this)[2]);
+        STD_ACCESSOR(double, e1x, (*this)[3]);
+        STD_ACCESSOR(double, e1y, (*this)[4]);
+        STD_ACCESSOR(double, e1z, (*this)[5]);
+        STD_ACCESSOR(double, L2x, (*this)[6]);
+        STD_ACCESSOR(double, L2y, (*this)[7]);
+        STD_ACCESSOR(double, L2z, (*this)[8]);
+        STD_ACCESSOR(double, e2x, (*this)[9]);
+        STD_ACCESSOR(double, e2y, (*this)[10]);
+        STD_ACCESSOR(double, e2z, (*this)[11]);
+
+        STD_ACCESSOR(double, rx, (*this)[6]);
+        STD_ACCESSOR(double, ry, (*this)[7]);
+        STD_ACCESSOR(double, rz, (*this)[8]);
+        STD_ACCESSOR(double, vx, (*this)[9]);
+        STD_ACCESSOR(double, vy, (*this)[10]);
+        STD_ACCESSOR(double, vz, (*this)[11]);
+
+        OPT_ACCESSOR(spin_num>0, double, S1x, (*this)[12]);
+        OPT_ACCESSOR(spin_num>0, double, S1y, (*this)[13]);
+        OPT_ACCESSOR(spin_num>0, double, S1z, (*this)[14]);
+
+        OPT_ACCESSOR(spin_num>1, double, S2x, (*this)[15]);
+        OPT_ACCESSOR(spin_num>1, double, S2y, (*this)[16]);
+        OPT_ACCESSOR(spin_num>1, double, S2z, (*this)[17]);
+
+        OPT_ACCESSOR(spin_num>2, double, S3x, (*this)[18]);
+        OPT_ACCESSOR(spin_num>2, double, S3y, (*this)[19]);
+        OPT_ACCESSOR(spin_num>2, double, S3z, (*this)[20]);
+    };
+
+
     struct OrbitArgs {
         template<typename Iter>
         OrbitArgs(Iter iter, bool DA, size_t spin_num) {
