@@ -180,6 +180,8 @@ void single_thread_job(std::string work_dir, ConcurrentFile input, size_t start_
                         const auto[e1x, e1y, e1z] = std::tie(data[3], data[4], data[5]);
 
                         double a = calc_a(1, L1x, L1y, L1z, e1x, e1y, e1z);
+
+                        
                     }
 
                     if(is_traj && t > traj_arg.t_output) {
