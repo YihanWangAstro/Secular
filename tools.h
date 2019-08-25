@@ -120,5 +120,15 @@ namespace secular {
 
         return Coef * L_sqr / j;
     }
+
+    inline auto calc_a(double Coef, double lx, double ly, double lz, double ex, double ey, double ez) {
+        double e_sqr = norm2(ex, ey, ez);
+
+        double j_sqr = fabs(1 - e_sqr);
+
+        double L_sqr = norm2(lx, ly, lz);
+
+        return Coef * L_sqr / j_sqr;
+    }
 }
 #endif
