@@ -91,60 +91,38 @@ namespace secular {
         return 0.5*consts::G/(consts::C * consts::C) * (4 + 3*m_other/m_self);
     };
 
-    struct SecularConst {
-
-        SecularConst(Controler const &ctrl, double _m1, double _m2, double _m3) : m1{_m1}, m2{_m2}, m3{_m3} {
-            double const m12 = m1 + m2;
-
-            mu[0] = m1 * m2 / m12;
-            mu[1] = m12 * m3 / (m12 + m3);
-            a_coef[0] = 1 / (consts::G * m12) / mu[0] / mu[0];
-            a_coef[1] = 1 / (consts::G * (m12 + m3)) / mu[1] / mu[1];
-
-            if (!ctrl.DA) {
-                SA_acc_coef = consts::G * m3 / mu[1];
-            }
-
-            if (ctrl.GR) {
-                GR_coef = 3 * pow(consts::G*m12, 1.5) / (consts::C * consts::C);
-            }
-
-            if (ctrl.GW) {
-                constexpr double C5 =  consts::C *consts::C* consts::C* consts::C*consts::C;
-                constexpr double G3 =  consts::G* consts::G*consts::G;
-
-                GW_L_coef = -6.4 * pow(consts::G, 3.5) * mu[0] * mu[0] * pow(m12, 2.5) / C5;
-                GW_e_coef = -304.0 / 15 * G3 * mu[0] * m12 * m12 / C5 ;
-            }
-
-            SL[0][0] = deSitter_coef(m1, m2);
-            SL[1][0] = deSitter_coef(m2, m1);
-
-            if(ctrl.SL) {
-                SL[0][1] = deSitter_coef(m12, m3);
-                SL[1][1] = SL[0][1];
-            }
-
-            SL[2][0] = 0;
-            SL[2][1] = deSitter_coef(m3, m12);
-
-            if(ctrl.LL) {
-                LL = deSitter_coef(m12, m3);
-            }
-        }
-
+    template<size_t spin_num>
+    class SecularConst {
     public:
-        double m1;
-        double m2;
-        double m3;
-        double mu[2];
-        double a_coef[2];
-        double SL[3][2];
-        double LL{0};
-        double SA_acc_coef{0};
-        double GR_coef{0};
-        double GW_L_coef{0};
-        double GW_e_coef{0};
+        SecularConst(double _m1, double _m2, double _m3) : basic_{_m1, _m2, _m3}, GR_{basic_.m12(), basic_.mu_in()}, SL_{_m1, _m2, _m3} {}
+
+        SecularConst() = default;
+        
+        READ_GETTER(double, m1, basic_.m1());
+        READ_GETTER(double, m2, basic_.m2());
+        READ_GETTER(double, m3, basic_.m3());
+        READ_GETTER(double, m12, basic_.m12());
+        READ_GETTER(double, m_tot, basic_.m_tot());
+        READ_GETTER(double, mu_in, basic_.mu_in());
+        READ_GETTER(double, m_out, basic_.mu_out());
+        READ_GETTER(double, a_in_coef, basic_.a_in_coef());
+        READ_GETTER(double, a_out_coef_, basic_.a_out_coef());
+
+        READ_GETTER(double, GR_coef, GR_.GR_coef());
+        READ_GETTER(double, GW_L_coef, GR_.GW_L_coef());
+        READ_GETTER(double, GW_e_coef, GR_.GW_L_coef());
+
+        READ_GETTER(double, LL, SL_.LL());
+        READ_GETTER(double, S1L1, SL_.S1L1());
+        READ_GETTER(double, S1L2, SL_.S1L2());
+        READ_GETTER(double, S2L1, SL_.S2L1());
+        READ_GETTER(double, S2L2, SL_.S2L2());
+        READ_GETTER(double, S3L1, SL_.S3L1());
+        READ_GETTER(double, S3L2, SL_.S3L2());
+    private:
+        BasicConst basic_;
+        GRConst GR_;
+        SLConst<spin_num> SL_;
     };
 
     template<typename Container>

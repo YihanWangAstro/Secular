@@ -17,9 +17,9 @@ namespace secular {
 
       GRConst() = default;
 
-      STD_ACCESSOR(double, GR_coef, GR_coef_);
-      STD_ACCESSOR(double, GW_L_coef, GW_L_coef_);
-      STD_ACCESSOR(double, GW_e_coef, GW_L_coef_);
+      READ_GETTER(double, GR_coef, GR_coef_);
+      READ_GETTER(double, GW_L_coef, GW_L_coef_);
+      READ_GETTER(double, GW_e_coef, GW_L_coef_);
   private:
       double GR_coef_{0};
       double GW_L_coef_{0};
@@ -32,9 +32,7 @@ namespace secular {
 
         double Omega = args.GR_coef() / (a_eff * a_eff * a_eff);
 
-        auto const[dx, dy, dz] = cross_with_coef(Omega, var.L1x(), var.L1y(), var.L1z(), var.e1x(), var.e1y(), var.e1z());
-
-        dvar.add_e1(dx, dy, dz);
+        dvar.add_e1(cross_with_coef(Omega, var.L1x(), var.L1y(), var.L1z(), var.e1x(), var.e1y(), var.e1z()));
     }
 
     template<typename Args, typename Container>

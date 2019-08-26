@@ -27,20 +27,28 @@ namespace secular {
                 SL_[4] = deSitter_coef(m3, m1+m2);
                 SL_[5] = SL_[4];
             }
+            LL_ = deSitter_coef(m1+m2, m3);
         }
 
         SLConst() = default;
 
-        inline double SL_coef(size_t S_i, size_t L_i) const {
-            return SL_[2*S_i + L_i];
-        }
+        READ_GETTER(double, LL, LL_);
+        OPT_READ_GETTER(sp_num>0, double, S1L1, SL_[0]);
+        OPT_READ_GETTER(sp_num>0, double, S1L2, SL_[1]);
+        OPT_READ_GETTER(sp_num>1, double, S2L1, SL_[2]);
+        OPT_READ_GETTER(sp_num>1, double, S2L2, SL_[3]);
+        OPT_READ_GETTER(sp_num>2, double, S3L1, SL_[4]);
+        OPT_READ_GETTER(sp_num>2, double, S3L2, SL_[5]);
     private:
         double SL_[sp_num*2];
+        double LL_;
 
         inline double deSitter_coef(double m_self, double m_other) {
             return 0.5*consts::G/(consts::C * consts::C) * (4 + 3*m_other/m_self);
         };
     };
+
+
 
     template<bool DA, bool LL, bool SL, typename Args, typename Container>
     struct deSitter_arg{
