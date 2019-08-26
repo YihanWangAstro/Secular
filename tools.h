@@ -6,26 +6,6 @@
 
 namespace secular {
 
-  #define STD_ACCESSOR(TYPE, NAME, MEMBER)                                                                               \
-                                                                                                                         \
-  inline TYPE & NAME () {                                                                                                \
-    return MEMBER;                                                                                                       \
-  };                                                                                                                     \
-  inline TYPE const & NAME () const {                                                                                    \
-    return MEMBER;                                                                                                       \
-  };
-
-  #define OPT_ACCESSOR(COND, TYPE, NAME, MEMBER)                                                                         \
-                                                                                                                         \
-  inline TYPE & NAME () {                                                                                                \
-    static_assert(COND, "method "#NAME#"() is not defined!");                                                            \
-    return MEMBER;                                                                                                       \
-  };                                                                                                                     \
-  inline TYPE const & NAME () const {                                                                                    \
-    static_assert(COND, "method "#NAME#"() is not defined!");                                                            \
-    return MEMBER;                                                                                                       \
-  };
-  
     namespace consts {
         constexpr double pi = 3.14159265358979323;
         constexpr double G = 4 * pi * pi;

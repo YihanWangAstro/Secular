@@ -173,15 +173,15 @@ void single_thread_job(std::string work_dir, ConcurrentFile input, size_t start_
 
                 Traj_args traj_arg{is_traj, work_dir, task_id, dt};
 
-                auto observer = [&, =is_traj, =is_10hz](auto const& data, double t) {
+                auto observer = [&](auto const& data, double t) {
                     if(is_10hz){
                         const auto[L1x, L1y, L1z] = std::tie(data[0], data[1], data[2]);
 
                         const auto[e1x, e1y, e1z] = std::tie(data[3], data[4], data[5]);
 
-                        double a = calc_a(1, L1x, L1y, L1z, e1x, e1y, e1z);
+                        double a = secular::calc_a(1, L1x, L1y, L1z, e1x, e1y, e1z);
 
-                        
+
                     }
 
                     if(is_traj && t > traj_arg.t_output) {
