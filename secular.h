@@ -40,6 +40,14 @@ namespace secular {
         READ_GETTER(double, vy, (*this)[10]);
         READ_GETTER(double, vz, (*this)[11]);
 
+        READ_GETTER(auto, L1, std::tie((*this)[0], (*this)[1], (*this)[2]));
+        READ_GETTER(auto, e1, std::tie((*this)[3], (*this)[4], (*this)[5]));
+        READ_GETTER(auto, L2, std::tie((*this)[6], (*this)[7], (*this)[8]));
+        READ_GETTER(auto, e2, std::tie((*this)[9], (*this)[10], (*this)[11]));
+
+        READ_GETTER(auto, r, std::tie((*this)[6], (*this)[7], (*this)[8]));
+        READ_GETTER(auto, v, std::tie((*this)[9], (*this)[10], (*this)[11]));
+
         STD_3WAY_SETTER(L1, (*this)[0], (*this)[1], (*this)[2]);
         STD_3WAY_SETTER(e1, (*this)[3], (*this)[4], (*this)[5]);
         STD_3WAY_SETTER(L2, (*this)[6], (*this)[7], (*this)[8]);
