@@ -4,9 +4,6 @@
 #include "tools.h"
 
 namespace secular {
-
-
-
     template<size_t sp_num>
     class SLConst{
         static_assert(sp_num<=3, "The max spin number is 3!");
@@ -201,7 +198,7 @@ namespace secular {
                 if(DA){                                                                                                                      \
                     dvar.sub_L2(dx, dy, dz);                                                                                                 \
                     auto [nex, ney, nez] = deSitter_e_vec(var.S##x(), var.S##y(), var.S##z(), var.L2x(), var.L2y(), var.L2z());              \
-                    dvar.add_e2(cross_with_coef(d.S##L1_Omega(), nex, ney, nez, var.e2x(), var.e2y(), var.e2z()));                           \
+                    dvar.add_e2(cross_with_coef(d.S##L2_Omega(), nex, ney, nez, var.e2x(), var.e2y(), var.e2z()));                           \
                 } else {                                                                                                                     \
                     dvar.add_v(SA_back_reaction(d.S##L2_Omega(), var.S##x(), var.S##y(), var.S##z(), var));                                  \
                 }                                                                                                                            \
@@ -211,11 +208,6 @@ namespace secular {
 
     template<bool DA, typename Stat, typename Args, typename Container>
     inline void deSitter_precession(Args const &args, Container const &var, Container &dvar, double t) {
-        constexpr int Lin_idx = 0;
-        constexpr int Lout_idx = 1;
-        constexpr int S1_idx = 0;
-        constexpr int S2_idx = 1;
-        constexpr int S3_idx = 2;
         using deArgs =  deSitter_arg<DA, Stat, Args, Container>;
         deArgs d{args, var};//calculate the Omega and L2(Single average case)
 

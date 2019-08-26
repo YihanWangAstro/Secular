@@ -50,7 +50,6 @@ namespace secular {
       }
   };
 
-
     double t_k_quad(double m_in, double m_out, double a_in, double a_out_eff) {
         double ratio = a_out_eff / sqrt(a_in);
         return consts::r_G_sqrt * sqrt(m_in) / m_out * ratio * ratio * ratio;
