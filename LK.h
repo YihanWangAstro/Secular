@@ -1,6 +1,7 @@
 #ifndef QUAD_LK_H
 #define QUAD_LK_H
 
+#include<algorithm>
 #include "tools.h"
 #include "SpaceHub/src/orbits/orbits.hpp"
 
@@ -17,7 +18,8 @@ namespace secular {
           mu_in_{_m1 *_m2/(_m1 + _m2)},
           mu_out_{(_m1+_m2)*_m3/(_m1 + _m2 + _m3)},
           a_in_coef_{calc_a_coef(m12_, mu_in_)},
-          a_out_coef_{calc_a_coef(m_tot_, mu_out_)}{}
+          a_out_coef_{calc_a_coef(m_tot_, mu_out_)},
+          SA_acc_coef_{consts::G * _m3 / mu_out_}{}
 
       BasicConst() = default;
 
@@ -27,9 +29,10 @@ namespace secular {
       READ_GETTER(double, m12, m12_);
       READ_GETTER(double, m_tot, m_tot_);
       READ_GETTER(double, mu_in, mu_in_);
-      READ_GETTER(double, m_out, mu_out_);
+      READ_GETTER(double, mu_out, mu_out_);
       READ_GETTER(double, a_in_coef, a_in_coef_);
-      READ_GETTER(double, a_out_coef_, a_out_coef_);
+      READ_GETTER(double, a_out_coef, a_out_coef_);
+      READ_GETTER(double, SA_acc_coef, SA_acc_coef_);
   private:
       double m1_{0};
       double m2_{0};
@@ -40,8 +43,9 @@ namespace secular {
       double mu_out_{0};
       double a_in_coef_{0};
       double a_out_coef_{0};
+      double SA_acc_coef_{0};
 
-      inline calc_a_coef(double m, double mu){
+      inline double calc_a_coef(double m, double mu){
           return 1 / (consts::G * m) / mu / mu;
       }
   };
@@ -56,77 +60,95 @@ namespace secular {
         return fabs(m1 - m2) / (m1 + m2) * a_in / a_out / c_out_sqr;
     }
 
-    template<typename Container, typename OrbitArg>
-    void initilize_orbit_args(bool DA, size_t spin_num, Container &c, OrbitArg const &o) {
+    auto unpack_init(size_t b, std::vector<double> const& v) {
+        return std::make_tuple(v[b], v[b+1], v[b+2], v[b+3], v[b+4], v[b+5], v[b+6], v[b+7], v[b+8], v[b+9], v[b+10], v[b+11]);
+    }
+
+    template<typename Container>
+    void initilize_orbit_args(bool DA, size_t spin_num, Container &c, std::vector<double>const&o, size_t off_set) {
         if(DA){
-            initilize_DA(spin_num, c, o);
+            initilize_DA(spin_num, c, o, off_set);
         } else {
-            initilize_SA(spin_num, c, o);
+            initilize_SA(spin_num, c, o, off_set);
         }
     }
 
-    template<typename Container, typename OrbitArg>
-    void initilize_DA(size_t spin_num, Container &c, OrbitArg const &o) {
-        Vec3d L1 = secular::calc_angular_mom(o.m1, o.m2, o.a_in) * sqrt(1 - o.e_in * o.e_in) *
-                   secular::unit_j(o.i_in, o.Omega_in);
+    template<typename Container>
+    void initilize_DA(size_t spin_num, Container &c, std::vector<double>const& args, size_t off_set) {
+        auto [m1, m2, m3, a_in, a_out, e_in, e_out, omega_in, omega_out, Omega_in, i_in, i_out] = unpack_init(off_set, args);
 
-        Vec3d L2 = secular::calc_angular_mom(o.m1 + o.m2, o.m3, o.a_out) * sqrt(1 - o.e_out * o.e_out) *
-                   secular::unit_j(o.i_out, o.Omega_out);
+        double Omega_out = Omega_in - 180;
 
-        Vec3d e1 = o.e_in * secular::unit_e(o.i_in, o.omega_in, o.Omega_in);
+        deg_to_rad(omega_in, omega_out, Omega_in, Omega_out, i_in, i_out);
 
-        Vec3d e2 = o.e_out * secular::unit_e(o.i_out, o.omega_out, o.Omega_out);
+        auto [j1x, j1y, j1z] = secular::unit_j(i_in, Omega_in);
 
-        c[0] = L1.x, c[1] = L1.y, c[2] = L1.z;
+        double L1 = secular::calc_angular_mom(m1, m2, a_in) * sqrt(1 - e_in * e_in);
 
-        c[3] = e1.x, c[4] = e1.y, c[5] = e1.z;
+        c.set_L1(L1*j1x, L1*j1y, L1*j1z);
 
-        c[6] = L2.x, c[7] = L2.y, c[8] = L2.z;
+        auto [j2x, j2y, j2z] = secular::unit_j(i_out, Omega_out);
 
-        c[9] = e2.x, c[10] = e2.y, c[11] = e2.z;
+        double L2 = secular::calc_angular_mom(m1 + m2, m3, a_out) * sqrt(1 - e_out * e_out);
 
-        for(size_t i = 0 ; i < spin_num; ++i){
-            c[12+i*3]   = o.s[i].x;
-            c[12+i*3+1] = o.s[i].y;
-            c[12+i*3+2] = o.s[i].z;
-        }
+        c.set_L2(L2*j2x, L2*j2y, L2*j2z);
+
+        auto [e1x, e1y, e1z] = secular::unit_e(i_in, omega_in, Omega_in);
+
+        c.set_e1(e_in*e1x, e_in*e1y, e_in*e1z);
+
+        auto [e2x, e2y, e2z] = secular::unit_e(i_out, omega_out, Omega_out);
+
+        c.set_e2(e_out*e2x, e_out*e2y, e_out*e2z);
+
+        std::copy_n(args.begin()+ off_set + 12, spin_num*3, c.spin_begin());
     }
 
-    template<typename Container, typename OrbitArg>
-    void initilize_SA(size_t spin_num, Container &c, OrbitArg const &o) {
-        Vec3d L1 = secular::calc_angular_mom(o.m1, o.m2, o.a_in) * sqrt(1 - o.e_in * o.e_in) *
-                   secular::unit_j(o.i_in, o.Omega_in);
+    template<typename Container>
+    void initilize_SA(size_t spin_num, Container &c, std::vector<double>const& args, size_t off_set) {
+        auto [m1, m2, m3, a_in, a_out, e_in, e_out, omega_in, omega_out, Omega_in, i_in, i_out] = unpack_init(off_set, args);
 
-        Vec3d e1 = o.e_in * secular::unit_e(o.i_in, o.omega_in, o.Omega_in);
+        double Omega_out = Omega_in - 180;
 
-        double E_nu = o.M_nu==0?0:space::orbit::calc_eccentric_anomaly(o.M_nu, o.e_out);
+        double M_nu = args[22];
+
+        deg_to_rad(omega_in, omega_out, Omega_in, Omega_out, i_in, i_out, M_nu);
+
+        auto [j1x, j1y, j1z] = secular::unit_j(i_in, Omega_in);
+
+        double L1 = secular::calc_angular_mom(m1, m2, a_in) * sqrt(1 - e_in * e_in);
+
+        c.set_L1(L1*j1x, L1*j1y, L1*j1z);
+
+        auto [e1x, e1y, e1z] = secular::unit_e(i_in, omega_in, Omega_in);
+
+        c.set_e1(e_in*e1x, e_in*e1y, e_in*e1z);
+
+        double E_nu = space::orbit::calc_eccentric_anomaly(M_nu, e_out);
 
         double cosE = cos(E_nu);
 
-        double nu_out = space::orbit::calc_true_anomaly(E_nu, o.e_out);//acos( ( cosE - o.e_out)/ (1 - o.e_out*cosE) );
+        double nu_out = space::orbit::calc_true_anomaly(E_nu, e_out);//acos( ( cosE - o.e_out)/ (1 - o.e_out*cosE) );
 
-        double r = o.a_out * (1 - o.e_out * cosE);
+        double r = a_out * (1 - e_out * cosE);
 
-        Vec3d r_out = r * secular::unit_e(o.i_out, o.omega_out + nu_out, o.Omega_out);
+        auto[px, py, pz] = secular::unit_e(i_out, omega_out + nu_out, Omega_out);
 
-        double v = sqrt(consts::G * (o.m1 + o.m2 + o.m3) / (o.a_out * (1 - o.e_out * o.e_out)));
+        c.set_r(r*px, r*py, r*pz);
 
-        Vec3d v_out = v * (-sin(nu_out) * secular::unit_e(o.i_out, o.omega_out, o.Omega_out) +
-                           (o.e_out + cos(nu_out)) * secular::unit_peri_v(o.i_out, o.omega_out, o.Omega_out));
+        double v = sqrt(consts::G * (m1 + m2 + m3) / (a_out * (1 - e_out * e_out)));
 
-        c[0] = L1.x, c[1] = L1.y, c[2] = L1.z;
+        double ve = -v*sin(nu_out);
 
-        c[3] = e1.x, c[4] = e1.y, c[5] = e1.z;
+        double vv = v*(e_out + cos(nu_out));
 
-        c[6] = r_out.x, c[7] = r_out.y, c[8] = r_out.z;
+        auto [e2x, e2y, e2z] = secular::unit_e(i_out, omega_out, Omega_out);
 
-        c[9] = v_out.x, c[10] = v_out.y, c[11] = v_out.z;
+        auto [vx, vy, vz] = secular::unit_peri_v(i_out, omega_out, Omega_out);
 
-        for(size_t i = 0 ; i < spin_num; ++i){
-            c[12+i*3]   = o.s[i].x;
-            c[12+i*3+1] = o.s[i].y;
-            c[12+i*3+2] = o.s[i].z;
-        }
+        c.set_v(ve*e2x + vv*vx, ve*e2y + vv*vy, ve*e2z + vv*vz);
+
+        std::copy_n(args.begin()+ off_set + 13, spin_num*3, c.spin_begin());
     }
 
     template<bool Oct, typename Args, typename Container>
@@ -268,7 +290,7 @@ namespace secular {
 
         dvar.set_e1(B1 * cn1r_x + B2 * ce1r_x + B3 * cn1e1_x, B1 * cn1r_y + B2 * ce1r_y + B3 * cn1e1_y, B1 * cn1r_z + B2 * ce1r_z + B3 * cn1e1_z);
 
-        dvar.set_r(var.vx(), var.vy(), var.vz())
+        dvar.set_r(var.vx(), var.vy(), var.vz());
 
         dvar.set_v(acc_r * var.rx() + acc_n * n1x + acc_e * var.e1x(), acc_r * var.ry() + acc_n * n1y + acc_e * var.e1y(), acc_r * var.rz() + acc_n * n1z + acc_e * var.e1z());
     }

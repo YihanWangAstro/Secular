@@ -2,6 +2,7 @@
 #define SECULAR_TOOL_H
 
 #include <cmath>
+#include <tuple>
 
 namespace secular {
 
@@ -20,17 +21,17 @@ namespace secular {
 
   #define OPT_STD_GETTER(COND, TYPE, NAME, MEMBER)                                                                       \
   inline TYPE & NAME () {                                                                                                \
-    static_assert(COND, "method "#NAME#"() is not defined!");                                                            \
+    static_assert(COND, "method is not defined!");                                                                       \
     return MEMBER;                                                                                                       \
   };                                                                                                                     \
   inline TYPE const & NAME () const {                                                                                    \
-    static_assert(COND, "method "#NAME#"() is not defined!");                                                            \
+    static_assert(COND, "method is not defined!");                                                                       \
     return MEMBER;                                                                                                       \
   };
 
   #define OPT_READ_GETTER(COND, TYPE, NAME, MEMBER)                                                                      \
   inline TYPE const & NAME () const {                                                                                    \
-    static_assert(COND, "method "#NAME#"() is not defined!");                                                            \
+    static_assert(COND, "method is not defined!");                                                                       \
     return MEMBER;                                                                                                       \
   };
 
@@ -57,27 +58,27 @@ inline void sub_##NAME(std::tuple<double, double, double> const& t) {           
 
 #define OPT_3WAY_SETTER(COND, NAME, X, Y, Z)                                                                             \
 inline void set_##NAME(double x, double y, double z) {                                                                   \
-    static_assert(COND, "method "#NAME#"() is not defined!");                                                            \
+    static_assert(COND, "method is not defined!");                                                                       \
     X = x, Y = y, Z = z;                                                                                                 \
 }                                                                                                                        \
 inline void add_##NAME(double x, double y, double z) {                                                                   \
-    static_assert(COND, "method "#NAME#"() is not defined!");                                                            \
+    static_assert(COND, "method is not defined!");                                                                       \
     X += x, Y += y, Z += z;                                                                                              \
 }                                                                                                                        \
 inline void sub_##NAME(double x, double y, double z) {                                                                   \
-    static_assert(COND, "method "#NAME#"() is not defined!");                                                            \
+    static_assert(COND, "method is not defined!");                                                                       \
     X -= x, Y -= y, Z -= z;                                                                                              \
 }                                                                                                                        \
 inline void set_##NAME(std::tuple<double, double, double> const& t) {                                                    \
-    static_assert(COND, "method "#NAME#"() is not defined!");                                                            \
+    static_assert(COND, "method is not defined!");                                                                       \
     X = std::get<0>(t), Y = std::get<1>(t), Z = std::get<2>(t);                                                          \
 }                                                                                                                        \
 inline void add_##NAME(std::tuple<double, double, double> const& t) {                                                    \
-    static_assert(COND, "method "#NAME#"() is not defined!");                                                            \
+    static_assert(COND, "method is not defined!");                                                                       \
     X += std::get<0>(t), Y += std::get<1>(t), Z += std::get<2>(t);                                                       \
 }                                                                                                                        \
 inline void sub_##NAME(std::tuple<double, double, double> const& t) {                                                    \
-    static_assert(COND, "method "#NAME#"() is not defined!");                                                            \
+    static_assert(COND, "method is not defined!");                                                                       \
     X -= std::get<0>(t), Y -= std::get<1>(t), Z -= std::get<2>(t);                                                       \
 }
 
@@ -91,6 +92,12 @@ inline void sub_##NAME(std::tuple<double, double, double> const& t) {           
 
         constexpr double year = 1;
     }
+
+
+    template<typename Container>
+    struct spin_num{
+        static constexpr size_t size{Container::s_num};
+    };
 
     using Tup3d = std::tuple<double, double, double>;
 
@@ -164,6 +171,13 @@ inline void sub_##NAME(std::tuple<double, double, double> const& t) {           
         return cross(jx, jy, jz, ex, ey, ez);
     }
 
+
+    template<typename ...Args>
+    void deg_to_rad(Args &...args) {
+        constexpr double rad = consts::pi / 180.0;
+        ((args*=rad), ...);
+    }
+
     inline auto calc_orbit_args(double Coef, double lx, double ly, double lz, double ex, double ey, double ez) {
         double e_sqr = norm2(ex, ey, ez);
 
@@ -211,6 +225,18 @@ inline void sub_##NAME(std::tuple<double, double, double> const& t) {           
         return Coef * L_sqr / j;
     }
 
+    inline auto calc_a_j(double Coef, double lx, double ly, double lz, double ex, double ey, double ez) {
+        double e_sqr = norm2(ex, ey, ez);
+
+        double j_sqr = fabs(1 - e_sqr);
+
+        double j = sqrt(j_sqr);
+
+        double L_sqr = norm2(lx, ly, lz);
+
+        return std::make_tuple(Coef * L_sqr/j_sqr, j);
+    }
+
     inline auto calc_a(double Coef, double lx, double ly, double lz, double ex, double ey, double ez) {
         double e_sqr = norm2(ex, ey, ez);
 
@@ -229,6 +255,7 @@ inline void sub_##NAME(std::tuple<double, double, double> const& t) {           
     const std::string str_ll[2]={"", "|LL"};
     const std::string str_s[4] ={"", "|S_{1}L_{in}", "|S_{1}L_{in}|S_{2}L_{in}", "|S_{1}L_{in}|S_{2}L_{in}|S_{3}L_{out}"};
 
+    template<typename Controler>
     std::string get_log_title(size_t task_id, bool DA, Controler const& ctrl, size_t spin_num){
         return std::to_string(task_id) + str_ave[DA] + str_pole[ctrl.Oct] + str_gr[ctrl.GR] + str_gw[ctrl.GW] + str_sl[ctrl.SL] + str_ll[ctrl.LL] +str_s[spin_num];
     }

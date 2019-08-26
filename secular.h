@@ -62,6 +62,12 @@ namespace secular {
         OPT_3WAY_SETTER(spin_num>0, S1, (*this)[12], (*this)[13], (*this)[14]);
         OPT_3WAY_SETTER(spin_num>1, S2, (*this)[15], (*this)[16], (*this)[17]);
         OPT_3WAY_SETTER(spin_num>2, S3, (*this)[18], (*this)[19], (*this)[20]);
+
+        auto spin_begin(){
+            return this->begin() + 12;
+        }
+
+        constexpr static size_t s_num{spin_num};
     };
 
     struct Controler {
@@ -87,26 +93,23 @@ namespace secular {
         shrink, eof, input_err
     };
 
-    inline double deSitter_coef(double m_self, double m_other) {
-        return 0.5*consts::G/(consts::C * consts::C) * (4 + 3*m_other/m_self);
-    };
-
     template<size_t spin_num>
     class SecularConst {
     public:
         SecularConst(double _m1, double _m2, double _m3) : basic_{_m1, _m2, _m3}, GR_{basic_.m12(), basic_.mu_in()}, SL_{_m1, _m2, _m3} {}
 
         SecularConst() = default;
-        
+
         READ_GETTER(double, m1, basic_.m1());
         READ_GETTER(double, m2, basic_.m2());
         READ_GETTER(double, m3, basic_.m3());
         READ_GETTER(double, m12, basic_.m12());
         READ_GETTER(double, m_tot, basic_.m_tot());
         READ_GETTER(double, mu_in, basic_.mu_in());
-        READ_GETTER(double, m_out, basic_.mu_out());
+        READ_GETTER(double, mu_out, basic_.mu_out());
         READ_GETTER(double, a_in_coef, basic_.a_in_coef());
-        READ_GETTER(double, a_out_coef_, basic_.a_out_coef());
+        READ_GETTER(double, a_out_coef, basic_.a_out_coef());
+        READ_GETTER(double, SA_acc_coef, basic_.SA_acc_coef());
 
         READ_GETTER(double, GR_coef, GR_.GR_coef());
         READ_GETTER(double, GW_L_coef, GR_.GW_L_coef());
@@ -127,47 +130,49 @@ namespace secular {
 
     template<typename Container>
     struct Dynamic_dispatch {
-        Dynamic_dispatch(Controler const &_ctrl, SecularConst const &_args) : ctrl{&_ctrl}, args{&_args} {}
+      using ConstArg = SecularConst<spin_num<Container>::size>;
+
+        Dynamic_dispatch(Controler const &_ctrl, ConstArg const &_args) : ctrl{&_ctrl}, args{&_args} {}
 
         void operator()(Container const &x, Container &dxdt, double t) {
             if (ctrl->DA == true) {
                 if (ctrl->Oct == true) {
-                    double_aved_LK<true, SecularConst, Container>(*args, x, dxdt, t);
+                    double_aved_LK<true, ConstArg, Container>(*args, x, dxdt, t);
                 } else {
-                    double_aved_LK<false, SecularConst, Container>(*args, x, dxdt, t);
+                    double_aved_LK<false, ConstArg, Container>(*args, x, dxdt, t);
                 }
 
                 if (ctrl->LL == true) {
                     if (ctrl->SL == true) {
-                        deSitter_precession<true, true, true, SecularConst, Container>(*args, x, dxdt, t);
+                        deSitter_precession<true, SLstat<deS::on, deS::on, deS::off, deS::bc, deS::on>, ConstArg, Container>(*args, x, dxdt, t);
                     } else {
-                        deSitter_precession<true, true, false, SecularConst, Container>(*args, x, dxdt, t);
+                        deSitter_precession<true, SLstat<deS::on, deS::off, deS::off, deS::bc, deS::on>, ConstArg, Container>(*args, x, dxdt, t);
                     }
                 } else {
                     if (ctrl->SL == true) {
-                        deSitter_precession<true, false, true, SecularConst, Container>(*args, x, dxdt, t);
+                        deSitter_precession<true, SLstat<deS::on, deS::on, deS::off, deS::bc, deS::off>, ConstArg, Container>(*args, x, dxdt, t);
                     } else {
-                        deSitter_precession<true, false, false, SecularConst, Container>(*args, x, dxdt, t);
+                        deSitter_precession<true, SLstat<deS::on, deS::off, deS::off, deS::bc, deS::off>, ConstArg, Container>(*args, x, dxdt, t);
                     }
                 }
             } else {
                 if (ctrl->Oct == true) {
-                    single_aved_LK<true, SecularConst, Container>(*args, x, dxdt, t);
+                    single_aved_LK<true, ConstArg, Container>(*args, x, dxdt, t);
                 } else {
-                    single_aved_LK<false, SecularConst, Container>(*args, x, dxdt, t);
+                    single_aved_LK<false, ConstArg, Container>(*args, x, dxdt, t);
                 }
 
                 if (ctrl->LL == true) {
                     if (ctrl->SL == true) {
-                        deSitter_precession<false, true, true, SecularConst, Container>(*args, x, dxdt, t);
+                        deSitter_precession<false, SLstat<deS::on, deS::on, deS::off, deS::bc, deS::on>, ConstArg, Container>(*args, x, dxdt, t);
                     } else {
-                        deSitter_precession<false, true, false, SecularConst, Container>(*args, x, dxdt, t);
+                        deSitter_precession<false, SLstat<deS::on, deS::off, deS::off, deS::bc, deS::on>, ConstArg, Container>(*args, x, dxdt, t);
                     }
                 } else {
                     if (ctrl->SL == true) {
-                        deSitter_precession<false, false, true, SecularConst, Container>(*args, x, dxdt, t);
+                        deSitter_precession<false, SLstat<deS::on, deS::on, deS::off, deS::bc, deS::off>, ConstArg, Container>(*args, x, dxdt, t);
                     } else {
-                        deSitter_precession<false, false, false, SecularConst, Container>(*args, x, dxdt, t);
+                        deSitter_precession<false, SLstat<deS::on, deS::off, deS::off, deS::bc, deS::off>, ConstArg, Container>(*args, x, dxdt, t);
                     }
                 }
             }
@@ -182,7 +187,7 @@ namespace secular {
         }
 
         Controler const *ctrl;
-        SecularConst const *args;
+        SecularConst<spin_num<Container>::size> const *args;
     };
 
 /*

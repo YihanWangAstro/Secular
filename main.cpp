@@ -1,6 +1,7 @@
 
 #include <iostream>
 #include "secular.h"
+
 #include "SpaceHub/src/multi-thread/multi-thread.hpp"
 #include "SpaceHub/src/tools/config-reader.hpp"
 #include "SpaceHub/src/tools/timer.hpp"
@@ -78,18 +79,30 @@ auto resolve_sim_type(std::string const& line) {
     }
 }
 
+constexpr size_t TASK_ID_OFFSET = 0;
+constexpr size_t TRAJECTROY_OFFSET = 1;
+constexpr size_t END_STAT_OFFSET = 2;
+constexpr size_t END_TIME_OFFSET = 3;
+constexpr size_t DT_OFFSET = 4;
+constexpr size_t CTRL_OFFSET = 5;
+constexpr size_t ARGS_OFFSET = 10;
+
 
 template<size_t spin_num, typename Observer>
-void call_ode_int(bool DA, secular::Controler const&ctrl, secular::OrbitArgs const& init_args, double t_start, double t_end, Observer obsv){
-    using Container = std::array<double, 12+spin_num*3>;
+void call_ode_int(bool DA, secular::Controler const&ctrl, std::vector<double> const& init_args, double t_start, double t_end, Observer obsv){
+    using Container = secular::SecularArray<spin_num>;
     //using stepper_type = boost::numeric::odeint::runge_kutta_fehlberg78<Container>;
     using stepper_type = boost::numeric::odeint::bulirsch_stoer<Container>;
 
     Container init_cond;
 
-    initilize_orbit_args(DA, spin_num, init_cond, init_args);
+    initilize_orbit_args(DA, spin_num, init_cond, init_args, ARGS_OFFSET);
 
-    secular::SecularConst const_parameters{ctrl, init_args.m1, init_args.m2, init_args.m3};
+    double m1 = init_args[ARGS_OFFSET];
+    double m2 = init_args[ARGS_OFFSET+1];
+    double m3 = init_args[ARGS_OFFSET+2];
+
+    secular::SecularConst<spin_num> const_parameters{m1, m2, m3};
 
     double ini_dt = 0.1 * secular::consts::year;
 
@@ -101,13 +114,7 @@ void call_ode_int(bool DA, secular::Controler const&ctrl, secular::OrbitArgs con
     //boost::numeric::odeint::integrate_adaptive(boost::numeric::odeint::make_controlled(INT_ERROR, INT_ERROR, stepper_type()), func, init_cond, t_start, t_end, ini_dt, obsv);
 }
 
-constexpr size_t TASK_ID_OFFSET = 0;
-constexpr size_t TRAJECTROY_OFFSET = 1;
-constexpr size_t END_STAT_OFFSET = 2;
-constexpr size_t END_TIME_OFFSET = 3;
-constexpr size_t DT_OFFSET = 4;
-constexpr size_t CTRL_OFFSET = 5;
-constexpr size_t ARGS_OFFSET = 10;
+
 
 struct Traj_args{
     Traj_args(bool open, std::string const& work_dir, size_t task_id, double _dt)
@@ -157,7 +164,7 @@ void single_thread_job(std::string work_dir, ConcurrentFile input, size_t start_
 
                 log << secular::get_log_title(task_id, DA, ctrl, spin_num) + "\r\n";
 
-                secular::OrbitArgs init_args{v.begin() + ARGS_OFFSET, DA, spin_num};
+                //secular::OrbitArgs init_args{v.begin() + ARGS_OFFSET, DA, spin_num};
 
                 double t_end = v[END_TIME_OFFSET];
 
@@ -173,15 +180,15 @@ void single_thread_job(std::string work_dir, ConcurrentFile input, size_t start_
 
                 Traj_args traj_arg{is_traj, work_dir, task_id, dt};
 
-                auto observer = [&, =is_traj, =is_10hz](auto const& data, double t) {
+                auto observer = [&](auto const& data, double t) {
                     if(is_10hz){
                         const auto[L1x, L1y, L1z] = std::tie(data[0], data[1], data[2]);
 
                         const auto[e1x, e1y, e1z] = std::tie(data[3], data[4], data[5]);
 
-                        double a = calc_a(1, L1x, L1y, L1z, e1x, e1y, e1z);
+                        double a = secular::calc_a(1, L1x, L1y, L1z, e1x, e1y, e1z);
 
-                        
+
                     }
 
                     if(is_traj && t > traj_arg.t_output) {
@@ -195,13 +202,13 @@ void single_thread_job(std::string work_dir, ConcurrentFile input, size_t start_
                 };
 
                 if(spin_num == 0) {
-                    call_ode_int<0>(DA, ctrl, init_args, 0.0, t_end, observer);
+                    call_ode_int<0>(DA, ctrl, v, 0.0, t_end, observer);
                 } else if(spin_num == 1){
-                    call_ode_int<1>(DA, ctrl, init_args, 0.0, t_end, observer);
+                    call_ode_int<1>(DA, ctrl, v, 0.0, t_end, observer);
                 } else if(spin_num == 2){
-                    call_ode_int<2>(DA, ctrl, init_args, 0.0, t_end, observer);
+                    call_ode_int<2>(DA, ctrl, v, 0.0, t_end, observer);
                 } else if(spin_num == 3){
-                    call_ode_int<3>(DA, ctrl, init_args, 0.0, t_end, observer);
+                    call_ode_int<3>(DA, ctrl, v, 0.0, t_end, observer);
                 }
             }
         } catch (secular::StopFlag flag) {
