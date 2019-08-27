@@ -5,40 +5,46 @@
 
 namespace secular {
     template<size_t sp_num>
-    class SLConst{
-        static_assert(sp_num<=3, "The max spin number is 3!");
+    class SLConst {
+        static_assert(sp_num <= 3, "The max spin number is 3!");
     public:
         SLConst(double m1, double m2, double m3) {
             if constexpr(sp_num > 0) {
                 SL_[0] = deSitter_coef(m1, m2);
-                SL_[1] = deSitter_coef(m1+m2, m3);
+                SL_[1] = deSitter_coef(m1 + m2, m3);
             }
             if constexpr(sp_num > 1) {
                 SL_[2] = deSitter_coef(m2, m1);
-                SL_[3] = deSitter_coef(m1+m2, m3);
+                SL_[3] = deSitter_coef(m1 + m2, m3);
             }
             if constexpr(sp_num == 3) {
-                SL_[4] = deSitter_coef(m3, m1+m2);
+                SL_[4] = deSitter_coef(m3, m1 + m2);
                 SL_[5] = SL_[4];
             }
-            LL_ = deSitter_coef(m1+m2, m3);
+            LL_ = deSitter_coef(m1 + m2, m3);
         }
 
         SLConst() = default;
 
         READ_GETTER(double, LL, LL_);
-        OPT_READ_GETTER(sp_num>0, double, S1L1, SL_[0]);
-        OPT_READ_GETTER(sp_num>0, double, S1L2, SL_[1]);
-        OPT_READ_GETTER(sp_num>1, double, S2L1, SL_[2]);
-        OPT_READ_GETTER(sp_num>1, double, S2L2, SL_[3]);
-        OPT_READ_GETTER(sp_num>2, double, S3L1, SL_[4]);
-        OPT_READ_GETTER(sp_num>2, double, S3L2, SL_[5]);
+
+        OPT_READ_GETTER(sp_num > 0, double, S1L1, SL_[0]);
+
+        OPT_READ_GETTER(sp_num > 0, double, S1L2, SL_[1]);
+
+        OPT_READ_GETTER(sp_num > 1, double, S2L1, SL_[2]);
+
+        OPT_READ_GETTER(sp_num > 1, double, S2L2, SL_[3]);
+
+        OPT_READ_GETTER(sp_num > 2, double, S3L1, SL_[4]);
+
+        OPT_READ_GETTER(sp_num > 2, double, S3L2, SL_[5]);
     private:
-        double SL_[sp_num*2];
+        double SL_[sp_num * 2];
         double LL_;
 
         inline double deSitter_coef(double m_self, double m_other) {
-            return 0.5*consts::G/(consts::C * consts::C) * (4 + 3*m_other/m_self);
+            return 0.5 * consts::G / (consts::C * consts::C) * (4 + 3 * m_other / m_self);
         };
     };
 
@@ -56,28 +62,28 @@ namespace secular {
     };
 
     template<typename Stat>
-    struct is_Lin_coupled{
+    struct is_Lin_coupled {
         constexpr static bool value{Stat::LL != deS::off || Stat::Sin_Lin != deS::off || Stat::Sout_Lin != deS::off};
     };
 
     template<typename Stat>
-    struct is_Lout_coupled{
+    struct is_Lout_coupled {
         constexpr static bool value{Stat::LL != deS::off || Stat::Sin_Lout != deS::off || Stat::Sout_Lout != deS::off};
     };
 
     template<bool DA, typename Stat, typename Args, typename Container>
-    class deSitter_arg{
-        static_assert(spin_num<Container>::size<=3, "The max spin number is 3!");
+    class deSitter_arg {
+        static_assert(spin_num<Container>::size <= 3, "The max spin number is 3!");
     public:
-        deSitter_arg(Args const&args, Container const& var) {
-            if constexpr(spin_num<Container>::size  > 0 && Lin_coupled) {
+        deSitter_arg(Args const &args, Container const &var) {
+            if constexpr(spin_num<Container>::size > 0 && Lin_coupled) {
                 a_in_eff_ = calc_a_eff(args.a_in_coef(), var.L1x(), var.L1y(), var.L1z(), var.e1x(), var.e1y(), var.e1z());
 
                 a_in_eff3_ = a_in_eff_ * a_in_eff_ * a_in_eff_;
             }
 
-            if constexpr(spin_num<Container>::size > 0 && Lout_coupled){
-                if constexpr(DA){
+            if constexpr(spin_num<Container>::size > 0 && Lout_coupled) {
+                if constexpr(DA) {
                     L2x_ = var.L2x(), L2y_ = var.L2y(), L2z_ = var.L2z();
 
                     a_out_eff_ = calc_a_eff(args.a_out_coef(), var.L2x(), var.L2y(), var.L2z(), var.e2x(), var.e2y(), var.e2z());
@@ -92,52 +98,61 @@ namespace secular {
                 }
             }
 
-            if constexpr(spin_num<Container>::size > 0){
+            if constexpr(spin_num<Container>::size > 0) {
                 if constexpr(Stat::Sin_Lin != deS::off)
                     Omega_[0] = args.S1L1() / a_in_eff3_;
                 if constexpr(Stat::Sin_Lout != deS::off)
                     Omega_[1] = args.S1L2() / a_out_eff3_;
             }
 
-            if constexpr(spin_num<Container>::size > 1){
+            if constexpr(spin_num<Container>::size > 1) {
                 if constexpr(Stat::Sin_Lin != deS::off)
                     Omega_[2] = args.S2L1() / a_in_eff3_;
                 if constexpr(Stat::Sin_Lout != deS::off)
                     Omega_[3] = args.S2L2() / a_out_eff3_;
             }
 
-            if constexpr(spin_num<Container>::size > 2){
-              if constexpr(Stat::Sout_Lin != deS::off)
-                  Omega_[4] = args.S3L1() / a_in_eff3_;
-              if constexpr(Stat::Sout_Lout != deS::off)
-                  Omega_[5] = args.S3L2() / a_out_eff3_;
+            if constexpr(spin_num<Container>::size > 2) {
+                if constexpr(Stat::Sout_Lin != deS::off)
+                    Omega_[4] = args.S3L1() / a_in_eff3_;
+                if constexpr(Stat::Sout_Lout != deS::off)
+                    Omega_[5] = args.S3L2() / a_out_eff3_;
             }
 
             if constexpr(Stat::LL != deS::off) {
                 LL_ = args.LL() / a_out_eff3_;
             }
         }
+
         constexpr static bool Lin_coupled{is_Lin_coupled<Stat>::value};
 
         constexpr static bool Lout_coupled{is_Lout_coupled<Stat>::value};
 
         READ_GETTER(double, LL, LL_);
-        OPT_READ_GETTER(spin_num<Container>::size>0, double, S1L1_Omega, Omega_[0]);
-        OPT_READ_GETTER(spin_num<Container>::size>0, double, S1L2_Omega, Omega_[1]);
-        OPT_READ_GETTER(spin_num<Container>::size>1, double, S2L1_Omega, Omega_[2]);
-        OPT_READ_GETTER(spin_num<Container>::size>1, double, S2L2_Omega, Omega_[3]);
-        OPT_READ_GETTER(spin_num<Container>::size>2, double, S3L1_Omega, Omega_[4]);
-        OPT_READ_GETTER(spin_num<Container>::size>2, double, S3L2_Omega, Omega_[5]);
+
+        OPT_READ_GETTER(spin_num<Container>::size > 0, double, S1L1_Omega, Omega_[0]);
+
+        OPT_READ_GETTER(spin_num<Container>::size > 0, double, S1L2_Omega, Omega_[1]);
+
+        OPT_READ_GETTER(spin_num<Container>::size > 1, double, S2L1_Omega, Omega_[2]);
+
+        OPT_READ_GETTER(spin_num<Container>::size > 1, double, S2L2_Omega, Omega_[3]);
+
+        OPT_READ_GETTER(spin_num<Container>::size > 2, double, S3L1_Omega, Omega_[4]);
+
+        OPT_READ_GETTER(spin_num<Container>::size > 2, double, S3L2_Omega, Omega_[5]);
 
 
         READ_GETTER(double, L2x, L2x_);
+
         READ_GETTER(double, L2y, L2y_);
+
         READ_GETTER(double, L2z, L2z_);
     private:
         double L2x_;
         double L2y_;
         double L2z_;
-        double Omega_[spin_num<Container>::size*2];
+        double Omega_[spin_num<Container>::size * 2];
         double LL_;
         double a_in_eff_;
         double a_in_eff3_;
@@ -146,35 +161,33 @@ namespace secular {
     };
 
     inline auto deSitter_e_vec(double S1x, double S1y, double S1z, double Lx, double Ly, double Lz) {
-        double dot_part = 3*dot(Lx, Ly, Lz, S1x, S1y, S1z)/norm2(Lx, Ly, Lz);
-        return std::make_tuple(S1x - dot_part*Lx, S1y - dot_part*Ly, S1z - dot_part*Lz);
+        double dot_part = 3 * dot(Lx, Ly, Lz, S1x, S1y, S1z) / norm2(Lx, Ly, Lz);
+        return std::make_tuple(S1x - dot_part * Lx, S1y - dot_part * Ly, S1z - dot_part * Lz);
     }
 
-    template< typename Container>
-    auto SA_back_reaction(double Omega, double Sx, double Sy, double Sz, Container const& var){
-          auto [crvx, crvy, crvz] = cross(var.rx(), var.ry(), var.rz(), var.vx(), var.vy(), var.vz());
-          /*---------------------------------------------------------------------------*\
-              orbital parameters calculation
-          \*---------------------------------------------------------------------------*/
-          double r2 = norm2(var.rx(), var.ry(), var.rz());
+    template<typename Container>
+    auto SA_back_reaction(double Omega, double Sx, double Sy, double Sz, Container const &var) {
+        auto[crvx, crvy, crvz] = cross(var.rx(), var.ry(), var.rz(), var.vx(), var.vy(), var.vz());
+    
+        double r2 = norm2(var.rx(), var.ry(), var.rz());
 
-          double const acc_coef = Omega / r2;
+        double const acc_coef = Omega / r2;
 
-          auto [csvx, csvy, csvz] = cross(Sx, Sy, Sz, var.vx(), var.vy(), var.vz());
+        auto[csvx, csvy, csvz] = cross(Sx, Sy, Sz, var.vx(), var.vy(), var.vz());
 
-          auto [csrx, csry, csrz] = cross(Sx, Sy, Sz, var.rx(), var.ry(), var.rz());
+        auto[csrx, csry, csrz] = cross(Sx, Sy, Sz, var.rx(), var.ry(), var.rz());
 
-          double dvr = dot(var.rx(), var.ry(), var.rz(), var.vx(), var.vy(), var.vz());
+        double dvr = dot(var.rx(), var.ry(), var.rz(), var.vx(), var.vy(), var.vz());
 
-          double tri_dot = dot(Sx, Sy, Sz, crvx, crvy, crvz);
+        double tri_dot = dot(Sx, Sy, Sz, crvx, crvy, crvz);
 
-          double acc_x = acc_coef *( 3 * tri_dot * var.rx() + 2 * r2*csvx - 3 * dvr * csrx);
+        double acc_x = acc_coef * (3 * tri_dot * var.rx() + 2 * r2 * csvx - 3 * dvr * csrx);
 
-          double acc_y = acc_coef *( 3 * tri_dot * var.ry() + 2 * r2*csvy - 3 * dvr * csry);
+        double acc_y = acc_coef * (3 * tri_dot * var.ry() + 2 * r2 * csvy - 3 * dvr * csry);
 
-          double acc_z = acc_coef *( 3 * tri_dot * var.rz() + 2 * r2*csvz - 3 * dvr * csrz);
+        double acc_z = acc_coef * (3 * tri_dot * var.rz() + 2 * r2 * csvz - 3 * dvr * csrz);
 
-          return std::make_tuple(acc_x, acc_y, acc_z);
+        return std::make_tuple(acc_x, acc_y, acc_z);
     }
 
 
@@ -212,21 +225,21 @@ namespace secular {
         deArgs d{args, var};//calculate the Omega and L2(Single average case)
 
         if constexpr(spin_num<Container>::size >= 1) {
-           dvar.set_S1(0, 0, 0);
-           EVOLVE_SEL_IN(Stat::Sin_Lin, S1);
-           EVOLVE_SEL_OUT(Stat::Sin_Lout, S1);
+            dvar.set_S1(0, 0, 0);
+            EVOLVE_SEL_IN(Stat::Sin_Lin, S1);
+            EVOLVE_SEL_OUT(Stat::Sin_Lout, S1);
         }
 
         if constexpr(spin_num<Container>::size >= 2) {
-          dvar.set_S2(0, 0, 0);
-          EVOLVE_SEL_IN(Stat::Sin_Lin, S2);
-          EVOLVE_SEL_OUT(Stat::Sin_Lout, S2);
+            dvar.set_S2(0, 0, 0);
+            EVOLVE_SEL_IN(Stat::Sin_Lin, S2);
+            EVOLVE_SEL_OUT(Stat::Sin_Lout, S2);
         }
 
         if constexpr(spin_num<Container>::size == 3) {
-          dvar.set_S3(0, 0, 0);
-          EVOLVE_SEL_IN(Stat::Sout_Lin, S3);
-          EVOLVE_SEL_OUT(Stat::Sout_Lout, S3);
+            dvar.set_S3(0, 0, 0);
+            EVOLVE_SEL_IN(Stat::Sout_Lin, S3);
+            EVOLVE_SEL_OUT(Stat::Sout_Lout, S3);
         }
 
         if constexpr (Stat::LL == deS::on) {

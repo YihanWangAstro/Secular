@@ -14,27 +14,27 @@ using namespace space::multiThread;
 
 double INT_ERROR = 1e-13;
 
-void get_line(std::fstream& is, std::string& str) {
+void get_line(std::fstream &is, std::string &str) {
     std::getline(is, str);
-    if(!is)
-      throw secular::StopFlag::eof;
+    if (!is)
+        throw secular::StopFlag::eof;
 }
 
-void unpack_args_from_str(std::string  const& str, std::vector<double>& vec, bool DA, size_t spin_num) {
+void unpack_args_from_str(std::string const &str, std::vector<double> &vec, bool DA, size_t spin_num) {
     std::stringstream is{str};
 
-    size_t token_num = 22 + static_cast<size_t>(!DA) + spin_num*3;
+    size_t token_num = 22 + static_cast<size_t>(!DA) + spin_num * 3;
 
     double tmp;
 
     vec.reserve(token_num);
-    for(size_t i = 0 ;  i < token_num; ++i){
+    for (size_t i = 0; i < token_num; ++i) {
         is >> tmp;
         vec.emplace_back(tmp);
     }
 }
 
-auto resolve_sim_type(std::string const& line) {
+auto resolve_sim_type(std::string const &line) {
     bool in_space = true;
     size_t token_num = 0;
     for (auto c : line) {
@@ -50,13 +50,13 @@ auto resolve_sim_type(std::string const& line) {
 
     size_t id = 0;
 
-    if(token_num>0) {
+    if (token_num > 0) {
         id = std::stoi(line);
-    } else{
+    } else {
         return std::make_tuple(id, double_average, 0u);
     }
 
-    switch(token_num) {
+    switch (token_num) {
         case 22 :
             return std::make_tuple(id, double_average, 0u);
         case 23 :
@@ -89,7 +89,7 @@ constexpr size_t ARGS_OFFSET = 10;
 
 
 template<size_t spin_num, typename Observer>
-void call_ode_int(bool DA, secular::Controler const&ctrl, std::vector<double> const& init_args, double t_start, double t_end, Observer obsv){
+void call_ode_int(bool DA, secular::Controler const &ctrl, std::vector<double> const &init_args, double t_start, double t_end, Observer obsv) {
     using Container = secular::SecularArray<spin_num>;
     //using stepper_type = boost::numeric::odeint::runge_kutta_fehlberg78<Container>;
     using stepper_type = boost::numeric::odeint::bulirsch_stoer<Container>;
@@ -99,8 +99,8 @@ void call_ode_int(bool DA, secular::Controler const&ctrl, std::vector<double> co
     initilize_orbit_args(DA, spin_num, init_cond, init_args, ARGS_OFFSET);
 
     double m1 = init_args[ARGS_OFFSET];
-    double m2 = init_args[ARGS_OFFSET+1];
-    double m3 = init_args[ARGS_OFFSET+2];
+    double m2 = init_args[ARGS_OFFSET + 1];
+    double m3 = init_args[ARGS_OFFSET + 2];
 
     secular::SecularConst<spin_num> const_parameters{m1, m2, m3};
 
@@ -115,22 +115,22 @@ void call_ode_int(bool DA, secular::Controler const&ctrl, std::vector<double> co
 }
 
 
-
-struct Traj_args{
-    Traj_args(bool open, std::string const& work_dir, size_t task_id, double _dt)
-      : dt{_dt}, t_output{0} {
-            if(open){
-                file.open(work_dir +  "output_" + std::to_string(task_id) + ".txt", std::fstream::out);
-                file << std::setprecision(13);
-            }
+struct Traj_args {
+    Traj_args(bool open, std::string const &work_dir, size_t task_id, double _dt)
+            : dt{_dt}, t_output{0} {
+        if (open) {
+            file.open(work_dir + "output_" + std::to_string(task_id) + ".txt", std::fstream::out);
+            file << std::setprecision(13);
         }
+    }
 
-    void move_to_next_output(){ t_output += dt;}
+    void move_to_next_output() { t_output += dt; }
 
     double dt;
     double t_output;
     std::fstream file;
 };
+
 /*
 auto create_obser(std::shared_ptr<Traj_args>& traj_arg_ptr, std::string const& work_dir, std::vector<double> &input_args ) {
     bool is_traj = input_args[TRAJECTROY_OFFSET];
@@ -150,12 +150,12 @@ auto create_obser(std::shared_ptr<Traj_args>& traj_arg_ptr, std::string const& w
 void single_thread_job(std::string work_dir, ConcurrentFile input, size_t start_id, size_t end_id, ConcurrentFile output, ConcurrentFile log) {
     std::string entry;
     for (;;) {
-        try{
+        try {
             input.execute(get_line, entry);
 
-            auto [task_id, DA, spin_num] = resolve_sim_type(entry);
+            auto[task_id, DA, spin_num] = resolve_sim_type(entry);
 
-            if(start_id<=task_id && task_id <= end_id){
+            if (start_id <= task_id && task_id <= end_id) {
                 std::vector<double> v;
 
                 unpack_args_from_str(entry, v, DA, spin_num);
@@ -180,8 +180,8 @@ void single_thread_job(std::string work_dir, ConcurrentFile input, size_t start_
 
                 Traj_args traj_arg{is_traj, work_dir, task_id, dt};
 
-                auto observer = [&](auto const& data, double t) {
-                    if(is_10hz){
+                auto observer = [&](auto const &data, double t) {
+                    if (is_10hz) {
                         const auto[L1x, L1y, L1z] = std::tie(data[0], data[1], data[2]);
 
                         const auto[e1x, e1y, e1z] = std::tie(data[3], data[4], data[5]);
@@ -189,28 +189,28 @@ void single_thread_job(std::string work_dir, ConcurrentFile input, size_t start_
                         double a = secular::calc_a(1, L1x, L1y, L1z, e1x, e1y, e1z);
                     }
 
-                    if(is_traj && t > traj_arg.t_output) {
+                    if (is_traj && t > traj_arg.t_output) {
                         traj_arg.file << t << ' ';
-                        for(auto d : data) {
+                        for (auto d : data) {
                             traj_arg.file << d << ' ';
                         }
-                        traj_arg.file <<  "\r\n";
+                        traj_arg.file << "\r\n";
                         traj_arg.move_to_next_output();
                     }
                 };
 
-                if(spin_num == 0) {
+                if (spin_num == 0) {
                     call_ode_int<0>(DA, ctrl, v, 0.0, t_end, observer);
-                } else if(spin_num == 1){
+                } else if (spin_num == 1) {
                     call_ode_int<1>(DA, ctrl, v, 0.0, t_end, observer);
-                } else if(spin_num == 2){
+                } else if (spin_num == 2) {
                     call_ode_int<2>(DA, ctrl, v, 0.0, t_end, observer);
-                } else if(spin_num == 3){
+                } else if (spin_num == 3) {
                     call_ode_int<3>(DA, ctrl, v, 0.0, t_end, observer);
                 }
             }
         } catch (secular::StopFlag flag) {
-            if(flag == secular::StopFlag::eof)
+            if (flag == secular::StopFlag::eof)
                 break;
         }
     }

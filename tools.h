@@ -6,7 +6,7 @@
 
 namespace secular {
 
-  #define STD_ACCESSOR(TYPE, NAME, MEMBER)                                                                               \
+#define STD_ACCESSOR(TYPE, NAME, MEMBER)                                                                                 \
   inline TYPE & NAME () {                                                                                                \
     return MEMBER;                                                                                                       \
   };                                                                                                                     \
@@ -14,12 +14,12 @@ namespace secular {
     return MEMBER;                                                                                                       \
   };
 
-  #define READ_GETTER(TYPE, NAME, MEMBER)                                                                                \
+#define READ_GETTER(TYPE, NAME, MEMBER)                                                                                  \
   inline TYPE const & NAME () const {                                                                                    \
     return MEMBER;                                                                                                       \
   };
 
-  #define OPT_STD_GETTER(COND, TYPE, NAME, MEMBER)                                                                       \
+#define OPT_STD_GETTER(COND, TYPE, NAME, MEMBER)                                                                         \
   inline TYPE & NAME () {                                                                                                \
     static_assert(COND, "method is not defined!");                                                                       \
     return MEMBER;                                                                                                       \
@@ -29,7 +29,7 @@ namespace secular {
     return MEMBER;                                                                                                       \
   };
 
-  #define OPT_READ_GETTER(COND, TYPE, NAME, MEMBER)                                                                      \
+#define OPT_READ_GETTER(COND, TYPE, NAME, MEMBER)                                                                        \
   inline TYPE const & NAME () const {                                                                                    \
     static_assert(COND, "method is not defined!");                                                                       \
     return MEMBER;                                                                                                       \
@@ -95,7 +95,7 @@ inline void sub_##NAME(std::tuple<double, double, double> const& t) {           
 
 
     template<typename Container>
-    struct spin_num{
+    struct spin_num {
         static constexpr size_t size{Container::s_num};
     };
 
@@ -105,7 +105,7 @@ inline void sub_##NAME(std::tuple<double, double, double> const& t) {           
         return x * x + y * y + z * z;
     }
 
-    inline double norm2(Tup3d const &tup){
+    inline double norm2(Tup3d const &tup) {
         return norm2(UNPACK3(tup));
     }
 
@@ -113,7 +113,7 @@ inline void sub_##NAME(std::tuple<double, double, double> const& t) {           
         return sqrt(norm2(x, y, z));
     }
 
-    inline double norm(Tup3d const &tup){
+    inline double norm(Tup3d const &tup) {
         return sqrt(norm2(tup));
     }
 
@@ -121,7 +121,7 @@ inline void sub_##NAME(std::tuple<double, double, double> const& t) {           
         return x1 * x2 + y1 * y2 + z1 * z2;
     }
 
-    inline double dot(Tup3d const& t1, Tup3d const& t2) {
+    inline double dot(Tup3d const &t1, Tup3d const &t2) {
         return dot(UNPACK3(t1), UNPACK3(t2));
     }
 
@@ -129,7 +129,7 @@ inline void sub_##NAME(std::tuple<double, double, double> const& t) {           
         return std::make_tuple(y1 * z2 - y2 * z1, z1 * x2 - z2 * x1, x1 * y2 - x2 * y1);
     }
 
-    inline auto cross(Tup3d const& t1, Tup3d const& t2) {
+    inline auto cross(Tup3d const &t1, Tup3d const &t2) {
         return cross(UNPACK3(t1), UNPACK3(t2));
     }
 
@@ -137,7 +137,7 @@ inline void sub_##NAME(std::tuple<double, double, double> const& t) {           
         return std::make_tuple(A * (y1 * z2 - y2 * z1), A * (z1 * x2 - z2 * x1), A * (x1 * y2 - x2 * y1));
     }
 
-    inline auto cross_with_coef(double A, Tup3d const& t1, Tup3d const& t2) {
+    inline auto cross_with_coef(double A, Tup3d const &t1, Tup3d const &t2) {
         return cross_with_coef(A, UNPACK3(t1), UNPACK3(t2));
     }
 
@@ -166,8 +166,8 @@ inline void sub_##NAME(std::tuple<double, double, double> const& t) {           
     }
 
     auto unit_peri_v(double i, double omega, double Omega) {
-        auto [ex, ey, ez] = unit_e(i, omega, Omega);
-        auto [jx, jy, jz] = unit_j(i, Omega);
+        auto[ex, ey, ez] = unit_e(i, omega, Omega);
+        auto[jx, jy, jz] = unit_j(i, Omega);
         return cross(jx, jy, jz, ex, ey, ez);
     }
 
@@ -175,7 +175,7 @@ inline void sub_##NAME(std::tuple<double, double, double> const& t) {           
     template<typename ...Args>
     void deg_to_rad(Args &...args) {
         constexpr double rad = consts::pi / 180.0;
-        ((args*=rad), ...);
+        ((args *= rad), ...);
     }
 
     inline auto calc_orbit_args(double Coef, double lx, double ly, double lz, double ex, double ey, double ez) {
@@ -194,23 +194,23 @@ inline void sub_##NAME(std::tuple<double, double, double> const& t) {           
         return std::make_tuple(e_sqr, j_sqr, j, L_norm, L, a);
     }
 
-  /*  inline auto calc_orbit_args(double Coef, double lx, double ly, double lz, double ex, double ey, double ez) {
-        double e_sqr = norm2(ex, ey, ez);
+    /*  inline auto calc_orbit_args(double Coef, double lx, double ly, double lz, double ex, double ey, double ez) {
+          double e_sqr = norm2(ex, ey, ez);
 
-        double j_sqr = 1 - e_sqr;
+          double j_sqr = 1 - e_sqr;
 
-        double j = sqrt(j_sqr);
+          double j = sqrt(j_sqr);
 
-        double L2 = norm2(lx, ly, lz);
+          double L2 = norm2(lx, ly, lz);
 
-        double L_norm = sqrt(L2);
+          double L_norm = sqrt(L2);
 
-        double L = L_norm / j;
+          double L = L_norm / j;
 
-        double a = Coef * L2/j_sqr;
+          double a = Coef * L2/j_sqr;
 
-        return std::make_tuple(e_sqr, j_sqr, j, L_norm, L, a);
-    }*/
+          return std::make_tuple(e_sqr, j_sqr, j, L_norm, L, a);
+      }*/
 
 
     inline auto calc_a_eff(double Coef, double lx, double ly, double lz, double ex, double ey, double ez) {
@@ -234,7 +234,7 @@ inline void sub_##NAME(std::tuple<double, double, double> const& t) {           
 
         double L_sqr = norm2(lx, ly, lz);
 
-        return std::make_tuple(Coef * L_sqr/j_sqr, j);
+        return std::make_tuple(Coef * L_sqr / j_sqr, j);
     }
 
     inline auto calc_a(double Coef, double lx, double ly, double lz, double ex, double ey, double ez) {
@@ -247,17 +247,18 @@ inline void sub_##NAME(std::tuple<double, double, double> const& t) {           
         return Coef * L_sqr / j_sqr;
     }
 
-    const std::string str_ave[2]={":SA",":DA"};
-    const std::string str_pole[2]={"|quad", "| oct"};
-    const std::string str_gr[2]={"", "|GR"};
-    const std::string str_gw[2]={"", "|GW"};
-    const std::string str_sl[2]={"", "|S_{in}L_{out}"};
-    const std::string str_ll[2]={"", "|LL"};
-    const std::string str_s[4] ={"", "|S_{1}L_{in}", "|S_{1}L_{in}|S_{2}L_{in}", "|S_{1}L_{in}|S_{2}L_{in}|S_{3}L_{out}"};
+    const std::string str_ave[2] = {":SA", ":DA"};
+    const std::string str_pole[2] = {"|quad", "| oct"};
+    const std::string str_gr[2] = {"", "|GR"};
+    const std::string str_gw[2] = {"", "|GW"};
+    const std::string str_sl[2] = {"", "|S_{in}L_{out}"};
+    const std::string str_ll[2] = {"", "|LL"};
+    const std::string str_s[4] = {"", "|S_{1}L_{in}", "|S_{1}L_{in}|S_{2}L_{in}", "|S_{1}L_{in}|S_{2}L_{in}|S_{3}L_{out}"};
 
     template<typename Controler>
-    std::string get_log_title(size_t task_id, bool DA, Controler const& ctrl, size_t spin_num){
-        return std::to_string(task_id) + str_ave[DA] + str_pole[ctrl.Oct] + str_gr[ctrl.GR] + str_gw[ctrl.GW] + str_sl[ctrl.SL] + str_ll[ctrl.LL] +str_s[spin_num];
+    std::string get_log_title(size_t task_id, bool DA, Controler const &ctrl, size_t spin_num) {
+        return std::to_string(task_id) + str_ave[DA] + str_pole[ctrl.Oct] + str_gr[ctrl.GR] + str_gw[ctrl.GW] + str_sl[ctrl.SL] + str_ll[ctrl.LL] +
+               str_s[spin_num];
     }
 }
 #endif

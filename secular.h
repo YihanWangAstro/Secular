@@ -15,63 +15,96 @@
 namespace secular {
 
     template<size_t spin_num>
-    class SecularArray : public std::array<double, 12+3*spin_num>{
-        static_assert(spin_num<=3, "The max spin number is 3!");
+    class SecularArray : public std::array<double, 12 + 3 * spin_num> {
+        static_assert(spin_num <= 3, "The max spin number is 3!");
     public:
         SecularArray() = default;
 
         READ_GETTER(double, L1x, (*this)[0]);
+
         READ_GETTER(double, L1y, (*this)[1]);
+
         READ_GETTER(double, L1z, (*this)[2]);
+
         READ_GETTER(double, e1x, (*this)[3]);
+
         READ_GETTER(double, e1y, (*this)[4]);
+
         READ_GETTER(double, e1z, (*this)[5]);
+
         READ_GETTER(double, L2x, (*this)[6]);
+
         READ_GETTER(double, L2y, (*this)[7]);
+
         READ_GETTER(double, L2z, (*this)[8]);
+
         READ_GETTER(double, e2x, (*this)[9]);
+
         READ_GETTER(double, e2y, (*this)[10]);
+
         READ_GETTER(double, e2z, (*this)[11]);
 
         READ_GETTER(double, rx, (*this)[6]);
+
         READ_GETTER(double, ry, (*this)[7]);
+
         READ_GETTER(double, rz, (*this)[8]);
+
         READ_GETTER(double, vx, (*this)[9]);
+
         READ_GETTER(double, vy, (*this)[10]);
+
         READ_GETTER(double, vz, (*this)[11]);
 
         READ_GETTER(auto, L1, std::tie((*this)[0], (*this)[1], (*this)[2]));
+
         READ_GETTER(auto, e1, std::tie((*this)[3], (*this)[4], (*this)[5]));
+
         READ_GETTER(auto, L2, std::tie((*this)[6], (*this)[7], (*this)[8]));
+
         READ_GETTER(auto, e2, std::tie((*this)[9], (*this)[10], (*this)[11]));
 
         READ_GETTER(auto, r, std::tie((*this)[6], (*this)[7], (*this)[8]));
+
         READ_GETTER(auto, v, std::tie((*this)[9], (*this)[10], (*this)[11]));
 
         STD_3WAY_SETTER(L1, (*this)[0], (*this)[1], (*this)[2]);
+
         STD_3WAY_SETTER(e1, (*this)[3], (*this)[4], (*this)[5]);
+
         STD_3WAY_SETTER(L2, (*this)[6], (*this)[7], (*this)[8]);
+
         STD_3WAY_SETTER(e2, (*this)[9], (*this)[10], (*this)[11]);
+
         STD_3WAY_SETTER(r, (*this)[6], (*this)[7], (*this)[8]);
+
         STD_3WAY_SETTER(v, (*this)[9], (*this)[10], (*this)[11]);
 
-        OPT_READ_GETTER(spin_num>0, double, S1x, (*this)[12]);
-        OPT_READ_GETTER(spin_num>0, double, S1y, (*this)[13]);
-        OPT_READ_GETTER(spin_num>0, double, S1z, (*this)[14]);
+        OPT_READ_GETTER(spin_num > 0, double, S1x, (*this)[12]);
 
-        OPT_READ_GETTER(spin_num>1, double, S2x, (*this)[15]);
-        OPT_READ_GETTER(spin_num>1, double, S2y, (*this)[16]);
-        OPT_READ_GETTER(spin_num>1, double, S2z, (*this)[17]);
+        OPT_READ_GETTER(spin_num > 0, double, S1y, (*this)[13]);
 
-        OPT_READ_GETTER(spin_num>2, double, S3x, (*this)[18]);
-        OPT_READ_GETTER(spin_num>2, double, S3y, (*this)[19]);
-        OPT_READ_GETTER(spin_num>2, double, S3z, (*this)[20]);
+        OPT_READ_GETTER(spin_num > 0, double, S1z, (*this)[14]);
 
-        OPT_3WAY_SETTER(spin_num>0, S1, (*this)[12], (*this)[13], (*this)[14]);
-        OPT_3WAY_SETTER(spin_num>1, S2, (*this)[15], (*this)[16], (*this)[17]);
-        OPT_3WAY_SETTER(spin_num>2, S3, (*this)[18], (*this)[19], (*this)[20]);
+        OPT_READ_GETTER(spin_num > 1, double, S2x, (*this)[15]);
 
-        auto spin_begin(){
+        OPT_READ_GETTER(spin_num > 1, double, S2y, (*this)[16]);
+
+        OPT_READ_GETTER(spin_num > 1, double, S2z, (*this)[17]);
+
+        OPT_READ_GETTER(spin_num > 2, double, S3x, (*this)[18]);
+
+        OPT_READ_GETTER(spin_num > 2, double, S3y, (*this)[19]);
+
+        OPT_READ_GETTER(spin_num > 2, double, S3z, (*this)[20]);
+
+        OPT_3WAY_SETTER(spin_num > 0, S1, (*this)[12], (*this)[13], (*this)[14]);
+
+        OPT_3WAY_SETTER(spin_num > 1, S2, (*this)[15], (*this)[16], (*this)[17]);
+
+        OPT_3WAY_SETTER(spin_num > 2, S3, (*this)[18], (*this)[19], (*this)[20]);
+
+        auto spin_begin() {
             return this->begin() + 12;
         }
 
@@ -109,26 +142,43 @@ namespace secular {
         SecularConst() = default;
 
         READ_GETTER(double, m1, basic_.m1());
+
         READ_GETTER(double, m2, basic_.m2());
+
         READ_GETTER(double, m3, basic_.m3());
+
         READ_GETTER(double, m12, basic_.m12());
+
         READ_GETTER(double, m_tot, basic_.m_tot());
+
         READ_GETTER(double, mu_in, basic_.mu_in());
+
         READ_GETTER(double, mu_out, basic_.mu_out());
+
         READ_GETTER(double, a_in_coef, basic_.a_in_coef());
+
         READ_GETTER(double, a_out_coef, basic_.a_out_coef());
+
         READ_GETTER(double, SA_acc_coef, basic_.SA_acc_coef());
 
         READ_GETTER(double, GR_coef, GR_.GR_coef());
+
         READ_GETTER(double, GW_L_coef, GR_.GW_L_coef());
+
         READ_GETTER(double, GW_e_coef, GR_.GW_L_coef());
 
         READ_GETTER(double, LL, SL_.LL());
+
         READ_GETTER(double, S1L1, SL_.S1L1());
+
         READ_GETTER(double, S1L2, SL_.S1L2());
+
         READ_GETTER(double, S2L1, SL_.S2L1());
+
         READ_GETTER(double, S2L2, SL_.S2L2());
+
         READ_GETTER(double, S3L1, SL_.S3L1());
+
         READ_GETTER(double, S3L2, SL_.S3L2());
     private:
         BasicConst basic_;
@@ -138,7 +188,7 @@ namespace secular {
 
     template<typename Container>
     struct Dynamic_dispatch {
-      using ConstArg = SecularConst<spin_num<Container>::size>;
+        using ConstArg = SecularConst<spin_num<Container>::size>;
 
         Dynamic_dispatch(Controler const &_ctrl, ConstArg const &_args) : ctrl{&_ctrl}, args{&_args} {}
 

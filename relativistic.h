@@ -5,26 +5,28 @@
 
 namespace secular {
 
-  class GRConst{
-  public:
-      GRConst(double M, double Mu) {
-          constexpr double C5 =  consts::C *consts::C* consts::C* consts::C*consts::C;
-          constexpr double G3 =  consts::G* consts::G*consts::G;
-          GR_coef_ = 3 * consts::G /(consts::C * consts::C) * M / Mu;//3 * pow(consts::G*M, 1.5) / (consts::C * consts::C);
-          GW_L_coef_ = -6.4 * G3 * Mu * M * M / C5;
-          GW_e_coef_ = -304.0 / 15 * G3 * Mu * M * M / C5 ;
-      }
+    class GRConst {
+    public:
+        GRConst(double M, double Mu) {
+            constexpr double C5 = consts::C * consts::C * consts::C * consts::C * consts::C;
+            constexpr double G3 = consts::G * consts::G * consts::G;
+            GR_coef_ = 3 * consts::G / (consts::C * consts::C) * M / Mu;//3 * pow(consts::G*M, 1.5) / (consts::C * consts::C);
+            GW_L_coef_ = -6.4 * G3 * Mu * M * M / C5;
+            GW_e_coef_ = -304.0 / 15 * G3 * Mu * M * M / C5;
+        }
 
-      GRConst() = default;
+        GRConst() = default;
 
-      READ_GETTER(double, GR_coef, GR_coef_);
-      READ_GETTER(double, GW_L_coef, GW_L_coef_);
-      READ_GETTER(double, GW_e_coef, GW_L_coef_);
-  private:
-      double GR_coef_{0};
-      double GW_L_coef_{0};
-      double GW_e_coef_{0};
-  };
+        READ_GETTER(double, GR_coef, GR_coef_);
+
+        READ_GETTER(double, GW_L_coef, GW_L_coef_);
+
+        READ_GETTER(double, GW_e_coef, GW_L_coef_);
+    private:
+        double GR_coef_{0};
+        double GW_L_coef_{0};
+        double GW_e_coef_{0};
+    };
 
     template<typename Args, typename Container>
     inline void GR_precession(Args const &args, Container const &var, Container &dvar, double t) {
@@ -37,7 +39,8 @@ namespace secular {
 
     template<typename Args, typename Container>
     inline void GW_radiation(Args const &args, Container const &var, Container &dvar, double t) {
-        auto[e1_sqr, j1_sqr, j1, L1_norm, L_in, a_in] = calc_orbit_args(args.a_in_coef(), var.L1x(), var.L1y(), var.L1z(), var.e1x(), var.e1y(), var.e1z());
+        auto[e1_sqr, j1_sqr, j1, L1_norm, L_in, a_in] = calc_orbit_args(args.a_in_coef(), var.L1x(), var.L1y(), var.L1z(), var.e1x(), var.e1y(),
+                                                                        var.e1z());
 
         double a_eff = a_in * j1;
 
