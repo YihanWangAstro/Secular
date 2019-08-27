@@ -13,10 +13,12 @@ using namespace space::multiThread;
 
 double INT_ERROR = 1e-13;
 
-void get_line(std::fstream &is, std::string &str) {
+bool get_line(std::fstream &is, std::string &str) {
     std::getline(is, str);
     if (!is)
-        throw secular::StopFlag::eof;
+        return false;
+    else
+        return true;
 }
 
 void unpack_args_from_str(std::string const &str, std::vector<double> &vec, bool DA, size_t spin_num) {
@@ -73,8 +75,7 @@ auto resolve_sim_type(std::string const &line) {
         case 32 :
             return std::make_tuple(id, single_average, 3u);
         default :
-            std::cout << "wrong input format!\n";
-            throw secular::StopFlag::input_err;
+            return std::make_tuple(0lu, single_average, 0u);
     }
 }
 
@@ -85,7 +86,6 @@ constexpr size_t END_TIME_OFFSET = 3;
 constexpr size_t DT_OFFSET = 4;
 constexpr size_t CTRL_OFFSET = 5;
 constexpr size_t ARGS_OFFSET = 10;
-
 
 template<size_t spin_num, typename Observer>
 void call_ode_int(bool DA, secular::Controler const &ctrl, std::vector<double> const &init_args, double t_start, double t_end, Observer obsv) {
@@ -112,7 +112,6 @@ void call_ode_int(bool DA, secular::Controler const &ctrl, std::vector<double> c
 
     //boost::numeric::odeint::integrate_adaptive(boost::numeric::odeint::make_controlled(INT_ERROR, INT_ERROR, stepper_type()), func, init_cond, t_start, t_end, ini_dt, obsv);
 }
-
 
 struct Traj_args {
     Traj_args(bool open, std::string const &work_dir, size_t task_id, double _dt)
@@ -148,10 +147,7 @@ auto create_obser(std::shared_ptr<Traj_args>& traj_arg_ptr, std::string const& w
 
 void single_thread_job(std::string work_dir, ConcurrentFile input, size_t start_id, size_t end_id, ConcurrentFile output, ConcurrentFile log) {
     std::string entry;
-    for (;;) {
-        try {
-            input.execute(get_line, entry);
-
+    for (;input.execute(get_line, entry);) {
             auto[task_id, DA, spin_num] = resolve_sim_type(entry);
 
             if (start_id <= task_id && task_id <= end_id) {
@@ -208,10 +204,6 @@ void single_thread_job(std::string work_dir, ConcurrentFile input, size_t start_
                     call_ode_int<3>(DA, ctrl, v, 0.0, t_end, observer);
                 }
             }
-        } catch (secular::StopFlag flag) {
-            if (flag == secular::StopFlag::eof)
-                break;
-        }
     }
 }
 
@@ -225,7 +217,7 @@ int main(int argc, char **argv) {
     const int dir_err = system(("mkdir -p " + work_dir).c_str());
     if (dir_err == -1) {
         std::cout << "Error creating directory!\n";
-        exit(1);
+        return 0;
     }
 
     work_dir += "/";

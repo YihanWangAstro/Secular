@@ -6,7 +6,7 @@
 
 namespace secular {
 
-#define STD_ACCESSOR(TYPE, NAME, MEMBER)                                                                                 \
+#define STD_ACCESSOR(TYPE, NAME, MEMBER)                                                                               \
   inline TYPE & NAME () {                                                                                                \
     return MEMBER;                                                                                                       \
   };                                                                                                                     \
@@ -14,12 +14,12 @@ namespace secular {
     return MEMBER;                                                                                                       \
   };
 
-#define READ_GETTER(TYPE, NAME, MEMBER)                                                                                  \
+#define READ_GETTER(TYPE, NAME, MEMBER)                                                                                \
   inline TYPE const & NAME () const {                                                                                    \
     return MEMBER;                                                                                                       \
   };
 
-#define OPT_STD_GETTER(COND, TYPE, NAME, MEMBER)                                                                         \
+#define OPT_STD_GETTER(COND, TYPE, NAME, MEMBER)                                                                       \
   inline TYPE & NAME () {                                                                                                \
     static_assert(COND, "method is not defined!");                                                                       \
     return MEMBER;                                                                                                       \
@@ -29,7 +29,7 @@ namespace secular {
     return MEMBER;                                                                                                       \
   };
 
-#define OPT_READ_GETTER(COND, TYPE, NAME, MEMBER)                                                                        \
+#define OPT_READ_GETTER(COND, TYPE, NAME, MEMBER)                                                                      \
   inline TYPE const & NAME () const {                                                                                    \
     static_assert(COND, "method is not defined!");                                                                       \
     return MEMBER;                                                                                                       \
