@@ -1,7 +1,6 @@
 
 #include <iostream>
 #include "secular.h"
-
 #include "SpaceHub/src/multi-thread/multi-thread.hpp"
 #include "SpaceHub/src/tools/config-reader.hpp"
 #include "SpaceHub/src/tools/timer.hpp"
@@ -106,10 +105,10 @@ void call_ode_int(bool DA, secular::Controler const &ctrl, std::vector<double> c
 
     double ini_dt = 0.1 * secular::consts::year;
 
-    auto func = secular::Dynamic_dispatch<Container>(ctrl, const_parameters);
+    //auto func = secular::Dynamic_dispatch<Container>(ctrl, const_parameters);
 
-    boost::numeric::odeint::integrate_adaptive(stepper_type{INT_ERROR, INT_ERROR}, func, init_cond, t_start, t_end, ini_dt, obsv);
-    //STATIC_DISPATH(ctrl, const_parameters, boost::numeric::odeint::integrate_adaptive(stepper_type{INT_ERROR, INT_ERROR}, func, init_cond, t_start, t_end, ini_dt, obsv);)
+    //boost::numeric::odeint::integrate_adaptive(stepper_type{INT_ERROR, INT_ERROR}, func, init_cond, t_start, t_end, ini_dt, obsv);
+    STATIC_DISPATH(ctrl, const_parameters, boost::numeric::odeint::integrate_adaptive(stepper_type{INT_ERROR, INT_ERROR}, func, init_cond, t_start, t_end, ini_dt, obsv);)
 
     //boost::numeric::odeint::integrate_adaptive(boost::numeric::odeint::make_controlled(INT_ERROR, INT_ERROR, stepper_type()), func, init_cond, t_start, t_end, ini_dt, obsv);
 }
