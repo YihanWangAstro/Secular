@@ -68,22 +68,23 @@ namespace secular {
         return fabs(m1 - m2) / (m1 + m2) * a_in / a_out / c_out_sqr;
     }
 
+    /*
     auto unpack_init(size_t b, std::vector<double> const &v) {
         return std::make_tuple(v[b], v[b + 1], v[b + 2], v[b + 3], v[b + 4], v[b + 5], v[b + 6], v[b + 7], v[b + 8], v[b + 9], v[b + 10], v[b + 11]);
-    }
+    }*/
 
-    template<typename Container>
-    void initilize_orbit_args(bool DA, size_t spin_num, Container &c, std::vector<double> const &o, size_t off_set) {
+    template<typename Container, typename Iter>
+    void initilize_orbit_args(bool DA, size_t spin_num, Container &c, Iter iter) {
         if (DA) {
-            initilize_DA(spin_num, c, o, off_set);
+            initilize_DA(spin_num, c, iter);
         } else {
-            initilize_SA(spin_num, c, o, off_set);
+            initilize_SA(spin_num, c, iter);
         }
     }
 
-    template<typename Container>
-    void initilize_DA(size_t spin_num, Container &c, std::vector<double> const &args, size_t off_set) {
-        auto[m1, m2, m3, a_in, a_out, e_in, e_out, omega_in, omega_out, Omega_in, i_in, i_out] = unpack_init(off_set, args);
+    template<typename Container,typename Iter>
+    void initilize_DA(size_t spin_num, Container &c, Iter iter) {
+        auto[m1, m2, m3, a_in, a_out, e_in, e_out, omega_in, omega_out, Omega_in, i_in, i_out] = unpack_args<Iter, 12>(iter);//unpack_vector(off_set, args);
 
         double Omega_out = Omega_in - 180;
 
@@ -109,16 +110,16 @@ namespace secular {
 
         c.set_e2(e_out * e2x, e_out * e2y, e_out * e2z);
 
-        std::copy_n(args.begin() + off_set + 12, spin_num * 3, c.spin_begin());
+        std::copy_n(iter + 12, spin_num * 3, c.spin_begin());
     }
 
-    template<typename Container>
-    void initilize_SA(size_t spin_num, Container &c, std::vector<double> const &args, size_t off_set) {
-        auto[m1, m2, m3, a_in, a_out, e_in, e_out, omega_in, omega_out, Omega_in, i_in, i_out] = unpack_init(off_set, args);
+    template<typename Container, typename Iter>
+    void initilize_SA(size_t spin_num, Container &c, Iter iter) {
+        auto[m1, m2, m3, a_in, a_out, e_in, e_out, omega_in, omega_out, Omega_in, i_in, i_out] = unpack_args<Iter, 12>(iter);
 
         double Omega_out = Omega_in - 180;
 
-        double M_nu = args[22];
+        double M_nu = *(iter+12);
 
         deg_to_rad(omega_in, omega_out, Omega_in, Omega_out, i_in, i_out, M_nu);
 
@@ -156,7 +157,7 @@ namespace secular {
 
         c.set_v(ve * e2x + vv * vx, ve * e2y + vv * vy, ve * e2z + vv * vz);
 
-        std::copy_n(args.begin() + off_set + 13, spin_num * 3, c.spin_begin());
+        std::copy_n(iter + 13, spin_num * 3, c.spin_begin());
     }
 
     template<bool Oct, typename Args, typename Container>

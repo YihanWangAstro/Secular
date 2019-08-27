@@ -3,10 +3,10 @@
 
 #include <cmath>
 #include <tuple>
-
+#include <vector>
 namespace secular {
 
-#define STD_ACCESSOR(TYPE, NAME, MEMBER)                                                                               \
+#define STD_ACCESSOR(TYPE, NAME, MEMBER)                                                                                 \
   inline TYPE & NAME () {                                                                                                \
     return MEMBER;                                                                                                       \
   };                                                                                                                     \
@@ -14,12 +14,12 @@ namespace secular {
     return MEMBER;                                                                                                       \
   };
 
-#define READ_GETTER(TYPE, NAME, MEMBER)                                                                                \
+#define READ_GETTER(TYPE, NAME, MEMBER)                                                                                  \
   inline TYPE const & NAME () const {                                                                                    \
     return MEMBER;                                                                                                       \
   };
 
-#define OPT_STD_GETTER(COND, TYPE, NAME, MEMBER)                                                                       \
+#define OPT_STD_GETTER(COND, TYPE, NAME, MEMBER)                                                                         \
   inline TYPE & NAME () {                                                                                                \
     static_assert(COND, "method is not defined!");                                                                       \
     return MEMBER;                                                                                                       \
@@ -29,7 +29,7 @@ namespace secular {
     return MEMBER;                                                                                                       \
   };
 
-#define OPT_READ_GETTER(COND, TYPE, NAME, MEMBER)                                                                      \
+#define OPT_READ_GETTER(COND, TYPE, NAME, MEMBER)                                                                        \
   inline TYPE const & NAME () const {                                                                                    \
     static_assert(COND, "method is not defined!");                                                                       \
     return MEMBER;                                                                                                       \
@@ -81,6 +81,24 @@ inline void sub_##NAME(std::tuple<double, double, double> const& t) {           
     static_assert(COND, "method is not defined!");                                                                       \
     X -= std::get<0>(t), Y -= std::get<1>(t), Z -= std::get<2>(t);                                                       \
 }
+
+template<typename Iter, size_t ...I>
+inline auto _unpack_array_(Iter iter, std::index_sequence<I...>) {
+    return std::make_tuple(*(iter+I)...);
+}
+
+template<typename Iter, size_t num>
+inline auto unpack_args(Iter iter) {
+    return _unpack_array_(iter, std::make_index_sequence<num>());
+}
+
+template<typename Iter, typename ...Args>
+inline auto cast_unpack(Iter iter) {
+    iter += sizeof...(Args) - 1;
+    return std::make_tuple(static_cast<Args>(*iter--)...);
+    //return std::make_tuple(static_cast<Args>(*iter++)...);
+}
+
 
 #define UNPACK3(x) std::get<0>(x), std::get<1>(x), std::get<2>(x)
 

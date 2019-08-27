@@ -9,7 +9,6 @@
 #include "relativistic.h"
 #include "deSitter.h"
 
-
 namespace secular {
 
     template<size_t spin_num>
@@ -101,6 +100,13 @@ namespace secular {
         OPT_3WAY_SETTER(spin_num > 1, S2, (*this)[15], (*this)[16], (*this)[17]);
 
         OPT_3WAY_SETTER(spin_num > 2, S3, (*this)[18], (*this)[19], (*this)[20]);
+
+        friend std::ostream& operator<<(std::ostream&os, SecularArray const& arr) {
+            for(auto a : arr){
+                os << a << ' ';
+            }
+            return os;
+        }
 
         auto spin_begin() {
             return this->begin() + 12;

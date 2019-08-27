@@ -1,6 +1,7 @@
 
 #include <iostream>
 #include "secular.h"
+#include "tools.h"
 #include "SpaceHub/src/multi-thread/multi-thread.hpp"
 #include "SpaceHub/src/tools/config-reader.hpp"
 #include "SpaceHub/src/tools/timer.hpp"
@@ -81,7 +82,7 @@ auto resolve_sim_type(std::string const &line) {
 
 constexpr size_t TASK_ID_OFFSET = 0;
 constexpr size_t TRAJECTROY_OFFSET = 1;
-constexpr size_t END_STAT_OFFSET = 2;
+constexpr size_t GW_10HZ_OFFSET = 2;
 constexpr size_t END_TIME_OFFSET = 3;
 constexpr size_t DT_OFFSET = 4;
 constexpr size_t CTRL_OFFSET = 5;
@@ -89,13 +90,15 @@ constexpr size_t ARGS_OFFSET = 10;
 
 template<size_t spin_num, typename Observer>
 void call_ode_int(bool DA, secular::Controler const &ctrl, std::vector<double> const &init_args, double t_start, double t_end, Observer obsv) {
+    using namespace boost::numeric::odeint;
+
     using Container = secular::SecularArray<spin_num>;
     //using stepper_type = boost::numeric::odeint::runge_kutta_fehlberg78<Container>;
-    using stepper_type = boost::numeric::odeint::bulirsch_stoer<Container>;
+    using stepper_type = bulirsch_stoer<Container>;
 
     Container init_cond;
 
-    initilize_orbit_args(DA, spin_num, init_cond, init_args, ARGS_OFFSET);
+    initilize_orbit_args(DA, spin_num, init_cond, init_args.begin() + ARGS_OFFSET);
 
     double m1 = init_args[ARGS_OFFSET];
     double m2 = init_args[ARGS_OFFSET + 1];
@@ -107,11 +110,14 @@ void call_ode_int(bool DA, secular::Controler const &ctrl, std::vector<double> c
 
     //auto func = secular::Dynamic_dispatch<Container>(ctrl, const_parameters);
 
-    //boost::numeric::odeint::integrate_adaptive(stepper_type{INT_ERROR, INT_ERROR}, func, init_cond, t_start, t_end, ini_dt, obsv);
-    STATIC_DISPATH(ctrl, const_parameters, boost::numeric::odeint::integrate_adaptive(stepper_type{INT_ERROR, INT_ERROR}, func, init_cond, t_start, t_end, ini_dt, obsv);)
+    //integrate_adaptive(stepper_type{INT_ERROR, INT_ERROR}, func, init_cond, t_start, t_end, ini_dt, obsv);
+    STATIC_DISPATH(ctrl, const_parameters, integrate_adaptive(stepper_type{10*INT_ERROR, INT_ERROR}, func, init_cond, t_start, t_end, ini_dt, obsv);)
 
-    //boost::numeric::odeint::integrate_adaptive(boost::numeric::odeint::make_controlled(INT_ERROR, INT_ERROR, stepper_type()), func, init_cond, t_start, t_end, ini_dt, obsv);
+    //STATIC_DISPATH(ctrl, const_parameters, integrate_adaptive(make_controlled(INT_ERROR, INT_ERROR, stepper_type()), func, init_cond, t_start, t_end, ini_dt, obsv);)
+
+    //integrate_adaptive(make_controlled(INT_ERROR, INT_ERROR, stepper_type()), func, init_cond, t_start, t_end, ini_dt, obsv);
 }
+
 
 struct Traj_args {
     Traj_args(bool open, std::string const &work_dir, size_t task_id, double _dt)
@@ -127,6 +133,26 @@ struct Traj_args {
     double dt;
     double t_output;
     std::fstream file;
+};
+
+
+struct Stream_observer
+{
+    Stream_observer(std::ostream &out, double dt) : dt_{dt}, t_out_{0.0}, f_out_{out}, switch_{dt > 5e-15} { }
+
+    template<typename State>
+    void operator()(State const&x , double t) 
+    {
+        if(switch_ && t >= t_out_) {
+              f_out_ << t << ' ' << x << "\r\n";
+              t_out_ += dt_;
+        }
+    }
+  private:
+    double const dt_;
+    double t_out_;
+    std::ostream& f_out_;
+    const bool switch_;
 };
 
 /*
@@ -159,37 +185,33 @@ void single_thread_job(std::string work_dir, ConcurrentFile input, size_t start_
 
                 log << secular::get_log_title(task_id, DA, ctrl, spin_num) + "\r\n";
 
-                //secular::OrbitArgs init_args{v.begin() + ARGS_OFFSET, DA, spin_num};
+                auto  [task_id, is_traj, is_10hz, t_end, dt] = secular::cast_unpack<decltype(v.begin()), size_t, bool, bool, double, double>(v.begin());
 
-                double t_end = v[END_TIME_OFFSET];
+                t_end *= 1e-3;
 
-                //space::display(std::cout, task_id, DA, spin_num, ctrl.Oct, ctrl.GR, ctrl.GW, ctrl.SL, ctrl.LL,"\n");
-
-                bool is_traj = v[TRAJECTROY_OFFSET];
-
-                bool is_10hz = v[END_STAT_OFFSET];
-
-                size_t task_id = v[TASK_ID_OFFSET];
-
-                double dt = v[DT_OFFSET];
+                //space::display(std::cout, task_id, is_traj, is_10hz, t_end, dt, DA, spin_num, ctrl.Oct, ctrl.GR, ctrl.GW, ctrl.SL, ctrl.LL,"\n");
 
                 Traj_args traj_arg{is_traj, work_dir, task_id, dt};
 
+                auto const [m1, m2, m3, a_in_init] = secular::unpack_args<decltype(v.begin()), 4>(v.begin() + ARGS_OFFSET);
+
+                double const a_in_coef = (m1+m2)/(secular::consts::G*m1*m1*m2*m2);
+
                 auto observer = [&](auto const &data, double t) {
                     if (is_10hz) {
-                        const auto[L1x, L1y, L1z] = std::tie(data[0], data[1], data[2]);
+                        double a_in = secular::calc_a(a_in_coef, data.L1x(), data.L1y(), data.L1z(), data.e1x(), data.e1y(), data.e1z());
+                        if(a_in <=0.001*a_in_init){
+                            output << PACK(task_id, ' ', t, ' ', data, "\r\n");
+                            output.flush();
+                            if(is_traj){
+                                traj_arg.file << t << ' ' << data << "\r\n";
+                            }
 
-                        const auto[e1x, e1y, e1z] = std::tie(data[3], data[4], data[5]);
-
-                        double a = secular::calc_a(1, L1x, L1y, L1z, e1x, e1y, e1z);
+                        }
                     }
 
                     if (is_traj && t > traj_arg.t_output) {
-                        traj_arg.file << t << ' ';
-                        for (auto d : data) {
-                            traj_arg.file << d << ' ';
-                        }
-                        traj_arg.file << "\r\n";
+                        traj_arg.file << t << ' ' << data << "\r\n";
                         traj_arg.move_to_next_output();
                     }
                 };
