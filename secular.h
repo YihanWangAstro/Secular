@@ -121,12 +121,12 @@ namespace secular {
             DA = _DA;
             Oct = static_cast<bool>(*iter), iter++;
             GR = static_cast<bool>(*iter), iter++;
-            GW_stop_a_ = static_cast<bool>(*iter), iter++;
+            GW_stop_a_ = static_cast<double>(*iter), iter++;
             GW = is_on(GW_stop_a_ );
             SL = static_cast<bool>(*iter), iter++;
             LL = static_cast<bool>(*iter);
         }
-        
+
         double stop_a_in() const{
             return GW_stop_a_;
         }
@@ -335,134 +335,134 @@ namespace secular {
                                                                                                                   \
         switch (f_id) {                                                                                           \
           case 0:                                                                                                 \
-              {auto func = std::move(secular::Static_functor<Container, false, false, false, false, false, false>(args)); expr; break;}\
+              {auto func =  secular::Static_functor<Container, false, false, false, false, false, false>(args) ; expr; break;}\
           case 1:                                                                                                 \
-              {auto func = std::move(secular::Static_functor<Container, true, false, false, false, false, false>(args)); expr;break;}\
+              {auto func =  secular::Static_functor<Container, true, false, false, false, false, false>(args) ; expr;break;}\
           case 2:                                                                                                 \
-              {auto func = std::move(secular::Static_functor<Container, false, true, false, false, false, false>(args)); expr;break;}\
+              {auto func =  secular::Static_functor<Container, false, true, false, false, false, false>(args) ; expr;break;}\
           case 3:                                                                                                 \
-              {auto func = std::move(secular::Static_functor<Container, true, true, false, false, false, false>(args)); expr;break;}\
+              {auto func =  secular::Static_functor<Container, true, true, false, false, false, false>(args) ; expr;break;}\
           case 4:                                                                                                 \
-              {auto func = std::move(secular::Static_functor<Container, false, false, true, false, false, false>(args)); expr;break;}\
+              {auto func =  secular::Static_functor<Container, false, false, true, false, false, false>(args) ; expr;break;}\
           case 5:                                                                                                 \
-              {auto func = std::move(secular::Static_functor<Container, true, false, true, false, false, false>(args)); expr;break;}\
+              {auto func =  secular::Static_functor<Container, true, false, true, false, false, false>(args) ; expr;break;}\
           case 6:                                                                                                 \
-              {auto func = std::move(secular::Static_functor<Container, false, true, true, false, false, false>(args)); expr;break;}\
+              {auto func =  secular::Static_functor<Container, false, true, true, false, false, false>(args) ; expr;break;}\
           case 7:                                                                                                 \
-              {auto func = std::move(secular::Static_functor<Container, true, true, true, false, false, false>(args)); expr;break;}\
+              {auto func =  secular::Static_functor<Container, true, true, true, false, false, false>(args) ; expr;break;}\
           case 8:                                                                                                 \
-              {auto func = std::move(secular::Static_functor<Container, false, false, false, true, false, false>(args)); expr;break;}\
+              {auto func =  secular::Static_functor<Container, false, false, false, true, false, false>(args) ; expr;break;}\
           case 9:                                                                                                 \
-              {auto func = std::move(secular::Static_functor<Container, true, false, false, true, false, false>(args)); expr;break;}\
+              {auto func =  secular::Static_functor<Container, true, false, false, true, false, false>(args) ; expr;break;}\
           case 10:                                                                                                 \
-              {auto func = std::move(secular::Static_functor<Container, false, true, false, true, false, false>(args)); expr;break;}\
+              {auto func =  secular::Static_functor<Container, false, true, false, true, false, false>(args) ; expr;break;}\
           case 11:                                                                                                 \
-              {auto func = std::move(secular::Static_functor<Container, true, true, false, true, false, false>(args)); expr;break;}\
+              {auto func =  secular::Static_functor<Container, true, true, false, true, false, false>(args) ; expr;break;}\
           case 12:                                                                                                 \
-              {auto func = std::move(secular::Static_functor<Container, false, false, true, true, false, false>(args)); expr;break;}\
+              {auto func =  secular::Static_functor<Container, false, false, true, true, false, false>(args) ; expr;break;}\
           case 13:                                                                                                 \
-              {auto func = std::move(secular::Static_functor<Container, true, false, true, true, false, false>(args)); expr;break;}\
+              {auto func =  secular::Static_functor<Container, true, false, true, true, false, false>(args) ; expr;break;}\
           case 14:                                                                                                 \
-              {auto func = std::move(secular::Static_functor<Container, false, true, true, true, false, false>(args)); expr;break;}\
+              {auto func =  secular::Static_functor<Container, false, true, true, true, false, false>(args) ; expr;break;}\
           case 15:                                                                                                 \
-              {auto func = std::move(secular::Static_functor<Container, true, true, true, true, false, false>(args)); expr;break;}\
+              {auto func =  secular::Static_functor<Container, true, true, true, true, false, false>(args) ; expr;break;}\
           case 16:                                                                                                 \
-              {auto func = std::move(secular::Static_functor<Container, false, false, false, false, true, false>(args)); expr;break;}\
+              {auto func =  secular::Static_functor<Container, false, false, false, false, true, false>(args) ; expr;break;}\
           case 17:                                                                                                 \
-              {auto func = std::move(secular::Static_functor<Container, true, false, false, false, true, false>(args)); expr;break;}\
+              {auto func =  secular::Static_functor<Container, true, false, false, false, true, false>(args) ; expr;break;}\
           case 18:                                                                                                 \
-              {auto func = std::move(secular::Static_functor<Container, false, true, false, false, true, false>(args)); expr;break;}\
+              {auto func =  secular::Static_functor<Container, false, true, false, false, true, false>(args) ; expr;break;}\
           case 19:                                                                                                 \
-              {auto func = std::move(secular::Static_functor<Container, true, true, false, false, true, false>(args)); expr;break;}\
+              {auto func =  secular::Static_functor<Container, true, true, false, false, true, false>(args) ; expr;break;}\
           case 20:                                                                                                 \
-              {auto func = std::move(secular::Static_functor<Container, false, false, true, false, true, false>(args)); expr;break;}\
+              {auto func =  secular::Static_functor<Container, false, false, true, false, true, false>(args) ; expr;break;}\
           case 21:                                                                                                 \
-              {auto func = std::move(secular::Static_functor<Container, true, false, true, false, true, false>(args)); expr;break;}\
+              {auto func =  secular::Static_functor<Container, true, false, true, false, true, false>(args) ; expr;break;}\
           case 22:                                                                                                 \
-              {auto func = std::move(secular::Static_functor<Container, false, true, true, false, true, false>(args)); expr;break;}\
+              {auto func =  secular::Static_functor<Container, false, true, true, false, true, false>(args) ; expr;break;}\
           case 23:                                                                                                 \
-              {auto func = std::move(secular::Static_functor<Container, true, true, true, false, true, false>(args)); expr;break;}\
+              {auto func =  secular::Static_functor<Container, true, true, true, false, true, false>(args) ; expr;break;}\
           case 24:                                                                                                 \
-              {auto func = std::move(secular::Static_functor<Container, false, false, false, true, true, false>(args)); expr;break;}\
+              {auto func =  secular::Static_functor<Container, false, false, false, true, true, false>(args) ; expr;break;}\
           case 25:                                                                                                 \
-              {auto func = std::move(secular::Static_functor<Container, true, false, false, true, true, false>(args)); expr;break;}\
+              {auto func =  secular::Static_functor<Container, true, false, false, true, true, false>(args) ; expr;break;}\
           case 26:                                                                                                 \
-              {auto func = std::move(secular::Static_functor<Container, false, true, false, true, true, false>(args)); expr;break;}\
+              {auto func =  secular::Static_functor<Container, false, true, false, true, true, false>(args) ; expr;break;}\
           case 27:                                                                                                 \
-              {auto func = std::move(secular::Static_functor<Container, true, true, false, true, true, false>(args)); expr;break;}\
+              {auto func =  secular::Static_functor<Container, true, true, false, true, true, false>(args) ; expr;break;}\
           case 28:                                                                                                 \
-              {auto func = std::move(secular::Static_functor<Container, false, false, true, true, true, false>(args)); expr;break;}\
+              {auto func =  secular::Static_functor<Container, false, false, true, true, true, false>(args) ; expr;break;}\
           case 29:                                                                                                 \
-              {auto func = std::move(secular::Static_functor<Container, true, false, true, true, true, false>(args)); expr;break;}\
+              {auto func =  secular::Static_functor<Container, true, false, true, true, true, false>(args) ; expr;break;}\
           case 30:                                                                                                 \
-              {auto func = std::move(secular::Static_functor<Container, false, true, true, true, true, false>(args)); expr;break;}\
+              {auto func =  secular::Static_functor<Container, false, true, true, true, true, false>(args) ; expr;break;}\
           case 31:                                                                                                 \
-              {auto func = std::move(secular::Static_functor<Container, true, true, true, true, true, false>(args)); expr;break;}\
+              {auto func =  secular::Static_functor<Container, true, true, true, true, true, false>(args) ; expr;break;}\
           case 32:                                                                                                 \
-              {auto func = std::move(secular::Static_functor<Container, false, false, false, false, false, true>(args)); expr;break;}\
+              {auto func =  secular::Static_functor<Container, false, false, false, false, false, true>(args) ; expr;break;}\
           case 33:                                                                                                 \
-              {auto func = std::move(secular::Static_functor<Container, true, false, false, false, false, true>(args)); expr;break;}\
+              {auto func =  secular::Static_functor<Container, true, false, false, false, false, true>(args) ; expr;break;}\
           case 34:                                                                                                 \
-              {auto func = std::move(secular::Static_functor<Container, false, true, false, false, false, true>(args)); expr;break;}\
+              {auto func =  secular::Static_functor<Container, false, true, false, false, false, true>(args) ; expr;break;}\
           case 35:                                                                                                 \
-              {auto func = std::move(secular::Static_functor<Container, true, true, false, false, false, true>(args)); expr;break;}\
+              {auto func =  secular::Static_functor<Container, true, true, false, false, false, true>(args) ; expr;break;}\
           case 36:                                                                                                 \
-              {auto func = std::move(secular::Static_functor<Container, false, false, true, false, false, true>(args)); expr;break;}\
+              {auto func =  secular::Static_functor<Container, false, false, true, false, false, true>(args) ; expr;break;}\
           case 37:                                                                                                 \
-              {auto func = std::move(secular::Static_functor<Container, true, false, true, false, false, true>(args)); expr;break;}\
+              {auto func =  secular::Static_functor<Container, true, false, true, false, false, true>(args) ; expr;break;}\
           case 38:                                                                                                 \
-              {auto func = std::move(secular::Static_functor<Container, false, true, true, false, false, true>(args)); expr;break;}\
+              {auto func =  secular::Static_functor<Container, false, true, true, false, false, true>(args) ; expr;break;}\
           case 39:                                                                                                 \
-              {auto func = std::move(secular::Static_functor<Container, true, true, true, false, false, true>(args)); expr;break;}\
+              {auto func =  secular::Static_functor<Container, true, true, true, false, false, true>(args) ; expr;break;}\
           case 40:                                                                                                 \
-              {auto func = std::move(secular::Static_functor<Container, false, false, false, true, false, true>(args)); expr;break;}\
+              {auto func =  secular::Static_functor<Container, false, false, false, true, false, true>(args) ; expr;break;}\
           case 41:                                                                                                 \
-              {auto func = std::move(secular::Static_functor<Container, true, false, false, true, false, true>(args)); expr;break;}\
+              {auto func =  secular::Static_functor<Container, true, false, false, true, false, true>(args) ; expr;break;}\
           case 42:                                                                                                 \
-              {auto func = std::move(secular::Static_functor<Container, false, true, false, true, false, true>(args)); expr;break;}\
+              {auto func =  secular::Static_functor<Container, false, true, false, true, false, true>(args) ; expr;break;}\
           case 43:                                                                                                 \
-              {auto func = std::move(secular::Static_functor<Container, true, true, false, true, false, true>(args)); expr;break;}\
+              {auto func =  secular::Static_functor<Container, true, true, false, true, false, true>(args) ; expr;break;}\
           case 44:                                                                                                 \
-              {auto func = std::move(secular::Static_functor<Container, false, false, true, true, false, true>(args)); expr;break;}\
+              {auto func =  secular::Static_functor<Container, false, false, true, true, false, true>(args) ; expr;break;}\
           case 45:                                                                                                 \
-              {auto func = std::move(secular::Static_functor<Container, true, false, true, true, false, true>(args));expr; break;}\
+              {auto func =  secular::Static_functor<Container, true, false, true, true, false, true>(args) ;expr; break;}\
           case 46:                                                                                                 \
-              {auto func = std::move(secular::Static_functor<Container, false, true, true, true, false, true>(args)); expr;break;}\
+              {auto func =  secular::Static_functor<Container, false, true, true, true, false, true>(args) ; expr;break;}\
           case 47:                                                                                                 \
-              {auto func = std::move(secular::Static_functor<Container, true, true, true, true, false, true>(args)); expr;break;}\
+              {auto func =  secular::Static_functor<Container, true, true, true, true, false, true>(args) ; expr;break;}\
           case 48:                                                                                                 \
-              {auto func = std::move(secular::Static_functor<Container, false, false, false, false, true, true>(args)); expr;break;}\
+              {auto func =  secular::Static_functor<Container, false, false, false, false, true, true>(args) ; expr;break;}\
           case 49:                                                                                                 \
-              {auto func = std::move(secular::Static_functor<Container, true, false, false, false, true, true>(args)); expr;break;}\
+              {auto func =  secular::Static_functor<Container, true, false, false, false, true, true>(args) ; expr;break;}\
           case 50:                                                                                                 \
-              {auto func = std::move(secular::Static_functor<Container, false, true, false, false, true, true>(args)); expr;break;}\
+              {auto func =  secular::Static_functor<Container, false, true, false, false, true, true>(args) ; expr;break;}\
           case 51:                                                                                                 \
-              {auto func = std::move(secular::Static_functor<Container, true, true, false, false, true, true>(args)); expr;break;}\
+              {auto func =  secular::Static_functor<Container, true, true, false, false, true, true>(args) ; expr;break;}\
           case 52:                                                                                                 \
-              {auto func = std::move(secular::Static_functor<Container, false, false, true, false, true, true>(args)); expr;break;}\
+              {auto func =  secular::Static_functor<Container, false, false, true, false, true, true>(args) ; expr;break;}\
           case 53:                                                                                                 \
-              {auto func = std::move(secular::Static_functor<Container, true, false, true, false, true, true>(args)); expr;break;}\
+              {auto func =  secular::Static_functor<Container, true, false, true, false, true, true>(args) ; expr;break;}\
           case 54:                                                                                                 \
-              {auto func = std::move(secular::Static_functor<Container, false, true, true, false, true, true>(args)); expr;break;}\
+              {auto func =  secular::Static_functor<Container, false, true, true, false, true, true>(args) ; expr;break;}\
           case 55:                                                                                                 \
-              {auto func = std::move(secular::Static_functor<Container, true, true, true, false, true, true>(args)); expr;break;}\
+              {auto func =  secular::Static_functor<Container, true, true, true, false, true, true>(args) ; expr;break;}\
           case 56:                                                                                                 \
-              {auto func = std::move(secular::Static_functor<Container, false, false, false, true, true, true>(args)); expr;break;}\
+              {auto func =  secular::Static_functor<Container, false, false, false, true, true, true>(args) ; expr;break;}\
           case 57:                                                                                                 \
-              {auto func = std::move(secular::Static_functor<Container, true, false, false, true, true, true>(args)); expr;break;}\
+              {auto func =  secular::Static_functor<Container, true, false, false, true, true, true>(args) ; expr;break;}\
           case 58:                                                                                                 \
-              {auto func = std::move(secular::Static_functor<Container, false, true, false, true, true, true>(args)); expr;break;}\
+              {auto func =  secular::Static_functor<Container, false, true, false, true, true, true>(args) ; expr;break;}\
           case 59:                                                                                                 \
-              {auto func = std::move(secular::Static_functor<Container, true, true, false, true, true, true>(args)); expr;break;}\
+              {auto func =  secular::Static_functor<Container, true, true, false, true, true, true>(args) ; expr;break;}\
           case 60:                                                                                                 \
-              {auto func = std::move(secular::Static_functor<Container, false, false, true, true, true, true>(args)); expr;break;}\
+              {auto func =  secular::Static_functor<Container, false, false, true, true, true, true>(args) ; expr;break;}\
           case 61:                                                                                                 \
-              {auto func = std::move(secular::Static_functor<Container, true, false, true, true, true, true>(args)); expr;break;}\
+              {auto func =  secular::Static_functor<Container, true, false, true, true, true, true>(args) ; expr;break;}\
           case 62:                                                                                                 \
-              {auto func = std::move(secular::Static_functor<Container, false, true, true, true, true, true>(args)); expr;break;}\
+              {auto func =  secular::Static_functor<Container, false, true, true, true, true, true>(args) ; expr;break;}\
           case 63:                                                                                                 \
-              {auto func = std::move(secular::Static_functor<Container, true, true, true, true, true, true>(args)); expr;break;}\
-        }           }                                                                                         \
+              {auto func =  secular::Static_functor<Container, true, true, true, true, true, true>(args) ; expr;break;}\
+        }           }                                                                                              \
 
 } // namespace secular
 #endif

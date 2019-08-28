@@ -1,7 +1,6 @@
 
 #include <iostream>
 #include "secular.h"
-#include "tools.h"
 #include "SpaceHub/src/multi-thread/multi-thread.hpp"
 #include "SpaceHub/src/tools/config-reader.hpp"
 #include "SpaceHub/src/tools/timer.hpp"
@@ -25,7 +24,7 @@ bool get_line(std::fstream &is, std::string &str) {
 void unpack_args_from_str(std::string const &str, std::vector<double> &vec, bool DA, size_t spin_num) {
     std::stringstream is{str};
 
-    size_t token_num = 22 + static_cast<size_t>(!DA) + spin_num * 3;
+    size_t token_num = 20 + static_cast<size_t>(!DA) + spin_num * 3;
 
     double tmp;
 
@@ -59,32 +58,30 @@ auto resolve_sim_type(std::string const &line) {
     }
 
     switch (token_num) {
-        case 22 :
+        case 20 :
             return std::make_tuple(id, double_average, 0u);
-        case 23 :
+        case 21 :
             return std::make_tuple(id, single_average, 0u);
-        case 25 :
+        case 23 :
             return std::make_tuple(id, double_average, 1u);
-        case 26 :
+        case 24 :
             return std::make_tuple(id, single_average, 1u);
-        case 28 :
+        case 26 :
             return std::make_tuple(id, double_average, 2u);
-        case 29 :
+        case 27 :
             return std::make_tuple(id, single_average, 2u);
-        case 31 :
+        case 29 :
             return std::make_tuple(id, double_average, 3u);
-        case 32 :
+        case 30 :
             return std::make_tuple(id, single_average, 3u);
         default :
             return std::make_tuple(0lu, single_average, 0u);
     }
 }
 
-
-
 struct Stream_observer
 {
-    Stream_observer(std::ostream &out, double dt) : dt_{dt}, t_out_{0.0}, f_out_{out}, switch_{is_on(dt)} { }
+    Stream_observer(std::ostream &out, double dt) : dt_{dt}, t_out_{0.0}, f_out_{out}, switch_{secular::is_on(dt)} { }
 
     template<typename State>
     void operator()(State const&x , double t)
@@ -104,14 +101,13 @@ struct Stream_observer
 
 struct SMA_Determinator
 {
-    SMA_Determinator(double a_coef, double a_min) : a_min_{a_min}, a_coef_{a_coef}, detect_{is_on(a_min)}  { }
+    SMA_Determinator(double a_coef, double a_min) : a_min_{a_min}, a_coef_{a_coef}, detect_{secular::is_on(a_min)}  { }
 
     template<typename State>
     bool operator()(State const&x , double t)
     {
         if(detect_){
             double a = secular::calc_a(a_coef_, x.L1x(), x.L1y(), x.L1z(), x.e1x(), x.e1y(), x.e1z());
-
             return a<= a_min_;
         } else {
             return false;
@@ -123,8 +119,8 @@ struct SMA_Determinator
     bool const detect_;
 };
 
-constexpr size_t CTRL_OFFSET = 5;
-constexpr size_t ARGS_OFFSET = 10;
+constexpr size_t CTRL_OFFSET = 3;
+constexpr size_t ARGS_OFFSET = 8;
 
 enum class ReturnFlag {
     input_err, max_iter, finish
@@ -138,15 +134,15 @@ auto call_ode_int(std::string work_dir, ConcurrentFile output, bool DA, secular:
     //using stepper_type = boost::numeric::odeint::runge_kutta_fehlberg78<Container>;
     using stepper_type = bulirsch_stoer<Container>;
 
-    auto  [task_id, is_traj, record_final, t_end, out_dt] = secular::cast_unpack<decltype(init_args.begin()), size_t, bool, bool, double, double>(init_args.begin());
+    auto  [task_id, t_end, out_dt] = secular::cast_unpack<decltype(init_args.begin()), size_t, double, double>(init_args.begin());
 
-    //space::display(std::cout, task_id, is_traj, record_final, t_end, out_dt);
+    //space::display(std::cout, task_id, t_end, out_dt);
 
     auto const [m1, m2, m3, a_in_init] = secular::unpack_args<4>(init_args.begin() + ARGS_OFFSET);
 
     std::fstream f_out;
 
-    if (is_on(out_dt)) {
+    if (secular::is_on(out_dt)) {
         f_out.open(work_dir + "output_" + std::to_string(task_id) + ".txt", std::fstream::out);
         f_out << std::setprecision(12);
     }
@@ -174,12 +170,13 @@ auto call_ode_int(std::string work_dir, ConcurrentFile output, bool DA, secular:
 
     for( ;time <= t_end && !stop(data, time); ) {
         constexpr size_t max_attempts = 500;
+
         controlled_step_result res = success;
         size_t trials = 0;
         do{
             res = stepper.try_step(func, data, time, dt);
             trials++;
-        } while((res == fail) && trials < max_attempts);
+        } while((res == fail) && (trials < max_attempts));
 
         if(trials == max_attempts){
             return ReturnFlag::max_iter;
@@ -188,54 +185,10 @@ auto call_ode_int(std::string work_dir, ConcurrentFile output, bool DA, secular:
     }
     )
     
-    output << PACK(time, ' ', data, "\r\n");
-    //integrate_adaptive(stepper_type{INT_ERROR, INT_ERROR}, func, init_cond, t_start, t_end, ini_dt, obsv);
-    //STATIC_DISPATH(ctrl, const_parameters, integrate_adaptive(stepper_type{INT_ERROR, INT_ERROR}, func, init_cond, t_start, t_end, ini_dt, Stream_observer(f_out, out_dt));)
-
-    //STATIC_DISPATH(ctrl, const_parameters, integrate_adaptive(make_controlled(INT_ERROR, INT_ERROR, stepper_type()), func, init_cond, t_start, t_end, ini_dt, obsv);)
-
-    //integrate_adaptive(make_controlled(INT_ERROR, INT_ERROR, stepper_type()), func, init_cond, t_start, t_end, ini_dt, obsv);
+    output << PACK(task_id, ' ', time, ' ', data, "\r\n");
 
     return ReturnFlag::finish;
 }
-
-/*
-template<size_t spin_num>
-void call_ode_int(std::string work_dir, bool DA, secular::Controler const &ctrl, std::vector<double> const &init_args) {
-    using namespace boost::numeric::odeint;
-
-    using Container = secular::SecularArray<spin_num>;
-    //using stepper_type = boost::numeric::odeint::runge_kutta_fehlberg78<Container>;
-    using stepper_type = bulirsch_stoer<Container>;
-
-    auto  [task_id, is_traj, is_10hz, t_end, out_dt] = secular::cast_unpack<decltype(init_args.begin()), size_t, bool, bool, double, double>(init_args.begin());
-
-    auto const [m1, m2, m3, a_in_init] = secular::unpack_args<4>(init_args.begin() + ARGS_OFFSET);
-
-    std::fstream f_out;
-
-    if (is_on(out_dt))
-        f_out.open(work_dir + "output_" + std::to_string(task_id) + ".txt", std::fstream::out);
-
-    Container init_cond;
-
-    initilize_orbit_args(DA, spin_num, init_cond, init_args.begin() + ARGS_OFFSET);
-
-    secular::SecularConst<spin_num> const_parameters{m1, m2, m3};
-
-    double ini_dt = 0.1 * secular::consts::year;
-
-    double t_start = 0;
-
-    auto func = secular::Dynamic_dispatch<Container>(ctrl, const_parameters);
-
-    integrate_adaptive(stepper_type{INT_ERROR, INT_ERROR}, func, init_cond, t_start, t_end, ini_dt, Stream_observer(f_out, out_dt));
-    //STATIC_DISPATH(ctrl, const_parameters, integrate_adaptive(stepper_type{INT_ERROR, INT_ERROR}, func, init_cond, t_start, t_end, ini_dt, Stream_observer(f_out, out_dt));)
-
-    //STATIC_DISPATH(ctrl, const_parameters, integrate_adaptive(make_controlled(INT_ERROR, INT_ERROR, stepper_type()), func, init_cond, t_start, t_end, ini_dt, obsv);)
-
-    //integrate_adaptive(make_controlled(INT_ERROR, INT_ERROR, stepper_type()), func, init_cond, t_start, t_end, ini_dt, obsv);
-}*/
 
 void single_thread_job(std::string work_dir, ConcurrentFile input, size_t start_id, size_t end_id, ConcurrentFile output, ConcurrentFile log) {
     std::string entry;
@@ -287,7 +240,7 @@ int main(int argc, char **argv) {
 
     auto input_file = make_thread_safe_fstream(input_file_name, std::fstream::in);
 
-    auto output_file = make_thread_safe_fstream(work_dir + "statistics.txt", std::fstream::out);
+    auto output_file = make_thread_safe_fstream(work_dir + "last_state.txt", std::fstream::out);
 
     auto log_file = make_thread_safe_fstream(work_dir + "log.txt", std::fstream::out);
 
