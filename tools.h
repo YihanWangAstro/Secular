@@ -92,10 +92,14 @@ inline auto unpack_args(Iter iter) {
     return _unpack_array_(iter, std::make_index_sequence<num>());
 }
 
+template<typename Iter, typename Tup, size_t ...I>
+inline auto _cast_unpack_(Iter iter, Tup const& t, std::index_sequence<I...>) {
+    return std::make_tuple(static_cast<decltype(std::get<I>(t))>( *(iter+I) )...);
+}
+
 template<typename Iter, typename ...Args>
 inline auto cast_unpack(Iter iter) {
-    iter += sizeof...(Args) - 1;
-    return std::make_tuple(static_cast<Args>(*iter--)...);
+    return _cast_unpack_(iter, std::make_tuple(static_cast<Args>(0)...), std::make_index_sequence<sizeof...(Args)>());
     //return std::make_tuple(static_cast<Args>(*iter++)...);
 }
 
@@ -111,6 +115,9 @@ inline auto cast_unpack(Iter iter) {
         constexpr double year = 1;
     }
 
+bool is_on(double x) {
+    return x > 5e-15;
+}
 
     template<typename Container>
     struct spin_num {

@@ -228,14 +228,16 @@ namespace secular {
 
         double dLz = A1 * cn1n2_z + A2 * ce1n2_z;
 
-        dvar.set_L1(dLx, dLy, dLz);
+        dvar.add_L1(dLx, dLy, dLz);
 
-        dvar.set_L2(-dLx, -dLy, -dLz);
-
-        dvar.set_e1(B1 * ce1n2_x + B2 * cn1e1_x + B3 * cn1n2_x, B1 * ce1n2_y + B2 * cn1e1_y + B3 * cn1n2_y,
+        dvar.add_e1(B1 * ce1n2_x + B2 * cn1e1_x + B3 * cn1n2_x,
+                    B1 * ce1n2_y + B2 * cn1e1_y + B3 * cn1n2_y,
                     B1 * ce1n2_z + B2 * cn1e1_z + B3 * cn1n2_z);
 
-        dvar.set_e2(C1 * ce1e2_x + C2 * ce2n1_x + C3 * cn2e2_x, C1 * ce1e2_y + C2 * ce2n1_y + C3 * cn2e2_y,
+        dvar.add_L2(-dLx, -dLy, -dLz);
+
+        dvar.add_e2(C1 * ce1e2_x + C2 * ce2n1_x + C3 * cn2e2_x,
+                    C1 * ce1e2_y + C2 * ce2n1_y + C3 * cn2e2_y,
                     C1 * ce1e2_z + C2 * ce2n1_z + C3 * cn2e2_z);
     }
 
@@ -300,13 +302,18 @@ namespace secular {
 
         double acc_e = -D * 10 * de1r / r4;
 
-        dvar.set_L1(A1 * ce1r_x + A2 * cn1r_x, A1 * ce1r_y + A2 * cn1r_y, A1 * ce1r_z + A2 * cn1r_z);
+        dvar.add_L1(A1 * ce1r_x + A2 * cn1r_x,
+                    A1 * ce1r_y + A2 * cn1r_y,
+                    A1 * ce1r_z + A2 * cn1r_z);
 
-        dvar.set_e1(B1 * cn1r_x + B2 * ce1r_x + B3 * cn1e1_x, B1 * cn1r_y + B2 * ce1r_y + B3 * cn1e1_y, B1 * cn1r_z + B2 * ce1r_z + B3 * cn1e1_z);
+        dvar.add_e1(B1 * cn1r_x + B2 * ce1r_x + B3 * cn1e1_x,
+                    B1 * cn1r_y + B2 * ce1r_y + B3 * cn1e1_y,
+                    B1 * cn1r_z + B2 * ce1r_z + B3 * cn1e1_z);
 
-        dvar.set_r(var.vx(), var.vy(), var.vz());
+        dvar.add_r(var.vx(), var.vy(), var.vz());
 
-        dvar.set_v(acc_r * var.rx() + acc_n * n1x + acc_e * var.e1x(), acc_r * var.ry() + acc_n * n1y + acc_e * var.e1y(),
+        dvar.add_v(acc_r * var.rx() + acc_n * n1x + acc_e * var.e1x(),
+                   acc_r * var.ry() + acc_n * n1y + acc_e * var.e1y(),
                    acc_r * var.rz() + acc_n * n1z + acc_e * var.e1z());
     }
 

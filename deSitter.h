@@ -168,7 +168,7 @@ namespace secular {
     template<typename Container>
     auto SA_back_reaction(double Omega, double Sx, double Sy, double Sz, Container const &var) {
         auto[crvx, crvy, crvz] = cross(var.rx(), var.ry(), var.rz(), var.vx(), var.vy(), var.vz());
-    
+
         double r2 = norm2(var.rx(), var.ry(), var.rz());
 
         double const acc_coef = Omega / r2;
@@ -192,10 +192,10 @@ namespace secular {
 
 
 #define EVOLVE_SEL_IN(C, S)                                                                                                                  \
-    if constexpr(C != deS::off){                                                                                                             \
+    if constexpr (C != deS::off){                                                                                                            \
         auto [dx, dy, dz] = cross_with_coef(d.S##L1_Omega(), var.L1x(), var.L1y(), var.L1z(), var.S##x(), var.S##y(), var.S##z());           \
         dvar.add_##S(dx, dy, dz);                                                                                                            \
-        if constexpr(C == deS::bc) {                                                                                                         \
+        if constexpr (C == deS::bc) {                                                                                                        \
             dvar.sub_L1(dx, dy, dz);                                                                                                         \
             auto [nex, ney, nez] = deSitter_e_vec(var.S##x(), var.S##y(), var.S##z(), var.L1x(), var.L1y(), var.L1z());                      \
             dvar.add_e1(cross_with_coef(d.S##L1_Omega(), nex, ney, nez, var.e1x(), var.e1y(), var.e1z()));                                   \
@@ -204,11 +204,11 @@ namespace secular {
 
 
 #define EVOLVE_SEL_OUT(C, S)                                                                                                                 \
-        if constexpr(C != deS::off){                                                                                                         \
+        if constexpr (C != deS::off){                                                                                                        \
             auto [dx, dy, dz] = cross_with_coef(d.S##L2_Omega(), d.L2x(), d.L2y(), d.L2z(), var.S##x(), var.S##y(), var.S##z());             \
             dvar.add_##S(dx, dy, dz);                                                                                                        \
-            if constexpr(C == deS::bc) {                                                                                                     \
-                if(DA){                                                                                                                      \
+            if constexpr (C == deS::bc) {                                                                                                    \
+                if constexpr (DA){                                                                                                           \
                     dvar.sub_L2(dx, dy, dz);                                                                                                 \
                     auto [nex, ney, nez] = deSitter_e_vec(var.S##x(), var.S##y(), var.S##z(), var.L2x(), var.L2y(), var.L2z());              \
                     dvar.add_e2(cross_with_coef(d.S##L2_Omega(), nex, ney, nez, var.e2x(), var.e2y(), var.e2z()));                           \
@@ -225,19 +225,16 @@ namespace secular {
         deArgs d{args, var};//calculate the Omega and L2(Single average case)
 
         if constexpr(spin_num<Container>::size >= 1) {
-            dvar.set_S1(0, 0, 0);
             EVOLVE_SEL_IN(Stat::Sin_Lin, S1);
             EVOLVE_SEL_OUT(Stat::Sin_Lout, S1);
         }
 
         if constexpr(spin_num<Container>::size >= 2) {
-            dvar.set_S2(0, 0, 0);
             EVOLVE_SEL_IN(Stat::Sin_Lin, S2);
             EVOLVE_SEL_OUT(Stat::Sin_Lout, S2);
         }
 
         if constexpr(spin_num<Container>::size == 3) {
-            dvar.set_S3(0, 0, 0);
             EVOLVE_SEL_IN(Stat::Sout_Lin, S3);
             EVOLVE_SEL_OUT(Stat::Sout_Lout, S3);
         }

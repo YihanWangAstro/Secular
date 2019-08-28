@@ -121,9 +121,14 @@ namespace secular {
             DA = _DA;
             Oct = static_cast<bool>(*iter), iter++;
             GR = static_cast<bool>(*iter), iter++;
-            GW = static_cast<bool>(*iter), iter++;
+            GW_stop_a_ = static_cast<bool>(*iter), iter++;
+            GW = is_on(GW_stop_a_ );
             SL = static_cast<bool>(*iter), iter++;
             LL = static_cast<bool>(*iter);
+        }
+        
+        double stop_a_in() const{
+            return GW_stop_a_;
         }
 
         bool DA;
@@ -132,6 +137,8 @@ namespace secular {
         bool GW;
         bool SL;
         bool LL;
+    private:
+        double GW_stop_a_;
     };
 
     template<size_t spin_num>
@@ -193,6 +200,8 @@ namespace secular {
         Dynamic_dispatch(Controler const &_ctrl, ConstArg const &_args) : ctrl{&_ctrl}, args{&_args} {}
 
         void operator()(Container const &x, Container &dxdt, double t) {
+            std::fill(dxdt.begin(), dxdt.end(), 0);
+
             if (ctrl->DA == true) {
                 if (ctrl->Oct == true) {
                     double_aved_LK<true, ConstArg, Container>(*args, x, dxdt, t);
@@ -256,6 +265,7 @@ namespace secular {
         Static_functor(ConstArg const &_args) : args{&_args} {}
 
         void operator()(Container const &x, Container &dxdt, double t) {
+            std::fill(dxdt.begin(), dxdt.end(), 0);
             if constexpr(DA == true) {
                 if constexpr(Oct == true) {
                     double_aved_LK<true, ConstArg, Container>(*args, x, dxdt, t);
