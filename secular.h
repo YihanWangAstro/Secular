@@ -134,10 +134,6 @@ namespace secular {
         bool LL;
     };
 
-    enum class StopFlag {
-        shrink, eof, input_err
-    };
-
     template<size_t spin_num>
     class SecularConst {
     public:

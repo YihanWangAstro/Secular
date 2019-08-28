@@ -87,7 +87,7 @@ inline auto _unpack_array_(Iter iter, std::index_sequence<I...>) {
     return std::make_tuple(*(iter+I)...);
 }
 
-template<typename Iter, size_t num>
+template<size_t num, typename Iter>
 inline auto unpack_args(Iter iter) {
     return _unpack_array_(iter, std::make_index_sequence<num>());
 }

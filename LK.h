@@ -84,7 +84,7 @@ namespace secular {
 
     template<typename Container,typename Iter>
     void initilize_DA(size_t spin_num, Container &c, Iter iter) {
-        auto[m1, m2, m3, a_in, a_out, e_in, e_out, omega_in, omega_out, Omega_in, i_in, i_out] = unpack_args<Iter, 12>(iter);//unpack_vector(off_set, args);
+        auto[m1, m2, m3, a_in, a_out, e_in, e_out, omega_in, omega_out, Omega_in, i_in, i_out] = unpack_args<12>(iter);//unpack_vector(off_set, args);
 
         double Omega_out = Omega_in - 180;
 
@@ -115,7 +115,7 @@ namespace secular {
 
     template<typename Container, typename Iter>
     void initilize_SA(size_t spin_num, Container &c, Iter iter) {
-        auto[m1, m2, m3, a_in, a_out, e_in, e_out, omega_in, omega_out, Omega_in, i_in, i_out] = unpack_args<Iter, 12>(iter);
+        auto[m1, m2, m3, a_in, a_out, e_in, e_out, omega_in, omega_out, Omega_in, i_in, i_out] = unpack_args<12>(iter);
 
         double Omega_out = Omega_in - 180;
 

@@ -80,68 +80,15 @@ auto resolve_sim_type(std::string const &line) {
     }
 }
 
-constexpr size_t TASK_ID_OFFSET = 0;
-constexpr size_t TRAJECTROY_OFFSET = 1;
-constexpr size_t GW_10HZ_OFFSET = 2;
-constexpr size_t END_TIME_OFFSET = 3;
-constexpr size_t DT_OFFSET = 4;
-constexpr size_t CTRL_OFFSET = 5;
-constexpr size_t ARGS_OFFSET = 10;
-
-template<size_t spin_num, typename Observer>
-void call_ode_int(bool DA, secular::Controler const &ctrl, std::vector<double> const &init_args, double t_start, double t_end, Observer obsv) {
-    using namespace boost::numeric::odeint;
-
-    using Container = secular::SecularArray<spin_num>;
-    //using stepper_type = boost::numeric::odeint::runge_kutta_fehlberg78<Container>;
-    using stepper_type = bulirsch_stoer<Container>;
-
-    Container init_cond;
-
-    initilize_orbit_args(DA, spin_num, init_cond, init_args.begin() + ARGS_OFFSET);
-
-    double m1 = init_args[ARGS_OFFSET];
-    double m2 = init_args[ARGS_OFFSET + 1];
-    double m3 = init_args[ARGS_OFFSET + 2];
-
-    secular::SecularConst<spin_num> const_parameters{m1, m2, m3};
-
-    double ini_dt = 0.1 * secular::consts::year;
-
-    //auto func = secular::Dynamic_dispatch<Container>(ctrl, const_parameters);
-
-    //integrate_adaptive(stepper_type{INT_ERROR, INT_ERROR}, func, init_cond, t_start, t_end, ini_dt, obsv);
-    STATIC_DISPATH(ctrl, const_parameters, integrate_adaptive(stepper_type{10*INT_ERROR, INT_ERROR}, func, init_cond, t_start, t_end, ini_dt, obsv);)
-
-    //STATIC_DISPATH(ctrl, const_parameters, integrate_adaptive(make_controlled(INT_ERROR, INT_ERROR, stepper_type()), func, init_cond, t_start, t_end, ini_dt, obsv);)
-
-    //integrate_adaptive(make_controlled(INT_ERROR, INT_ERROR, stepper_type()), func, init_cond, t_start, t_end, ini_dt, obsv);
+bool is_on(double x) {
+    return x > 5e-15;
 }
-
-
-struct Traj_args {
-    Traj_args(bool open, std::string const &work_dir, size_t task_id, double _dt)
-            : dt{_dt}, t_output{0} {
-        if (open) {
-            file.open(work_dir + "output_" + std::to_string(task_id) + ".txt", std::fstream::out);
-            file << std::setprecision(13);
-        }
-    }
-
-    void move_to_next_output() { t_output += dt; }
-
-    double dt;
-    double t_output;
-    std::fstream file;
-};
-
-
 struct Stream_observer
 {
-    Stream_observer(std::ostream &out, double dt) : dt_{dt}, t_out_{0.0}, f_out_{out}, switch_{dt > 5e-15} { }
+    Stream_observer(std::ostream &out, double dt) : dt_{dt}, t_out_{0.0}, f_out_{out}, switch_{is_on(dt)} { }
 
     template<typename State>
-    void operator()(State const&x , double t) 
+    void operator()(State const&x , double t)
     {
         if(switch_ && t >= t_out_) {
               f_out_ << t << ' ' << x << "\r\n";
@@ -155,20 +102,129 @@ struct Stream_observer
     const bool switch_;
 };
 
-/*
-auto create_obser(std::shared_ptr<Traj_args>& traj_arg_ptr, std::string const& work_dir, std::vector<double> &input_args ) {
-    bool is_traj = input_args[TRAJECTROY_OFFSET];
-    size_t task_id = input_args[TASK_ID_OFFSET];
-    double dt = input_args[DT_OFFSET];
 
-    traj_arg_ptr = std::make_shared<Traj_args>(work_dir, task_id, dt);
+struct GW_Determinator
+{
+    GW_Determinator(double m1, double m2, double a_min) : a_min_{a_min}, a_coef_{0}  { }
 
-    return [=](auto const& data, double t) {
-        if(is_traj && t > traj_arg_ptr->t_output) {
-            space::display(traj_arg_ptr->file, t, data, "\r\n");
-            traj_arg_ptr->move_to_next_output();
+    template<typename State>
+    void operator()(State const&x , double t)
+    {
+
+    }
+  private:
+    double const a_min_;
+    double const a_coef_;
+    const bool switch_{true};
+};
+
+constexpr size_t TASK_ID_OFFSET = 0;
+constexpr size_t TRAJECTROY_OFFSET = 1;
+constexpr size_t GW_10HZ_OFFSET = 2;
+constexpr size_t END_TIME_OFFSET = 3;
+constexpr size_t DT_OFFSET = 4;
+constexpr size_t CTRL_OFFSET = 5;
+constexpr size_t ARGS_OFFSET = 10;
+
+enum class ReturnFlag {
+    shrink, eof, input_err, max_iter, finish
+};
+
+template<size_t spin_num>
+auto call_ode_int(std::string work_dir, bool DA, secular::Controler const &ctrl, std::vector<double> const &init_args) {
+    using namespace boost::numeric::odeint;
+
+    using Container = secular::SecularArray<spin_num>;
+    //using stepper_type = boost::numeric::odeint::runge_kutta_fehlberg78<Container>;
+    using stepper_type = bulirsch_stoer<Container>;
+
+    auto  [task_id, is_traj, is_10hz, t_end, out_dt] = secular::cast_unpack<decltype(init_args.begin()), size_t, bool, bool, double, double>(init_args.begin());
+
+    auto const [m1, m2, m3, a_in_init] = secular::unpack_args<4>(init_args.begin() + ARGS_OFFSET);
+
+    std::fstream f_out;
+
+    if (is_on(out_dt))
+        f_out.open(work_dir + "output_" + std::to_string(task_id) + ".txt", std::fstream::out);
+
+    Container data;
+
+    initilize_orbit_args(DA, spin_num, data, init_args.begin() + ARGS_OFFSET);
+
+    secular::SecularConst<spin_num> const_parameters{m1, m2, m3};
+
+    double dt = 0.1 * secular::consts::year;
+
+    double time = 0;
+
+    stepper_type stepper{INT_ERROR, INT_ERROR};
+
+    auto ode = secular::Dynamic_dispatch<Container>(ctrl, const_parameters);
+
+    Stream_observer writer{f_out, out_dt};
+
+    for( ;time <= t_end; ) {
+
+        writer(data, t_start);
+
+        constexpr size_t max_attempts = 500;
+        controlled_step_result res = success;
+        size_t trials = 0;
+        do{
+            res = stepper.try_step(ode, data, time, dt );
+            trails++;
+        } while((res == fail) && trails < max_attempts);
+        if(trails == max_attempts){
+            return ReturnFlag::max_iter;
         }
-    };
+    }
+
+    //integrate_adaptive(stepper_type{INT_ERROR, INT_ERROR}, func, init_cond, t_start, t_end, ini_dt, obsv);
+    //STATIC_DISPATH(ctrl, const_parameters, integrate_adaptive(stepper_type{INT_ERROR, INT_ERROR}, func, init_cond, t_start, t_end, ini_dt, Stream_observer(f_out, out_dt));)
+
+    //STATIC_DISPATH(ctrl, const_parameters, integrate_adaptive(make_controlled(INT_ERROR, INT_ERROR, stepper_type()), func, init_cond, t_start, t_end, ini_dt, obsv);)
+
+    //integrate_adaptive(make_controlled(INT_ERROR, INT_ERROR, stepper_type()), func, init_cond, t_start, t_end, ini_dt, obsv);
+
+    return ReturnFlag::finish;
+}
+
+/*
+template<size_t spin_num>
+void call_ode_int(std::string work_dir, bool DA, secular::Controler const &ctrl, std::vector<double> const &init_args) {
+    using namespace boost::numeric::odeint;
+
+    using Container = secular::SecularArray<spin_num>;
+    //using stepper_type = boost::numeric::odeint::runge_kutta_fehlberg78<Container>;
+    using stepper_type = bulirsch_stoer<Container>;
+
+    auto  [task_id, is_traj, is_10hz, t_end, out_dt] = secular::cast_unpack<decltype(init_args.begin()), size_t, bool, bool, double, double>(init_args.begin());
+
+    auto const [m1, m2, m3, a_in_init] = secular::unpack_args<4>(init_args.begin() + ARGS_OFFSET);
+
+    std::fstream f_out;
+
+    if (is_on(out_dt))
+        f_out.open(work_dir + "output_" + std::to_string(task_id) + ".txt", std::fstream::out);
+
+    Container init_cond;
+
+    initilize_orbit_args(DA, spin_num, init_cond, init_args.begin() + ARGS_OFFSET);
+
+    secular::SecularConst<spin_num> const_parameters{m1, m2, m3};
+
+    double ini_dt = 0.1 * secular::consts::year;
+
+    double t_start = 0;
+
+    auto func = secular::Dynamic_dispatch<Container>(ctrl, const_parameters);
+
+    integrate_adaptive(stepper_type{INT_ERROR, INT_ERROR}, func, init_cond, t_start, t_end, ini_dt, Stream_observer(f_out, out_dt));
+    //STATIC_DISPATH(ctrl, const_parameters, integrate_adaptive(stepper_type{INT_ERROR, INT_ERROR}, func, init_cond, t_start, t_end, ini_dt, Stream_observer(f_out, out_dt));)
+
+    //STATIC_DISPATH(ctrl, const_parameters, integrate_adaptive(make_controlled(INT_ERROR, INT_ERROR, stepper_type()), func, init_cond, t_start, t_end, ini_dt, obsv);)
+
+    //integrate_adaptive(make_controlled(INT_ERROR, INT_ERROR, stepper_type()), func, init_cond, t_start, t_end, ini_dt, obsv);
 }*/
 
 void single_thread_job(std::string work_dir, ConcurrentFile input, size_t start_id, size_t end_id, ConcurrentFile output, ConcurrentFile log) {
@@ -185,45 +241,14 @@ void single_thread_job(std::string work_dir, ConcurrentFile input, size_t start_
 
                 log << secular::get_log_title(task_id, DA, ctrl, spin_num) + "\r\n";
 
-                auto  [task_id, is_traj, is_10hz, t_end, dt] = secular::cast_unpack<decltype(v.begin()), size_t, bool, bool, double, double>(v.begin());
-
-                t_end *= 1e-3;
-
-                //space::display(std::cout, task_id, is_traj, is_10hz, t_end, dt, DA, spin_num, ctrl.Oct, ctrl.GR, ctrl.GW, ctrl.SL, ctrl.LL,"\n");
-
-                Traj_args traj_arg{is_traj, work_dir, task_id, dt};
-
-                auto const [m1, m2, m3, a_in_init] = secular::unpack_args<decltype(v.begin()), 4>(v.begin() + ARGS_OFFSET);
-
-                double const a_in_coef = (m1+m2)/(secular::consts::G*m1*m1*m2*m2);
-
-                auto observer = [&](auto const &data, double t) {
-                    if (is_10hz) {
-                        double a_in = secular::calc_a(a_in_coef, data.L1x(), data.L1y(), data.L1z(), data.e1x(), data.e1y(), data.e1z());
-                        if(a_in <=0.001*a_in_init){
-                            output << PACK(task_id, ' ', t, ' ', data, "\r\n");
-                            output.flush();
-                            if(is_traj){
-                                traj_arg.file << t << ' ' << data << "\r\n";
-                            }
-
-                        }
-                    }
-
-                    if (is_traj && t > traj_arg.t_output) {
-                        traj_arg.file << t << ' ' << data << "\r\n";
-                        traj_arg.move_to_next_output();
-                    }
-                };
-
                 if (spin_num == 0) {
-                    call_ode_int<0>(DA, ctrl, v, 0.0, t_end, observer);
+                    call_ode_int<0>(work_dir, DA, ctrl, v);
                 } else if (spin_num == 1) {
-                    call_ode_int<1>(DA, ctrl, v, 0.0, t_end, observer);
+                    call_ode_int<1>(work_dir, DA, ctrl, v);
                 } else if (spin_num == 2) {
-                    call_ode_int<2>(DA, ctrl, v, 0.0, t_end, observer);
+                    call_ode_int<2>(work_dir, DA, ctrl, v);
                 } else if (spin_num == 3) {
-                    call_ode_int<3>(DA, ctrl, v, 0.0, t_end, observer);
+                    call_ode_int<3>(work_dir, DA, ctrl, v);
                 }
             }
     }
