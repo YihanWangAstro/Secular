@@ -227,7 +227,7 @@ int main(int argc, char **argv) {
         }
     }
 
-    const int dir_err = system(("mkdir " + work_dir).c_str());
+    const int dir_err = system(("mkdir -p" + work_dir).c_str());
     if (dir_err == -1) {
         std::cout << "Error creating directory!\n";
         return 0;
