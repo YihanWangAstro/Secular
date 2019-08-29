@@ -126,10 +126,30 @@ enum class ReturnFlag {
     input_err, max_iter, finish
 };
 
-auto get_task_num(std::string const&fname) {
-    std::ifstream inFile(fname); 
-    return std::count(std::istreambuf_iterator<char>(inFile), std::istreambuf_iterator<char>(), '\n');
-}   
+size_t get_file_line(std::string const&fname) {
+    std::ifstream inFile(fname);
+    return std::count(std::istreambuf_iterator<char>(inFile), std::istreambuf_iterator<char>(), '\n') + 1;
+}
+
+auto args_analy(size_t& start_id, size_t& end_id, std::string const&f){
+    if(start_id <=0 || end_id <=0) {
+        std::cout << "task id cannot be smaller than 1!\r\n";
+        exit(0);
+    }
+
+    if(start_id > end_id)
+      std::swap(start_id, end_id);
+
+    size_t attempt_job_num = end_id - start_id + 1;
+
+    size_t lines_in_file = get_file_line(f);
+
+    size_t task_num = attempt_job_num < lines_in_file ? attempt_job_num : lines_in_file;
+
+    size_t thread_num = std::min(task_num, space::multiThread::auto_thread);
+
+    return std::make_tuple(task_num, thread_num);
+}
 
 template<size_t spin_num>
 auto call_ode_int(std::string work_dir, ConcurrentFile output, bool DA, secular::Controler const &ctrl, std::vector<double> const &init_args) {
@@ -189,7 +209,7 @@ auto call_ode_int(std::string work_dir, ConcurrentFile output, bool DA, secular:
         writer(data, time);
     }
     )
-    
+
     output << PACK(task_id, ' ', time, ' ', data, "\r\n");
 
     return ReturnFlag::finish;
@@ -235,6 +255,8 @@ int main(int argc, char **argv) {
 
     space::tools::read_command_line(argc, argv, input_file_name, start_task_id, end_task_id, work_dir);
 
+    auto [task_num, thread_num] = args_analy(start_task_id, end_task_id, input_file_name);
+
     const int dir_err = system(("mkdir -p " + work_dir).c_str());
     if (dir_err == -1) {
         std::cout << "Error creating directory!\n";
@@ -249,11 +271,7 @@ int main(int argc, char **argv) {
 
     auto log_file = make_thread_safe_fstream(work_dir + "log.txt", std::fstream::out);
 
-    size_t task_num = get_task_num(input_file_name);
-
-    size_t thread_num = std::min(task_num, space::multiThread::auto_thread);
-
-    std::cout << task_num << " tasks in total. " << thread_num << " threads will be created for computing!\n";
+    std::cout << task_num << " tasks in total will be processed. \n" << thread_num << " threads(automatically selected based on the hardware) will be created for computing!\n";
 
     space::tools::Timer timer;
     timer.start();
