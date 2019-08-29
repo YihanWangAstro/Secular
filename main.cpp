@@ -22,6 +22,10 @@ bool get_line(std::fstream &is, std::string &str) {
         return true;
 }
 
+enum class SimArgT {
+	SA, DA, empty, wrong
+};
+
 auto resolve_sim_type(std::string const &line) {
     bool in_space = true;
     size_t token_num = 0;
@@ -33,15 +37,18 @@ auto resolve_sim_type(std::string const &line) {
             in_space = false;
         }
     }
-    constexpr static bool single_average{false};
-    constexpr static bool double_average{true};
+
+    constexpr static SimArgT single_average{SimArgT::SA};
+    constexpr static SimArgT double_average{SimArgT::DA};
+	constexpr static SimArgT empty_line{ SimArgT::empty };
+	constexpr static SimArgT wrongFormat{ SimArgT::wrong };
 
     size_t id = 0;
 
     if (token_num > 0) {
         id = std::stoi(line);
     } else {
-        return std::make_tuple(id, double_average, 0u);
+        return std::make_tuple(id, empty_line, 0u);
     }
 
     switch (token_num) {
@@ -62,9 +69,10 @@ auto resolve_sim_type(std::string const &line) {
         case 30 :
             return std::make_tuple(id, single_average, 3u);
         default :
-            return std::make_tuple(static_cast<size_t>(0), single_average, 0u);
+            return std::make_tuple(static_cast<size_t>(0), wrongFormat, 0u);
     }
 }
+
 
 constexpr size_t CTRL_OFFSET = 3;
 constexpr size_t ARGS_OFFSET = 8;
@@ -156,7 +164,21 @@ auto call_ode_int(std::string work_dir, ConcurrentFile output, bool DA, secular:
 void single_thread_job(std::string work_dir, ConcurrentFile input, size_t start_id, size_t end_id, ConcurrentFile output, ConcurrentFile log) {
     std::string entry;
     for (;input.execute(get_line, entry);) {
-            auto[task_id, DA, spin_num] = resolve_sim_type(entry);
+            auto[task_id, AveType, spin_num] = resolve_sim_type(entry);
+
+			bool DA{ true };
+			if (AveType == SimArgT::DA) {
+				DA = true;
+			} else if (AveType == SimArgT::SA) {
+				DA = false;
+			}
+			else if (AveType == SimArgT::empty) {
+				continue;
+			}
+			else if (AveType == SimArgT::wrong) {
+				std::cout << "task" + std::to_string(task_id) + ":wrong input format!\r\n";
+				continue;
+			}
 
             if (start_id <= task_id && task_id <= end_id) {
                 std::vector<double> v;
@@ -219,7 +241,7 @@ int main(int argc, char **argv) {
 
     auto log_file = make_thread_safe_fstream(work_dir + "log.txt", std::fstream::out);
 
-    std::cout << task_num << " tasks in total will be processed. \n" << thread_num << " threads will be created for computing!\n";
+    std::cout << task_num << " tasks in total will be processed.    " << thread_num << " threads will be created for computing!\n\n\n";
 
     space::tools::Timer timer;
     timer.start();
