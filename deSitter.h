@@ -40,7 +40,7 @@ namespace secular {
 
         OPT_READ_GETTER(sp_num > 2, double, S3L2, SL_[5]);
     private:
-        double SL_[sp_num * 2];
+        double SL_[sp_num * 2+1];
         double LL_;
 
         inline double deSitter_coef(double m_self, double m_other) {
@@ -152,7 +152,7 @@ namespace secular {
         double L2x_;
         double L2y_;
         double L2z_;
-        double Omega_[spin_num<Container>::size * 2];
+        double Omega_[spin_num<Container>::size * 2 + 1];
         double LL_;
         double a_in_eff_;
         double a_in_eff3_;

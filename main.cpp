@@ -62,7 +62,7 @@ auto resolve_sim_type(std::string const &line) {
         case 30 :
             return std::make_tuple(id, single_average, 3u);
         default :
-            return std::make_tuple(0lu, single_average, 0u);
+            return std::make_tuple(static_cast<size_t>(0), single_average, 0u);
     }
 }
 
@@ -205,7 +205,7 @@ int main(int argc, char **argv) {
         }
     }
 
-    const int dir_err = system(("mkdir -p " + work_dir).c_str());
+    const int dir_err = system(("mkdir " + work_dir).c_str());
     if (dir_err == -1) {
         std::cout << "Error creating directory!\n";
         return 0;
