@@ -157,6 +157,7 @@ auto call_ode_int(std::string work_dir, ConcurrentFile output, bool DA, secular:
     )
 
     output << PACK(task_id, ' ', time, ' ', data, "\r\n");
+    output.flush();
 
     return ReturnFlag::finish;
 }
