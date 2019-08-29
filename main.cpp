@@ -126,6 +126,12 @@ enum class ReturnFlag {
     input_err, max_iter, finish
 };
 
+bool is_number(const std::string& s)
+{
+    return !s.empty() && std::find_if(s.begin(), 
+        s.end(), [](char c) { return !std::isdigit(c); }) == s.end();
+}
+
 size_t get_file_line(std::string const&fname) {
     std::ifstream inFile(fname);
     return std::count(std::istreambuf_iterator<char>(inFile), std::istreambuf_iterator<char>(), '\n') + 1;
@@ -252,10 +258,21 @@ int main(int argc, char **argv) {
     std::string input_file_name;
     std::string work_dir;
     size_t start_task_id, end_task_id;
+    std::string user_specified_core_num;
 
-    space::tools::read_command_line(argc, argv, input_file_name, start_task_id, end_task_id, work_dir);
+    space::tools::read_command_line(argc, argv, user_specified_core_num, input_file_name, start_task_id, end_task_id, work_dir);
 
     auto [task_num, thread_num] = args_analy(start_task_id, end_task_id, input_file_name);
+
+    if(user_specified_core_num != "auto") {
+        if(is_number(user_specified_core_num)){
+            thread_num = std::to_string(user_specified_core_num);
+        } else {
+            std::cout << "wrong format of the first argument(cpu core number)!\n";
+            exit(0);
+        }
+    }
+        
 
     const int dir_err = system(("mkdir -p " + work_dir).c_str());
     if (dir_err == -1) {
