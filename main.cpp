@@ -1,6 +1,7 @@
 
 #include <iostream>
 #include "secular.h"
+#include "observer.h"
 #include "SpaceHub/src/multi-thread/multi-thread.hpp"
 #include "SpaceHub/src/tools/config-reader.hpp"
 #include "SpaceHub/src/tools/timer.hpp"
@@ -19,20 +20,6 @@ bool get_line(std::fstream &is, std::string &str) {
         return false;
     else
         return true;
-}
-
-void unpack_args_from_str(std::string const &str, std::vector<double> &vec, bool DA, size_t spin_num) {
-    std::stringstream is{str};
-
-    size_t token_num = 20 + static_cast<size_t>(!DA) + spin_num * 3;
-
-    double tmp;
-
-    vec.reserve(token_num);
-    for (size_t i = 0; i < token_num; ++i) {
-        is >> tmp;
-        vec.emplace_back(tmp);
-    }
 }
 
 auto resolve_sim_type(std::string const &line) {
@@ -79,63 +66,12 @@ auto resolve_sim_type(std::string const &line) {
     }
 }
 
-struct Stream_observer
-{
-    Stream_observer(std::ostream &out, double dt) : dt_{dt}, t_out_{0.0}, f_out_{out}, switch_{secular::is_on(dt)} { }
-
-    template<typename State>
-    void operator()(State const&x , double t)
-    {
-        if(switch_ && t >= t_out_) {
-              f_out_ << t << ' ' << x << "\r\n";
-              t_out_ += dt_;
-        }
-    }
-  private:
-    double const dt_;
-    double t_out_;
-    std::ostream& f_out_;
-    const bool switch_;
-};
-
-
-struct SMA_Determinator
-{
-    SMA_Determinator(double a_coef, double a_min) : a_min_{a_min}, a_coef_{a_coef}, detect_{secular::is_on(a_min)}  { }
-
-    template<typename State>
-    bool operator()(State const&x , double t)
-    {
-        if(detect_){
-            double a = secular::calc_a(a_coef_, x.L1x(), x.L1y(), x.L1z(), x.e1x(), x.e1y(), x.e1z());
-            return a<= a_min_;
-        } else {
-            return false;
-        }
-    }
-  private:
-    double const a_min_;
-    double const a_coef_;
-    bool const detect_;
-};
-
 constexpr size_t CTRL_OFFSET = 3;
 constexpr size_t ARGS_OFFSET = 8;
 
 enum class ReturnFlag {
     input_err, max_iter, finish
 };
-
-bool is_number(const std::string& s)
-{
-    return !s.empty() && std::find_if(s.begin(), 
-        s.end(), [](char c) { return !std::isdigit(c); }) == s.end();
-}
-
-size_t get_file_line(std::string const&fname) {
-    std::ifstream inFile(fname);
-    return std::count(std::istreambuf_iterator<char>(inFile), std::istreambuf_iterator<char>(), '\n') + 1;
-}
 
 auto args_analy(size_t& start_id, size_t& end_id, std::string const&f){
     if(start_id <=0 || end_id <=0) {
@@ -146,11 +82,7 @@ auto args_analy(size_t& start_id, size_t& end_id, std::string const&f){
     if(start_id > end_id)
       std::swap(start_id, end_id);
 
-    size_t attempt_job_num = end_id - start_id + 1;
-
-    size_t lines_in_file = get_file_line(f);
-
-    size_t task_num = attempt_job_num < lines_in_file ? attempt_job_num : lines_in_file;
+    size_t task_num = end_id - start_id + 1;
 
     size_t thread_num = std::min(task_num, space::multiThread::auto_thread);
 
@@ -190,9 +122,9 @@ auto call_ode_int(std::string work_dir, ConcurrentFile output, bool DA, secular:
 
     stepper_type stepper{INT_ERROR, INT_ERROR};
 
-    Stream_observer writer{f_out, out_dt};
+    secular::Stream_observer writer{f_out, out_dt};
 
-    SMA_Determinator stop{const_parameters.a_in_coef(), ctrl.stop_a_in()};
+    secular::SMA_Determinator stop{const_parameters.a_in_coef(), ctrl.stop_a_in()};
 
     //auto func = secular::Dynamic_dispatch<Container>(ctrl, const_parameters);
     writer(data, time);
@@ -229,7 +161,7 @@ void single_thread_job(std::string work_dir, ConcurrentFile input, size_t start_
             if (start_id <= task_id && task_id <= end_id) {
                 std::vector<double> v;
 
-                unpack_args_from_str(entry, v, DA, spin_num);
+                secular::unpack_args_from_str(entry, v, DA, spin_num);
 
                 secular::Controler ctrl{v.begin() + CTRL_OFFSET, DA};
 
@@ -265,14 +197,13 @@ int main(int argc, char **argv) {
     auto [task_num, thread_num] = args_analy(start_task_id, end_task_id, input_file_name);
 
     if(user_specified_core_num != "auto") {
-        if(is_number(user_specified_core_num)){
+        if(secular::is_number(user_specified_core_num)){
             thread_num = std::stoi(user_specified_core_num);
         } else {
             std::cout << "wrong format of the first argument(cpu core number)!\n";
             exit(0);
         }
     }
-        
 
     const int dir_err = system(("mkdir -p " + work_dir).c_str());
     if (dir_err == -1) {

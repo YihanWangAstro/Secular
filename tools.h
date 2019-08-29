@@ -4,6 +4,7 @@
 #include <cmath>
 #include <tuple>
 #include <vector>
+#include <sstream>
 namespace secular {
 
 #define STD_ACCESSOR(TYPE, NAME, MEMBER)                                                                                 \
@@ -103,17 +104,36 @@ inline auto cast_unpack(Iter iter) {
     //return std::make_tuple(static_cast<Args>(*iter++)...);
 }
 
+void unpack_args_from_str(std::string const &str, std::vector<double> &vec, bool DA, size_t spin_num) {
+    std::stringstream is{str};
+
+    size_t token_num = 20 + static_cast<size_t>(!DA) + spin_num * 3;
+
+    double tmp;
+
+    vec.reserve(token_num);
+    for (size_t i = 0; i < token_num; ++i) {
+        is >> tmp;
+        vec.emplace_back(tmp);
+    }
+}
 
 #define UNPACK3(x) std::get<0>(x), std::get<1>(x), std::get<2>(x)
 
-    namespace consts {
+namespace consts {
         constexpr double pi = 3.14159265358979323;
         constexpr double G = 4 * pi * pi;
         constexpr double C = 6.32397263e4;
         constexpr double r_G_sqrt = 1.0 / (2 * pi);
 
         constexpr double year = 1;
-    }
+}
+
+bool is_number(const std::string& s)
+{
+    return !s.empty() && std::find_if(s.begin(),
+        s.end(), [](char c) { return !std::isdigit(c); }) == s.end();
+}
 
 bool is_on(double x) {
     return x > 5e-15;
@@ -218,25 +238,6 @@ bool is_on(double x) {
 
         return std::make_tuple(e_sqr, j_sqr, j, L_norm, L, a);
     }
-
-    /*  inline auto calc_orbit_args(double Coef, double lx, double ly, double lz, double ex, double ey, double ez) {
-          double e_sqr = norm2(ex, ey, ez);
-
-          double j_sqr = 1 - e_sqr;
-
-          double j = sqrt(j_sqr);
-
-          double L2 = norm2(lx, ly, lz);
-
-          double L_norm = sqrt(L2);
-
-          double L = L_norm / j;
-
-          double a = Coef * L2/j_sqr;
-
-          return std::make_tuple(e_sqr, j_sqr, j, L_norm, L, a);
-      }*/
-
 
     inline auto calc_a_eff(double Coef, double lx, double ly, double lz, double ex, double ey, double ez) {
         double e_sqr = norm2(ex, ey, ez);
