@@ -241,7 +241,7 @@ int main(int argc, char **argv) {
 
     auto log_file = make_thread_safe_fstream(work_dir + "log.txt", std::fstream::out);
 
-    std::cout << task_num << " tasks in total will be processed.    " << thread_num << " threads will be created for computing!\n\n\n";
+    std::cout << task_num << " tasks in total will be processed.    " << thread_num << " threads will be created for computing!" << std::endl;
 
     space::tools::Timer timer;
     timer.start();
