@@ -126,6 +126,11 @@ enum class ReturnFlag {
     input_err, max_iter, finish
 };
 
+auto get_task_num(std::string const&fname) {
+    std::ifstream inFile(fname); 
+    return std::count(std::istreambuf_iterator<char>(inFile), std::istreambuf_iterator<char>(), '\n');
+}   
+
 template<size_t spin_num>
 auto call_ode_int(std::string work_dir, ConcurrentFile output, bool DA, secular::Controler const &ctrl, std::vector<double> const &init_args) {
     using namespace boost::numeric::odeint;
@@ -244,11 +249,15 @@ int main(int argc, char **argv) {
 
     auto log_file = make_thread_safe_fstream(work_dir + "log.txt", std::fstream::out);
 
-    std::cout << std::setprecision(15);
+    size_t task_num = get_task_num(input_file_name);
+
+    size_t thread_num = std::min(task_num, space::multiThread::auto_thread);
+
+    std::cout << task_num << " tasks in total. " << thread_num << " threads will be created for computing!\n";
 
     space::tools::Timer timer;
     timer.start();
-    space::multiThread::auto_multi_thread(single_thread_job, work_dir, input_file, start_task_id, end_task_id, output_file, log_file);
-    std::cout << "\r\n Time:" << timer.get_time() << '\n';
+    space::multiThread::multi_thread_run(thread_num, single_thread_job, work_dir, input_file, start_task_id, end_task_id, output_file, log_file);
+    std::cout << "\r\n Time:" << timer.get_time() << " s\n";
     return 0;
 }
