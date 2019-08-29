@@ -266,7 +266,7 @@ int main(int argc, char **argv) {
 
     if(user_specified_core_num != "auto") {
         if(is_number(user_specified_core_num)){
-            thread_num = std::to_string(user_specified_core_num);
+            thread_num = std::stoi(user_specified_core_num);
         } else {
             std::cout << "wrong format of the first argument(cpu core number)!\n";
             exit(0);
@@ -288,7 +288,7 @@ int main(int argc, char **argv) {
 
     auto log_file = make_thread_safe_fstream(work_dir + "log.txt", std::fstream::out);
 
-    std::cout << task_num << " tasks in total will be processed. \n" << thread_num << " threads(automatically selected based on the hardware) will be created for computing!\n";
+    std::cout << task_num << " tasks in total will be processed. \n" << thread_num << " threads will be created for computing!\n";
 
     space::tools::Timer timer;
     timer.start();
