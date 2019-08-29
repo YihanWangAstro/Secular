@@ -37,39 +37,33 @@ auto resolve_sim_type(std::string const &line) {
             in_space = false;
         }
     }
-
-    constexpr static SimArgT single_average{SimArgT::SA};
-    constexpr static SimArgT double_average{SimArgT::DA};
-	constexpr static SimArgT empty_line{ SimArgT::empty };
-	constexpr static SimArgT wrongFormat{ SimArgT::wrong };
-
     size_t id = 0;
 
     if (token_num > 0) {
         id = std::stoi(line);
     } else {
-        return std::make_tuple(id, empty_line, 0u);
+        return std::make_tuple(id, SimArgT::empty, 0u);
     }
 
     switch (token_num) {
         case 20 :
-            return std::make_tuple(id, double_average, 0u);
+            return std::make_tuple(id, SimArgT::DA, 0u);
         case 21 :
-            return std::make_tuple(id, single_average, 0u);
+            return std::make_tuple(id, SimArgT::SA, 0u);
         case 23 :
-            return std::make_tuple(id, double_average, 1u);
+            return std::make_tuple(id, SimArgT::DA, 1u);
         case 24 :
-            return std::make_tuple(id, single_average, 1u);
+            return std::make_tuple(id, SimArgT::SA, 1u);
         case 26 :
-            return std::make_tuple(id, double_average, 2u);
+            return std::make_tuple(id, SimArgT::DA, 2u);
         case 27 :
-            return std::make_tuple(id, single_average, 2u);
+            return std::make_tuple(id, SimArgT::SAe, 2u);
         case 29 :
-            return std::make_tuple(id, double_average, 3u);
+            return std::make_tuple(id, SimArgT::DA, 3u);
         case 30 :
-            return std::make_tuple(id, single_average, 3u);
+            return std::make_tuple(id, SimArgT::SA, 3u);
         default :
-            return std::make_tuple(static_cast<size_t>(0), wrongFormat, 0u);
+            return std::make_tuple(static_cast<size_t>(0), SimArgT::wrong, 0u);
     }
 }
 
