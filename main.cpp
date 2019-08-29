@@ -92,7 +92,7 @@ auto args_analy(size_t& start_id, size_t& end_id, std::string const&f){
 }
 
 template<size_t spin_num>
-auto call_ode_int(std::string work_dir, ConcurrentFile output, bool DA, secular::Controler const &ctrl, std::vector<double> const &init_args) {
+auto call_ode_int(std::string work_dir, ConcurrentFile output, bool is_double_ave, secular::Controler const &ctrl, std::vector<double> const &init_args) {
     using namespace boost::numeric::odeint;
 
     using Container = secular::SecularArray<spin_num>;
@@ -114,7 +114,7 @@ auto call_ode_int(std::string work_dir, ConcurrentFile output, bool DA, secular:
 
     Container data;
 
-    initilize_orbit_args(DA, spin_num, data, init_args.begin() + ARGS_OFFSET);
+    initilize_orbit_args(is_double_ave, spin_num, data, init_args.begin() + ARGS_OFFSET);
 
     secular::SecularConst<spin_num> const_parameters{m1, m2, m3};
 
@@ -161,11 +161,11 @@ void single_thread_job(std::string work_dir, ConcurrentFile input, size_t start_
     for (;input.execute(get_line, entry);) {
             auto[task_id, AveType, spin_num] = resolve_sim_type(entry);
 
-			bool DA{ true };
+			bool is_double_ave{ true };
 			if (AveType == SimArgT::DA) {
-				DA = true;
+				is_double_ave = true;
 			} else if (AveType == SimArgT::SA) {
-				DA = false;
+				is_double_ave = false;
 			}
 			else if (AveType == SimArgT::empty) {
 				continue;
@@ -178,22 +178,22 @@ void single_thread_job(std::string work_dir, ConcurrentFile input, size_t start_
             if (start_id <= task_id && task_id <= end_id) {
                 std::vector<double> v;
 
-                secular::unpack_args_from_str(entry, v, DA, spin_num);
+                secular::unpack_args_from_str(entry, v, is_double_ave, spin_num);
 
-                secular::Controler ctrl{v.begin() + CTRL_OFFSET, DA};
+                secular::Controler ctrl{v.begin() + CTRL_OFFSET, is_double_ave};
 
-                log << secular::get_log_title(task_id, DA, ctrl, spin_num) + "\r\n";
+                log << secular::get_log_title(task_id, is_double_ave, ctrl, spin_num) + "\r\n";
                 log.flush();
 
                 ReturnFlag res;
                 if (spin_num == 0) {
-                    res = call_ode_int<0>(work_dir, output, DA, ctrl, v);
+                    res = call_ode_int<0>(work_dir, output, is_double_ave, ctrl, v);
                 } else if (spin_num == 1) {
-                    res = call_ode_int<1>(work_dir, output, DA, ctrl, v);
+                    res = call_ode_int<1>(work_dir, output, is_double_ave, ctrl, v);
                 } else if (spin_num == 2) {
-                    res = call_ode_int<2>(work_dir, output, DA, ctrl, v);
+                    res = call_ode_int<2>(work_dir, output, is_double_ave, ctrl, v);
                 } else if (spin_num == 3) {
-                    res = call_ode_int<3>(work_dir, output, DA, ctrl, v);
+                    res = call_ode_int<3>(work_dir, output, is_double_ave, ctrl, v);
                 }
 
                 if(res == ReturnFlag::max_iter)
