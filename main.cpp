@@ -189,6 +189,7 @@ void single_thread_job(std::string work_dir, ConcurrentFile input, size_t start_
                 secular::Controler ctrl{v.begin() + CTRL_OFFSET, DA};
 
                 log << secular::get_log_title(task_id, DA, ctrl, spin_num) + "\r\n";
+                log.flush();
 
                 ReturnFlag res;
                 if (spin_num == 0) {
@@ -203,6 +204,7 @@ void single_thread_job(std::string work_dir, ConcurrentFile input, size_t start_
 
                 if(res == ReturnFlag::max_iter)
                     log << std::to_string(task_id) + ":Max iteration number reaches!\n";
+                    log.flush();
             }
     }
 }
