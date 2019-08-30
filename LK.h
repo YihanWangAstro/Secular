@@ -171,25 +171,25 @@ namespace secular {
         /*---------------------------------------------------------------------------*\
             unit vectors
         \*---------------------------------------------------------------------------*/
-        double n1x = var.L1x() / L1_norm, n1y = var.L1y() / L1_norm, n1z = var.L1z() / L1_norm;
+        double j1x = var.L1x() / L_in, j1y = var.L1y() / L_in, j1z = var.L1z() / L_in;
 
         double n2x = var.L2x() / L2_norm, n2y = var.L2y() / L2_norm, n2z = var.L2z() / L2_norm;
         /*---------------------------------------------------------------------------*\
             dot production
         \*---------------------------------------------------------------------------*/
-        double dn1n2 = dot(n1x, n1y, n1z, n2x, n2y, n2z);
+        double dj1n2 = dot(j1x, j1y, j1z, n2x, n2y, n2z);
 
         double de1n2 = dot(var.e1x(), var.e1y(), var.e1z(), n2x, n2y, n2z);
         /*---------------------------------------------------------------------------*\
             cross production
         \*---------------------------------------------------------------------------*/
-        auto const[cn1n2_x, cn1n2_y, cn1n2_z] = cross(n1x, n1y, n1z, n2x, n2y, n2z);
+        auto const[cj1n2_x, cj1n2_y, cj1n2_z] = cross(j1x, j1y, j1z, n2x, n2y, n2z);
 
-        auto const[cn1e1_x, cn1e1_y, cn1e1_z] = cross(n1x, n1y, n1z, var.e1x(), var.e1y(), var.e1z());
+        auto const[cj1e1_x, cj1e1_y, cj1e1_z] = cross(j1x, j1y, j1z, var.e1x(), var.e1y(), var.e1z());
 
         auto const[ce1n2_x, ce1n2_y, ce1n2_z] = cross(var.e1x(), var.e1y(), var.e1z(), n2x, n2y, n2z);
 
-        auto const[ce2n1_x, ce2n1_y, ce2n1_z] = cross(var.e2x(), var.e2y(), var.e2z(), n1x, n1y, n1z);
+        auto const[ce2j1_x, ce2j1_y, ce2j1_z] = cross(var.e2x(), var.e2y(), var.e2z(), j1x, j1y, j1z);
 
         auto const[ce1e2_x, ce1e2_y, ce1e2_z] = cross(var.e1x(), var.e1y(), var.e1z(), var.e2x(), var.e2y(), var.e2z());
 
@@ -203,13 +203,13 @@ namespace secular {
 
         double A = quad_coef * L_in;
 
-        double A1 = A * j1_sqr * dn1n2;
+        double A1 = A  * dj1n2;
 
         double A2 = -A * 5 * de1n2;
 
-        double B = quad_coef * j1;
+        double B = quad_coef;
 
-        double B1 = B * dn1n2;
+        double B1 = B * dj1n2;
 
         double B2 = B * 2;
 
@@ -219,27 +219,27 @@ namespace secular {
 
         double C1 = C * 5 * de1n2;
 
-        double C2 = C * j1_sqr * dn1n2;
+        double C2 = C * dj1n2;
 
-        double C3 = -C * (0.5 - 3 * e1_sqr + 12.5 * de1n2 * de1n2 - 2.5 * j1_sqr * dn1n2 * dn1n2);
+        double C3 = -C * (0.5 - 3 * e1_sqr + 12.5 * de1n2 * de1n2 - 2.5 * dj1n2 * dj1n2);
 
-        double dLx = A1 * cn1n2_x + A2 * ce1n2_x;
+        double dLx = A1 * cj1n2_x + A2 * ce1n2_x;
 
-        double dLy = A1 * cn1n2_y + A2 * ce1n2_y;
+        double dLy = A1 * cj1n2_y + A2 * ce1n2_y;
 
-        double dLz = A1 * cn1n2_z + A2 * ce1n2_z;
+        double dLz = A1 * cj1n2_z + A2 * ce1n2_z;
 
         dvar.add_L1(dLx, dLy, dLz);
 
-        dvar.add_e1(B1 * ce1n2_x + B2 * cn1e1_x + B3 * cn1n2_x,
-                    B1 * ce1n2_y + B2 * cn1e1_y + B3 * cn1n2_y,
-                    B1 * ce1n2_z + B2 * cn1e1_z + B3 * cn1n2_z);
+        dvar.add_e1(B1 * ce1n2_x + B2 * cj1e1_x + B3 * cj1n2_x,
+                    B1 * ce1n2_y + B2 * cj1e1_y + B3 * cj1n2_y,
+                    B1 * ce1n2_z + B2 * cj1e1_z + B3 * cj1n2_z);
 
         dvar.add_L2(-dLx, -dLy, -dLz);
 
-        dvar.add_e2(C1 * ce1e2_x + C2 * ce2n1_x + C3 * cn2e2_x,
-                    C1 * ce1e2_y + C2 * ce2n1_y + C3 * cn2e2_y,
-                    C1 * ce1e2_z + C2 * ce2n1_z + C3 * cn2e2_z);
+        dvar.add_e2(C1 * ce1e2_x + C2 * ce2j1_x + C3 * cn2e2_x,
+                    C1 * ce1e2_y + C2 * ce2j1_y + C3 * cn2e2_y,
+                    C1 * ce1e2_z + C2 * ce2j1_z + C3 * cn2e2_z);
     }
 
     template<bool Oct, typename Args, typename Container>
@@ -253,21 +253,21 @@ namespace secular {
         /*---------------------------------------------------------------------------*\
             unit vectors
         \*---------------------------------------------------------------------------*/
-        double n1x = var.L1x() / L1_norm, n1y = var.L1y() / L1_norm, n1z = var.L1z() / L1_norm;
+        double j1x = var.L1x() / L_in, j1y = var.L1y() / L_in, j1z = var.L1z() / L_in;
 
         double rhox = var.rx() / r, rhoy = var.ry() / r, rhoz = var.rz() / r;
         /*---------------------------------------------------------------------------*\
             dot production
         \*---------------------------------------------------------------------------*/
-        double dn1r = dot(n1x, n1y, n1z, rhox, rhoy, rhoz);
+        double dj1r = dot(j1x, j1y, j1z, rhox, rhoy, rhoz);
 
         double de1r = dot(var.e1x(), var.e1y(), var.e1z(), rhox, rhoy, rhoz);
         /*---------------------------------------------------------------------------*\
             cross production
         \*---------------------------------------------------------------------------*/
-        auto const[cn1r_x, cn1r_y, cn1r_z] = cross(n1x, n1y, n1z, rhox, rhoy, rhoz);
+        auto const[cj1r_x, cj1r_y, cj1r_z] = cross(j1x, j1y, j1z, rhox, rhoy, rhoz);
 
-        auto const[cn1e1_x, cn1e1_y, cn1e1_z] = cross(n1x, n1y, n1z, var.e1x(), var.e1y(), var.e1z());
+        auto const[cj1e1_x, cj1e1_y, cj1e1_z] = cross(j1x, j1y, j1z, var.e1x(), var.e1y(), var.e1z());
 
         auto const[ce1r_x, ce1r_y, ce1r_z] = cross(var.e1x(), var.e1y(), var.e1z(), rhox, rhoy, rhoz);
         /*---------------------------------------------------------------------------*\
@@ -279,13 +279,13 @@ namespace secular {
 
         double A1 = A * 5 * de1r;
 
-        double A2 = -A * j1_sqr * dn1r;
+        double A2 = -A * dj1r;
 
-        double B = quad_coef * j1;
+        double B = quad_coef;
 
         double B1 = B * 5 * de1r;
 
-        double B2 = -B * dn1r;
+        double B2 = -B * dj1r;
 
         double B3 = -2 * B;
 
@@ -297,30 +297,30 @@ namespace secular {
 
         double D = -0.75 * args.SA_acc_coef() * args.mu_in() * a_in * a_in;
 
-        double acc_r = -args.SA_acc_coef() * args.m12() / r3 + D * (25 * de1r * de1r - 5 * j1_sqr * dn1r * dn1r + 1 - 6 * e1_sqr) / r5;
+        double acc_r = -args.SA_acc_coef() * args.m12() / r3 + D * (25 * de1r * de1r - 5  * dj1r * dj1r + 1 - 6 * e1_sqr) / r5;
 
-        double acc_n = D * 2 * j1_sqr * dn1r / r4;
+        double acc_n = D * 2 * dj1r / r4;
 
         double acc_e = -D * 10 * de1r / r4;
 
-        dvar.add_L1(A1 * ce1r_x + A2 * cn1r_x,
-                    A1 * ce1r_y + A2 * cn1r_y,
-                    A1 * ce1r_z + A2 * cn1r_z);
+        dvar.add_L1(A1 * ce1r_x + A2 * cj1r_x,
+                    A1 * ce1r_y + A2 * cj1r_y,
+                    A1 * ce1r_z + A2 * cj1r_z);
 
-        dvar.add_e1(B1 * cn1r_x + B2 * ce1r_x + B3 * cn1e1_x,
-                    B1 * cn1r_y + B2 * ce1r_y + B3 * cn1e1_y,
-                    B1 * cn1r_z + B2 * ce1r_z + B3 * cn1e1_z);
+        dvar.add_e1(B1 * cj1r_x + B2 * ce1r_x + B3 * cj1e1_x,
+                    B1 * cj1r_y + B2 * ce1r_y + B3 * cj1e1_y,
+                    B1 * cj1r_z + B2 * ce1r_z + B3 * cj1e1_z);
 
         dvar.add_r(var.vx(), var.vy(), var.vz());
 
-        dvar.add_v(acc_r * var.rx() + acc_n * n1x + acc_e * var.e1x(),
-                   acc_r * var.ry() + acc_n * n1y + acc_e * var.e1y(),
-                   acc_r * var.rz() + acc_n * n1z + acc_e * var.e1z());
+        dvar.add_v(acc_r * var.rx() + acc_n * j1x + acc_e * var.e1x(),
+                   acc_r * var.ry() + acc_n * j1y + acc_e * var.e1y(),
+                   acc_r * var.rz() + acc_n * j1z + acc_e * var.e1z());
 
 
         if constexpr(Oct) {
-            double espsilon = normed_oct_epsilon(args.m1(), args.m2(), r);
-            
+            double espsilon = normed_oct_epsilon(args.m1(), args.m2(), a_in, r);
+
         }
     }
 

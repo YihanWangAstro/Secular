@@ -57,7 +57,7 @@ auto resolve_sim_type(std::string const &line) {
         case 26 :
             return std::make_tuple(id, SimArgT::DA, 2u);
         case 27 :
-            return std::make_tuple(id, SimArgT::SAe, 2u);
+            return std::make_tuple(id, SimArgT::SA, 2u);
         case 29 :
             return std::make_tuple(id, SimArgT::DA, 3u);
         case 30 :
