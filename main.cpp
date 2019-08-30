@@ -166,11 +166,9 @@ void single_thread_job(std::string work_dir, ConcurrentFile input, size_t start_
 				is_double_ave = true;
 			} else if (AveType == SimArgT::SA) {
 				is_double_ave = false;
-			}
-			else if (AveType == SimArgT::empty) {
+			} else if (AveType == SimArgT::empty) {
 				continue;
-			}
-			else if (AveType == SimArgT::wrong) {
+			} else if (AveType == SimArgT::wrong) {
 				std::cout << "task" + std::to_string(task_id) + ":wrong input format!\r\n";
 				continue;
 			}
