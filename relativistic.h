@@ -28,13 +28,23 @@ namespace secular {
         double GW_e_coef_{0};
     };
 
-    template<typename Args, typename Container>
+    template<typename Args, typename Container, bool DA = true>
     inline void GR_precession(Args const &args, Container const &var, Container &dvar, double t) {
         double a_eff = calc_a_eff(args.a_in_coef(), var.L1x(), var.L1y(), var.L1z(), var.e1x(), var.e1y(), var.e1z());
 
-        double Omega = args.GR_coef() / (a_eff * a_eff * a_eff);
+        double Omega = args.GR_in_coef() / (a_eff * a_eff * a_eff);
 
         dvar.add_e1(cross_with_coef(Omega, var.L1x(), var.L1y(), var.L1z(), var.e1x(), var.e1y(), var.e1z()));
+
+        if(DA){
+            double a_out_eff = calc_a_eff(args.a_out_coef(), var.L2x(), var.L2y(), var.L2z(), var.e2x(), var.e2y(), var.e2z());
+
+            double Omega_out = args.GR_out_coef() / (a_out_eff * a_out_eff * a_out_eff);
+
+            dvar.add_e2(cross_with_coef(Omega_out, var.L2x(), var.L2y(), var.L2z(), var.e2x(), var.e2y(), var.e2z()));
+        } else {
+            
+        }
     }
 
     template<typename Args, typename Container>
@@ -48,9 +58,9 @@ namespace secular {
 
         double a_eff4 = a_eff2 * a_eff2;
 
-        double GW_L_coef = args.GW_L_coef() / a_eff4 / j1 * (1 + 0.875 * e1_sqr);
+        double GW_L_coef = args.GW_L_in_coef() / a_eff4 / j1 * (1 + 0.875 * e1_sqr);
 
-        double GW_e_coef = args.GW_e_coef() / a_eff4 / j1 * (1 + 121.0 / 304 * e1_sqr);
+        double GW_e_coef = args.GW_e_in_coef() / a_eff4 / j1 * (1 + 121.0 / 304 * e1_sqr);
 
         dvar.add_L1(GW_L_coef * var.L1x(), GW_L_coef * var.L1y(), GW_L_coef * var.L1z());
 

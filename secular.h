@@ -144,7 +144,7 @@ namespace secular {
     template<size_t spin_num>
     class SecularConst {
     public:
-        SecularConst(double _m1, double _m2, double _m3) : basic_{_m1, _m2, _m3}, GR_{basic_.m12(), basic_.mu_in()}, SL_{_m1, _m2, _m3} {}
+        SecularConst(double _m1, double _m2, double _m3) : basic_{_m1, _m2, _m3}, GR_in_{basic_.m12(), basic_.mu_in()}, GR_out_{basic_.m_tot(), basic_.mu_out()}, SL_{_m1, _m2, _m3} {}
 
         SecularConst() = default;
 
@@ -168,11 +168,17 @@ namespace secular {
 
         READ_GETTER(double, SA_acc_coef, basic_.SA_acc_coef());
 
-        READ_GETTER(double, GR_coef, GR_.GR_coef());
+        READ_GETTER(double, GR_in_coef, GR_in_.GR_coef());
 
-        READ_GETTER(double, GW_L_coef, GR_.GW_L_coef());
+        READ_GETTER(double, GW_L_in_coef, GR_in_.GW_L_coef());
 
-        READ_GETTER(double, GW_e_coef, GR_.GW_L_coef());
+        READ_GETTER(double, GW_e_in_coef, GR_in_.GW_L_coef());
+
+        READ_GETTER(double, GR_out_coef, GR_out_.GR_coef());
+
+        READ_GETTER(double, GW_L_out_coef, GR_out_.GW_L_coef());
+
+        READ_GETTER(double, GW_e_out_coef, GR_out_.GW_L_coef());
 
         READ_GETTER(double, LL, SL_.LL());
 
@@ -189,7 +195,8 @@ namespace secular {
         READ_GETTER(double, S3L2, SL_.S3L2());
     private:
         BasicConst basic_;
-        GRConst GR_;
+        GRConst GR_in_;
+        GRConst GR_out_;
         SLConst<spin_num> SL_;
     };
 

@@ -259,35 +259,31 @@ namespace secular {
         /*---------------------------------------------------------------------------*\
             dot production
         \*---------------------------------------------------------------------------*/
-        double dj1r = dot(j1x, j1y, j1z, rhox, rhoy, rhoz);
+        double dj1rho = dot(j1x, j1y, j1z, rhox, rhoy, rhoz);
 
-        double de1r = dot(var.e1x(), var.e1y(), var.e1z(), rhox, rhoy, rhoz);
+        double de1rho = dot(var.e1x(), var.e1y(), var.e1z(), rhox, rhoy, rhoz);
         /*---------------------------------------------------------------------------*\
             cross production
         \*---------------------------------------------------------------------------*/
-        auto const[cj1r_x, cj1r_y, cj1r_z] = cross(j1x, j1y, j1z, rhox, rhoy, rhoz);
+        auto const[cj1rho_x, cj1rho_y, cj1rho_z] = cross(j1x, j1y, j1z, rhox, rhoy, rhoz);
 
         auto const[cj1e1_x, cj1e1_y, cj1e1_z] = cross(j1x, j1y, j1z, var.e1x(), var.e1y(), var.e1z());
 
-        auto const[ce1r_x, ce1r_y, ce1r_z] = cross(var.e1x(), var.e1y(), var.e1z(), rhox, rhoy, rhoz);
+        auto const[ce1rho_x, ce1rho_y, ce1rho_z] = cross(var.e1x(), var.e1y(), var.e1z(), rhox, rhoy, rhoz);
         /*---------------------------------------------------------------------------*\
             combinations
         \*---------------------------------------------------------------------------*/
         double quad_coef = 1.5 / t_k_quad(args.m12(), args.m3(), a_in, r);
 
-        double A = quad_coef * L_in;
+        double B1 = quad_coef * 5 * de1rho;
 
-        double A1 = A * 5 * de1r;
+        double B2 = -quad_coef * dj1rho;
 
-        double A2 = -A * dj1r;
+        double B3 = -2 * quad_coef;
 
-        double B = quad_coef;
+        double A1 = B1 * L_in;
 
-        double B1 = B * 5 * de1r;
-
-        double B2 = -B * dj1r;
-
-        double B3 = -2 * B;
+        double A2 = B2 * L_in;
 
         double r3 = r2 * r;
 
@@ -297,21 +293,21 @@ namespace secular {
 
         double D = -0.75 * args.SA_acc_coef() * args.mu_in() * a_in * a_in;
 
-        double acc_r = -args.SA_acc_coef() * args.m12() / r3 + D * (25 * de1r * de1r - 5  * dj1r * dj1r + 1 - 6 * e1_sqr) / r5;
+        double acc_r = -args.SA_acc_coef() * args.m12() / r3 + D * (25 * de1rho * de1rho - 5  * dj1rho * dj1rho + 1 - 6 * e1_sqr) / r5;
 
-        double acc_n = D * 2 * dj1r / r4;
+        double acc_n = D * 2 * dj1rho / r4;
 
-        double acc_e = -D * 10 * de1r / r4;
+        double acc_e = -D * 10 * de1rho / r4;
 
-        dvar.add_L1(A1 * ce1r_x + A2 * cj1r_x,
-                    A1 * ce1r_y + A2 * cj1r_y,
-                    A1 * ce1r_z + A2 * cj1r_z);
+        dvar.add_L1(A1 * ce1rho_x + A2 * cj1rho_x,
+                    A1 * ce1rho_y + A2 * cj1rho_y,
+                    A1 * ce1rho_z + A2 * cj1rho_z);
 
-        dvar.add_e1(B1 * cj1r_x + B2 * ce1r_x + B3 * cj1e1_x,
-                    B1 * cj1r_y + B2 * ce1r_y + B3 * cj1e1_y,
-                    B1 * cj1r_z + B2 * ce1r_z + B3 * cj1e1_z);
+        dvar.add_e1(B1 * cj1rho_x + B2 * ce1rho_x + B3 * cj1e1_x,
+                    B1 * cj1rho_y + B2 * ce1rho_y + B3 * cj1e1_y,
+                    B1 * cj1rho_z + B2 * ce1rho_z + B3 * cj1e1_z);
 
-        dvar.add_r(var.vx(), var.vy(), var.vz());
+        dvar.set_r(var.vx(), var.vy(), var.vz());
 
         dvar.add_v(acc_r * var.rx() + acc_n * j1x + acc_e * var.e1x(),
                    acc_r * var.ry() + acc_n * j1y + acc_e * var.e1y(),
@@ -319,7 +315,25 @@ namespace secular {
 
 
         if constexpr(Oct) {
-            double espsilon = normed_oct_epsilon(args.m1(), args.m2(), a_in, r);
+            double epsilon = normed_oct_epsilon(args.m1(), args.m2(), a_in, r);
+
+            double oct_coef = quad_coef * epsilon * 5.0/ 8.0;
+
+            double E = 8*e1_sqr - 1;
+
+            double F1 = oct_coef * 10 * dj1rho * de1rho;
+
+            double F2 = oct_coef * (E + 5 * dj1rho * dj1rho -35  * de1rho * de1rho);
+
+            double F3 = oct_coef * 10 * dj1rho * de1rho;
+
+            double H1 = F1 * L_in;
+
+            double H2 = F2 * L_in;
+
+            dvar.add_L1( H1 * cj1e1_x + H2 * ce1rho_x, H1 * cj1e1_y + H2 * ce1rho_y, H1 * cj1e1_z + H2 * ce1rho_z);
+
+            dvar.add_e1(F1 * cj1e1_x + F2 * cj1rho_x + F3 * ce1rho_x, F1 * cj1e1_y + F2 * cj1rho_y + F3 * ce1rho_y, F1 * cj1e1_z + F2 * cj1rho_z + F3 * ce1rho_z); 
 
         }
     }
