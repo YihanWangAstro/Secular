@@ -64,9 +64,10 @@ namespace secular {
         return consts::r_G_sqrt * sqrt(m_in) / m_out * ratio * ratio * ratio;
     }
 
-    double normed_oct_epsilon(double m1, double m2, double a_in, double a_out, double c_out_sqr) {
-        return fabs(m1 - m2) / (m1 + m2) * a_in / a_out / c_out_sqr;
+    double normed_oct_epsilon(double m1, double m2, double a_in, double a_out_eff) {
+        return fabs(m1 - m2) / (m1 + m2) * a_in / a_out_eff;
     }
+
 
     /*
     auto unpack_init(size_t b, std::vector<double> const &v) {
@@ -198,7 +199,7 @@ namespace secular {
         \*---------------------------------------------------------------------------*/
         double a_out_eff = a_out * j2;
 
-        double quad_coef = 0.75 / t_k_quad(args.m1() + args.m2(), args.m3(), a_in, a_out_eff);
+        double quad_coef = 0.75 / t_k_quad(args.m12(), args.m3(), a_in, a_out_eff);
 
         double A = quad_coef * L_in;
 
@@ -272,7 +273,7 @@ namespace secular {
         /*---------------------------------------------------------------------------*\
             combinations
         \*---------------------------------------------------------------------------*/
-        double quad_coef = 1.5 / t_k_quad(args.m1() + args.m2(), args.m3(), a_in, r);
+        double quad_coef = 1.5 / t_k_quad(args.m12(), args.m3(), a_in, r);
 
         double A = quad_coef * L_in;
 
@@ -296,7 +297,7 @@ namespace secular {
 
         double D = -0.75 * args.SA_acc_coef() * args.mu_in() * a_in * a_in;
 
-        double acc_r = -args.SA_acc_coef() * (args.m1() + args.m2()) / r3 + D * (25 * de1r * de1r - 5 * j1_sqr * dn1r * dn1r + 1 - 6 * e1_sqr) / r5;
+        double acc_r = -args.SA_acc_coef() * args.m12() / r3 + D * (25 * de1r * de1r - 5 * j1_sqr * dn1r * dn1r + 1 - 6 * e1_sqr) / r5;
 
         double acc_n = D * 2 * j1_sqr * dn1r / r4;
 
@@ -315,6 +316,12 @@ namespace secular {
         dvar.add_v(acc_r * var.rx() + acc_n * n1x + acc_e * var.e1x(),
                    acc_r * var.ry() + acc_n * n1y + acc_e * var.e1y(),
                    acc_r * var.rz() + acc_n * n1z + acc_e * var.e1z());
+
+
+        if constexpr(Oct) {
+            double espsilon = normed_oct_epsilon(args.m1(), args.m2(), r);
+            
+        }
     }
 
 } // namespace secular
