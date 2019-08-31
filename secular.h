@@ -120,7 +120,7 @@ namespace secular {
         Controler(Iter iter, bool _DA) {
             DA = _DA;
             Oct = static_cast<bool>(*iter), iter++;
-            GR = static_cast<bool>(*iter), iter++;
+            GR = static_cast<int>(*iter), iter++;
             GW_stop_a_ = static_cast<double>(*iter), iter++;
             GW = is_on(GW_stop_a_ );
             SL = static_cast<bool>(*iter), iter++;
@@ -133,7 +133,7 @@ namespace secular {
 
         bool DA;
         bool Oct;
-        bool GR;
+        int GR;
         bool GW;
         bool SL;
         bool LL;
@@ -229,6 +229,12 @@ namespace secular {
                         deSitter_precession<true, SLstat<deS::on, deS::off, deS::off, deS::bc, deS::off>, ConstArg, Container>(*args, x, dxdt, t);
                     }
                 }
+
+                if (ctrl->GR == 1) {
+                    GR_precession<ConstArg, Container, true, 1>(*args, x, dxdt, t);
+                } else if(ctrl->GR == 2) {
+                    GR_precession<ConstArg, Container, true, 2>(*args, x, dxdt, t);
+                }
             } else {
                 if (ctrl->Oct == true) {
                     single_aved_LK<true, ConstArg, Container>(*args, x, dxdt, t);
@@ -249,10 +255,12 @@ namespace secular {
                         deSitter_precession<false, SLstat<deS::on, deS::off, deS::off, deS::bc, deS::off>, ConstArg, Container>(*args, x, dxdt, t);
                     }
                 }
-            }
 
-            if (ctrl->GR == true) {
-                GR_precession(*args, x, dxdt, t);
+                if (ctrl->GR == 1) {
+                    GR_precession<ConstArg, Container, false, 1>(*args, x, dxdt, t);
+                } else if(ctrl->GR == 2) {
+                    GR_precession<ConstArg, Container, false, 2>(*args, x, dxdt, t);
+                }
             }
 
             if (ctrl->GW == true) {
@@ -264,8 +272,8 @@ namespace secular {
         SecularConst<spin_num<Container>::size> const *args;
     };
 
-
-    template<typename Container, bool DA, bool Oct, bool GR, bool GW, bool SL, bool LL>
+/*
+    template<typename Container, bool DA, bool Oct, int GR, bool GW, bool SL, bool LL>
     struct Static_functor {
         using ConstArg = SecularConst<spin_num<Container>::size>;
 
@@ -316,7 +324,7 @@ namespace secular {
             }
 
             if constexpr(GR == true) {
-                GR_precession(*args, x, dxdt, t);
+                GR_precession<ConstArg, Container, DA>(*args, x, dxdt, t);
             }
 
             if constexpr(GW == true) {
@@ -470,6 +478,6 @@ namespace secular {
           case 63:                                                                                                 \
               {auto func =  secular::Static_functor<Container, true, true, true, true, true, true>(args) ; expr;break;}\
         }           }                                                                                              \
-
+*/
 } // namespace secular
 #endif

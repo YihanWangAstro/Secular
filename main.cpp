@@ -128,10 +128,10 @@ auto call_ode_int(std::string work_dir, ConcurrentFile output, bool is_double_av
 
     secular::SMA_Determinator stop{const_parameters.a_in_coef(), ctrl.stop_a_in()};
 
-    //auto func = secular::Dynamic_dispatch<Container>(ctrl, const_parameters);
+    auto func = secular::Dynamic_dispatch<Container>(ctrl, const_parameters);
     writer(data, time);
 
-    STATIC_DISPATH(ctrl, const_parameters,
+    //STATIC_DISPATH(ctrl, const_parameters,
 
     for( ;time <= t_end && !stop(data, time); ) {
         constexpr size_t max_attempts = 500;
@@ -148,7 +148,7 @@ auto call_ode_int(std::string work_dir, ConcurrentFile output, bool is_double_av
         }
         writer(data, time);
     }
-    )
+    //)
 
     output << PACK(task_id, ' ', time, ' ', data, "\r\n");
     output.flush();
