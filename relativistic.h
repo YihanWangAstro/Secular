@@ -36,25 +36,10 @@ namespace secular {
 
     template<typename Args, typename Container, bool DA, size_t Orbit>
     inline void GR_precession(Args const &args, Container const &var, Container &dvar, double t) {
-        /*double a_eff = calc_a_eff(args.a_in_coef(), var.L1x(), var.L1y(), var.L1z(), var.e1x(), var.e1y(), var.e1z());
-
-        double Omega = args.GR_in_coef() / (a_eff * a_eff * a_eff);
-
-        dvar.add_e1(cross_with_coef(Omega, var.L1x(), var.L1y(), var.L1z(), var.e1x(), var.e1y(), var.e1z()));
-
-        /*if(DA){
-            double a_out_eff = calc_a_eff(args.a_out_coef(), var.L2x(), var.L2y(), var.L2z(), var.e2x(), var.e2y(), var.e2z());
-
-            double Omega_out = args.GR_out_coef() / (a_out_eff * a_out_eff * a_out_eff);
-
-            dvar.add_e2(cross_with_coef(Omega_out, var.L2x(), var.L2y(), var.L2z(), var.e2x(), var.e2y(), var.e2z()));
-        } else {
-
-        }*/
         if constexpr(Orbit>0) {
             GR_PROCESS(a_in_coef(), GR_in_coef(), 1);
         }
-        
+
         if constexpr(Orbit>1) {
             if constexpr(DA) {
                 GR_PROCESS(a_out_coef(), GR_out_coef(), 2);
