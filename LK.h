@@ -1,342 +1,359 @@
 #ifndef QUAD_LK_H
 #define QUAD_LK_H
 
-#include<algorithm>
+#include <algorithm>
 #include "tools.h"
 #include "SpaceHub/src/orbits/orbits.hpp"
 
-namespace secular {
+namespace secular
+{
 
-    class BasicConst {
-    public:
-        BasicConst(double _m1, double _m2, double _m3)
-                : m1_{_m1},
-                  m2_{_m2},
-                  m3_{_m3},
-                  m12_{_m1 + _m2},
-                  m_tot_{_m1 + _m2 + _m3},
-                  mu_in_{_m1 * _m2 / (_m1 + _m2)},
-                  mu_out_{(_m1 + _m2) * _m3 / (_m1 + _m2 + _m3)},
-                  a_in_coef_{calc_a_coef(m12_, mu_in_)},
-                  a_out_coef_{calc_a_coef(m_tot_, mu_out_)},
-                  SA_acc_coef_{consts::G * _m3 / mu_out_} {}
+class BasicConst
+{
+public:
+    BasicConst(double _m1, double _m2, double _m3)
+        : m1_{_m1},
+          m2_{_m2},
+          m3_{_m3},
+          m12_{_m1 + _m2},
+          m_tot_{_m1 + _m2 + _m3},
+          mu_in_{_m1 * _m2 / (_m1 + _m2)},
+          mu_out_{(_m1 + _m2) * _m3 / (_m1 + _m2 + _m3)},
+          a_in_coef_{calc_a_coef(m12_, mu_in_)},
+          a_out_coef_{calc_a_coef(m_tot_, mu_out_)},
+          SA_acc_coef_{consts::G * _m3 / mu_out_} {}
 
-        BasicConst() = default;
+    BasicConst() = default;
 
-        READ_GETTER(double, m1, m1_);
+    READ_GETTER(double, m1, m1_);
 
-        READ_GETTER(double, m2, m2_);
+    READ_GETTER(double, m2, m2_);
 
-        READ_GETTER(double, m3, m3_);
+    READ_GETTER(double, m3, m3_);
 
-        READ_GETTER(double, m12, m12_);
+    READ_GETTER(double, m12, m12_);
 
-        READ_GETTER(double, m_tot, m_tot_);
+    READ_GETTER(double, m_tot, m_tot_);
 
-        READ_GETTER(double, mu_in, mu_in_);
+    READ_GETTER(double, mu_in, mu_in_);
 
-        READ_GETTER(double, mu_out, mu_out_);
+    READ_GETTER(double, mu_out, mu_out_);
 
-        READ_GETTER(double, a_in_coef, a_in_coef_);
+    READ_GETTER(double, a_in_coef, a_in_coef_);
 
-        READ_GETTER(double, a_out_coef, a_out_coef_);
+    READ_GETTER(double, a_out_coef, a_out_coef_);
 
-        READ_GETTER(double, SA_acc_coef, SA_acc_coef_);
-    private:
-        double m1_{0};
-        double m2_{0};
-        double m3_{0};
-        double m12_{0};
-        double m_tot_{0};
-        double mu_in_{0};
-        double mu_out_{0};
-        double a_in_coef_{0};
-        double a_out_coef_{0};
-        double SA_acc_coef_{0};
+    READ_GETTER(double, SA_acc_coef, SA_acc_coef_);
 
-        inline double calc_a_coef(double m, double mu) {
-            return 1 / (consts::G * m) / mu / mu;
-        }
-    };
+private:
+    double m1_{0};
+    double m2_{0};
+    double m3_{0};
+    double m12_{0};
+    double m_tot_{0};
+    double mu_in_{0};
+    double mu_out_{0};
+    double a_in_coef_{0};
+    double a_out_coef_{0};
+    double SA_acc_coef_{0};
 
-    double t_k_quad(double m_in, double m_out, double a_in, double a_out_eff) {
-        double ratio = a_out_eff / sqrt(a_in);
-        return consts::r_G_sqrt * sqrt(m_in) / m_out * ratio * ratio * ratio;
+    inline double calc_a_coef(double m, double mu)
+    {
+        return 1 / (consts::G * m) / mu / mu;
     }
+};
 
-    double normed_oct_epsilon(double m1, double m2, double a_in, double a_out_eff) {
-        return fabs(m1 - m2) / (m1 + m2) * a_in / a_out_eff;
-    }
+double t_k_quad(double m_in, double m_out, double a_in, double a_out_eff)
+{
+    double ratio = a_out_eff / sqrt(a_in);
+    return consts::r_G_sqrt * sqrt(m_in) / m_out * ratio * ratio * ratio;
+}
 
+double normed_oct_epsilon(double m1, double m2, double a_in, double a_out_eff)
+{
+    return fabs(m1 - m2) / (m1 + m2) * a_in / a_out_eff;
+}
 
-    /*
+/*
     auto unpack_init(size_t b, std::vector<double> const &v) {
         return std::make_tuple(v[b], v[b + 1], v[b + 2], v[b + 3], v[b + 4], v[b + 5], v[b + 6], v[b + 7], v[b + 8], v[b + 9], v[b + 10], v[b + 11]);
     }*/
 
-    template<typename Container, typename Iter>
-    void initilize_orbit_args(bool DA, size_t spin_num, Container &c, Iter iter) {
-        if (DA) {
-            initilize_DA(spin_num, c, iter);
-        } else {
-            initilize_SA(spin_num, c, iter);
-        }
+template <typename Container, typename Iter>
+void initilize_orbit_args(bool DA, size_t spin_num, Container &c, Iter iter)
+{
+    if (DA)
+    {
+        initilize_DA(spin_num, c, iter);
     }
-
-    template<typename Container,typename Iter>
-    void initilize_DA(size_t spin_num, Container &c, Iter iter) {
-        auto[m1, m2, m3, a_in, a_out, e_in, e_out, omega_in, omega_out, Omega_in, i_in, i_out] = unpack_args<12>(iter);//unpack_vector(off_set, args);
-
-        double Omega_out = Omega_in - 180;
-
-        deg_to_rad(omega_in, omega_out, Omega_in, Omega_out, i_in, i_out);
-
-        auto[j1x, j1y, j1z] = secular::unit_j(i_in, Omega_in);
-
-        double L1 = secular::calc_angular_mom(m1, m2, a_in) * sqrt(1 - e_in * e_in);
-
-        c.set_L1(L1 * j1x, L1 * j1y, L1 * j1z);
-
-        auto[j2x, j2y, j2z] = secular::unit_j(i_out, Omega_out);
-
-        double L2 = secular::calc_angular_mom(m1 + m2, m3, a_out) * sqrt(1 - e_out * e_out);
-
-        c.set_L2(L2 * j2x, L2 * j2y, L2 * j2z);
-
-        auto[e1x, e1y, e1z] = secular::unit_e(i_in, omega_in, Omega_in);
-
-        c.set_e1(e_in * e1x, e_in * e1y, e_in * e1z);
-
-        auto[e2x, e2y, e2z] = secular::unit_e(i_out, omega_out, Omega_out);
-
-        c.set_e2(e_out * e2x, e_out * e2y, e_out * e2z);
-
-        std::copy_n(iter + 12, spin_num * 3, c.spin_begin());
+    else
+    {
+        initilize_SA(spin_num, c, iter);
     }
+}
 
-    template<typename Container, typename Iter>
-    void initilize_SA(size_t spin_num, Container &c, Iter iter) {
-        auto[m1, m2, m3, a_in, a_out, e_in, e_out, omega_in, omega_out, Omega_in, i_in, i_out] = unpack_args<12>(iter);
+template <typename Container, typename Iter>
+void initilize_DA(size_t spin_num, Container &c, Iter iter)
+{
+    auto [m1, m2, m3, a_in, a_out, e_in, e_out, omega_in, omega_out, Omega_in, i_in, i_out] = unpack_args<12>(iter); //unpack_vector(off_set, args);
 
-        double Omega_out = Omega_in - 180;
+    double Omega_out = Omega_in - 180;
 
-        double M_nu = *(iter+12);
+    deg_to_rad(omega_in, omega_out, Omega_in, Omega_out, i_in, i_out);
 
-        deg_to_rad(omega_in, omega_out, Omega_in, Omega_out, i_in, i_out, M_nu);
+    auto [j1x, j1y, j1z] = secular::unit_j(i_in, Omega_in);
 
-        auto[j1x, j1y, j1z] = secular::unit_j(i_in, Omega_in);
+    double L1 = secular::calc_angular_mom(m1, m2, a_in) * sqrt(1 - e_in * e_in);
 
-        double L1 = secular::calc_angular_mom(m1, m2, a_in) * sqrt(1 - e_in * e_in);
+    c.set_L1(L1 * j1x, L1 * j1y, L1 * j1z);
 
-        c.set_L1(L1 * j1x, L1 * j1y, L1 * j1z);
+    auto [j2x, j2y, j2z] = secular::unit_j(i_out, Omega_out);
 
-        auto[e1x, e1y, e1z] = secular::unit_e(i_in, omega_in, Omega_in);
+    double L2 = secular::calc_angular_mom(m1 + m2, m3, a_out) * sqrt(1 - e_out * e_out);
 
-        c.set_e1(e_in * e1x, e_in * e1y, e_in * e1z);
+    c.set_L2(L2 * j2x, L2 * j2y, L2 * j2z);
 
-        double E_nu = space::orbit::calc_eccentric_anomaly(M_nu, e_out);
+    auto [e1x, e1y, e1z] = secular::unit_e(i_in, omega_in, Omega_in);
 
-        double cosE = cos(E_nu);
+    c.set_e1(e_in * e1x, e_in * e1y, e_in * e1z);
 
-        double nu_out = space::orbit::calc_true_anomaly(E_nu, e_out);//acos( ( cosE - o.e_out)/ (1 - o.e_out*cosE) );
+    auto [e2x, e2y, e2z] = secular::unit_e(i_out, omega_out, Omega_out);
 
-        double r = a_out * (1 - e_out * cosE);
+    c.set_e2(e_out * e2x, e_out * e2y, e_out * e2z);
 
-        auto[px, py, pz] = secular::unit_e(i_out, omega_out + nu_out, Omega_out);
+    std::copy_n(iter + 12, spin_num * 3, c.spin_begin());
+}
 
-        c.set_r(r * px, r * py, r * pz);
+template <typename Container, typename Iter>
+void initilize_SA(size_t spin_num, Container &c, Iter iter)
+{
+    auto [m1, m2, m3, a_in, a_out, e_in, e_out, omega_in, omega_out, Omega_in, i_in, i_out] = unpack_args<12>(iter);
 
-        double v = sqrt(consts::G * (m1 + m2 + m3) / (a_out * (1 - e_out * e_out)));
+    double Omega_out = Omega_in - 180;
 
-        double ve = -v * sin(nu_out);
+    double M_nu = *(iter + 12);
 
-        double vv = v * (e_out + cos(nu_out));
+    deg_to_rad(omega_in, omega_out, Omega_in, Omega_out, i_in, i_out, M_nu);
 
-        auto[e2x, e2y, e2z] = secular::unit_e(i_out, omega_out, Omega_out);
+    auto [j1x, j1y, j1z] = secular::unit_j(i_in, Omega_in);
 
-        auto[vx, vy, vz] = secular::unit_peri_v(i_out, omega_out, Omega_out);
+    double L1 = secular::calc_angular_mom(m1, m2, a_in) * sqrt(1 - e_in * e_in);
 
-        c.set_v(ve * e2x + vv * vx, ve * e2y + vv * vy, ve * e2z + vv * vz);
+    c.set_L1(L1 * j1x, L1 * j1y, L1 * j1z);
 
-        std::copy_n(iter + 13, spin_num * 3, c.spin_begin());
-    }
+    auto [e1x, e1y, e1z] = secular::unit_e(i_in, omega_in, Omega_in);
 
-    template<bool Oct, typename Args, typename Container>
-    inline void double_aved_LK(Args const &args, Container const &var, Container &dvar, double t) {
-        auto[e1_sqr, j1_sqr, j1, L1_norm, L_in, a_in] = calc_orbit_args(args.a_in_coef(), var.L1x(), var.L1y(), var.L1z(), var.e1x(), var.e1y(),
-                                                                        var.e1z());
+    c.set_e1(e_in * e1x, e_in * e1y, e_in * e1z);
 
-        auto[e2_sqr, j2_sqr, j2, L2_norm, L_out, a_out] = calc_orbit_args(args.a_out_coef(), var.L2x(), var.L2y(), var.L2z(), var.e2x(), var.e2y(),
-                                                                          var.e2z());
-        /*---------------------------------------------------------------------------*\
+    double E_nu = space::orbit::calc_eccentric_anomaly(M_nu, e_out);
+
+    double cosE = cos(E_nu);
+
+    double nu_out = space::orbit::calc_true_anomaly(E_nu, e_out); //acos( ( cosE - o.e_out)/ (1 - o.e_out*cosE) );
+
+    double r = a_out * (1 - e_out * cosE);
+
+    auto [px, py, pz] = secular::unit_e(i_out, omega_out + nu_out, Omega_out);
+
+    c.set_r(r * px, r * py, r * pz);
+
+    double v = sqrt(consts::G * (m1 + m2 + m3) / (a_out * (1 - e_out * e_out)));
+
+    double ve = -v * sin(nu_out);
+
+    double vv = v * (e_out + cos(nu_out));
+
+    auto [e2x, e2y, e2z] = secular::unit_e(i_out, omega_out, Omega_out);
+
+    auto [vx, vy, vz] = secular::unit_peri_v(i_out, omega_out, Omega_out);
+
+    c.set_v(ve * e2x + vv * vx, ve * e2y + vv * vy, ve * e2z + vv * vz);
+
+    std::copy_n(iter + 13, spin_num * 3, c.spin_begin());
+}
+
+template <bool Oct, typename Args, typename Container>
+inline void double_aved_LK(Args const &args, Container const &var, Container &dvar, double t)
+{
+    auto [e1_sqr, j1_sqr, j1, L1_norm, L_in, a_in] = calc_orbit_args(args.a_in_coef(), var.L1x(), var.L1y(), var.L1z(), var.e1x(), var.e1y(),
+                                                                     var.e1z());
+
+    auto [e2_sqr, j2_sqr, j2, L2_norm, L_out, a_out] = calc_orbit_args(args.a_out_coef(), var.L2x(), var.L2y(), var.L2z(), var.e2x(), var.e2y(),
+                                                                       var.e2z());
+    /*---------------------------------------------------------------------------*\
             unit vectors
         \*---------------------------------------------------------------------------*/
-        double j1x = var.L1x() / L_in, j1y = var.L1y() / L_in, j1z = var.L1z() / L_in;
+    double j1x = var.L1x() / L_in, j1y = var.L1y() / L_in, j1z = var.L1z() / L_in;
 
-        double n2x = var.L2x() / L2_norm, n2y = var.L2y() / L2_norm, n2z = var.L2z() / L2_norm;
-        /*---------------------------------------------------------------------------*\
+    double n2x = var.L2x() / L2_norm, n2y = var.L2y() / L2_norm, n2z = var.L2z() / L2_norm;
+    /*---------------------------------------------------------------------------*\
             dot production
         \*---------------------------------------------------------------------------*/
-        double dj1n2 = dot(j1x, j1y, j1z, n2x, n2y, n2z);
+    double dj1n2 = dot(j1x, j1y, j1z, n2x, n2y, n2z);
 
-        double de1n2 = dot(var.e1x(), var.e1y(), var.e1z(), n2x, n2y, n2z);
-        /*---------------------------------------------------------------------------*\
+    double de1n2 = dot(var.e1x(), var.e1y(), var.e1z(), n2x, n2y, n2z);
+    /*---------------------------------------------------------------------------*\
             cross production
         \*---------------------------------------------------------------------------*/
-        auto const[cj1n2_x, cj1n2_y, cj1n2_z] = cross(j1x, j1y, j1z, n2x, n2y, n2z);
+    auto const [cj1n2_x, cj1n2_y, cj1n2_z] = cross(j1x, j1y, j1z, n2x, n2y, n2z);
 
-        auto const[cj1e1_x, cj1e1_y, cj1e1_z] = cross(j1x, j1y, j1z, var.e1x(), var.e1y(), var.e1z());
+    auto const [cj1e1_x, cj1e1_y, cj1e1_z] = cross(j1x, j1y, j1z, var.e1x(), var.e1y(), var.e1z());
 
-        auto const[ce1n2_x, ce1n2_y, ce1n2_z] = cross(var.e1x(), var.e1y(), var.e1z(), n2x, n2y, n2z);
+    auto const [ce1n2_x, ce1n2_y, ce1n2_z] = cross(var.e1x(), var.e1y(), var.e1z(), n2x, n2y, n2z);
 
-        auto const[ce2j1_x, ce2j1_y, ce2j1_z] = cross(var.e2x(), var.e2y(), var.e2z(), j1x, j1y, j1z);
+    auto const [ce2j1_x, ce2j1_y, ce2j1_z] = cross(var.e2x(), var.e2y(), var.e2z(), j1x, j1y, j1z);
 
-        auto const[ce1e2_x, ce1e2_y, ce1e2_z] = cross(var.e1x(), var.e1y(), var.e1z(), var.e2x(), var.e2y(), var.e2z());
+    auto const [ce1e2_x, ce1e2_y, ce1e2_z] = cross(var.e1x(), var.e1y(), var.e1z(), var.e2x(), var.e2y(), var.e2z());
 
-        auto const[cn2e2_x, cn2e2_y, cn2e2_z] = cross(n2x, n2y, n2z, var.e2x(), var.e2y(), var.e2z());
-        /*---------------------------------------------------------------------------*\
+    auto const [cn2e2_x, cn2e2_y, cn2e2_z] = cross(n2x, n2y, n2z, var.e2x(), var.e2y(), var.e2z());
+    /*---------------------------------------------------------------------------*\
             combinations
         \*---------------------------------------------------------------------------*/
-        double a_out_eff = a_out * j2;
+    double a_out_eff = a_out * j2;
 
-        double quad_coef = 0.75 / t_k_quad(args.m12(), args.m3(), a_in, a_out_eff);
+    double quad_coef = 0.75 / t_k_quad(args.m12(), args.m3(), a_in, a_out_eff);
 
-        double A = quad_coef * L_in;
+    double A = quad_coef * L_in;
 
-        double A1 = A  * dj1n2;
+    double A1 = A * dj1n2;
 
-        double A2 = -A * 5 * de1n2;
+    double A2 = -A * 5 * de1n2;
 
-        double B = quad_coef;
+    double B = quad_coef;
 
-        double B1 = B * dj1n2;
+    double B1 = B * dj1n2;
 
-        double B2 = B * 2;
+    double B2 = B * 2;
 
-        double B3 = B * de1n2 * (-5);
+    double B3 = B * de1n2 * (-5);
 
-        double C = quad_coef * L_in / L2_norm;
+    double C = quad_coef * L_in / L2_norm;
 
-        double C1 = C * 5 * de1n2;
+    double C1 = C * 5 * de1n2;
 
-        double C2 = C * dj1n2;
+    double C2 = C * dj1n2;
 
-        double C3 = -C * (0.5 - 3 * e1_sqr + 12.5 * de1n2 * de1n2 - 2.5 * dj1n2 * dj1n2);
+    double C3 = -C * (0.5 - 3 * e1_sqr + 12.5 * de1n2 * de1n2 - 2.5 * dj1n2 * dj1n2);
 
-        double dLx = A1 * cj1n2_x + A2 * ce1n2_x;
+    double dLx = A1 * cj1n2_x + A2 * ce1n2_x;
 
-        double dLy = A1 * cj1n2_y + A2 * ce1n2_y;
+    double dLy = A1 * cj1n2_y + A2 * ce1n2_y;
 
-        double dLz = A1 * cj1n2_z + A2 * ce1n2_z;
+    double dLz = A1 * cj1n2_z + A2 * ce1n2_z;
 
-        dvar.add_L1(dLx, dLy, dLz);
+    dvar.add_L1(dLx, dLy, dLz);
 
-        dvar.add_e1(B1 * ce1n2_x + B2 * cj1e1_x + B3 * cj1n2_x,
-                    B1 * ce1n2_y + B2 * cj1e1_y + B3 * cj1n2_y,
-                    B1 * ce1n2_z + B2 * cj1e1_z + B3 * cj1n2_z);
+    dvar.add_e1(B1 * ce1n2_x + B2 * cj1e1_x + B3 * cj1n2_x,
+                B1 * ce1n2_y + B2 * cj1e1_y + B3 * cj1n2_y,
+                B1 * ce1n2_z + B2 * cj1e1_z + B3 * cj1n2_z);
 
-        dvar.add_L2(-dLx, -dLy, -dLz);
+    dvar.add_L2(-dLx, -dLy, -dLz);
 
-        dvar.add_e2(C1 * ce1e2_x + C2 * ce2j1_x + C3 * cn2e2_x,
-                    C1 * ce1e2_y + C2 * ce2j1_y + C3 * cn2e2_y,
-                    C1 * ce1e2_z + C2 * ce2j1_z + C3 * cn2e2_z);
+    dvar.add_e2(C1 * ce1e2_x + C2 * ce2j1_x + C3 * cn2e2_x,
+                C1 * ce1e2_y + C2 * ce2j1_y + C3 * cn2e2_y,
+                C1 * ce1e2_z + C2 * ce2j1_z + C3 * cn2e2_z);
+
+    if constexpr (Oct)
+    {
+        double epsilon = normed_oct_epsilon(args.m1(), args.m2(), a_in, a_out_eff);
     }
+}
 
-    template<bool Oct, typename Args, typename Container>
-    inline void single_aved_LK(Args const &args, Container const &var, Container &dvar, double t) {
-        auto[e1_sqr, j1_sqr, j1, L1_norm, L_in, a_in] = calc_orbit_args(args.a_in_coef(), var.L1x(), var.L1y(), var.L1z(), var.e1x(), var.e1y(),
-                                                                        var.e1z());
+template <bool Oct, typename Args, typename Container>
+inline void single_aved_LK(Args const &args, Container const &var, Container &dvar, double t)
+{
+    auto [e1_sqr, j1_sqr, j1, L1_norm, L_in, a_in] = calc_orbit_args(args.a_in_coef(), var.L1x(), var.L1y(), var.L1z(), var.e1x(), var.e1y(),
+                                                                     var.e1z());
 
-        double r2 = norm2(var.rx(), var.ry(), var.rz());
+    double r2 = norm2(var.rx(), var.ry(), var.rz());
 
-        double r = sqrt(r2);
-        /*---------------------------------------------------------------------------*\
+    double r = sqrt(r2);
+    /*---------------------------------------------------------------------------*\
             unit vectors
         \*---------------------------------------------------------------------------*/
-        double j1x = var.L1x() / L_in, j1y = var.L1y() / L_in, j1z = var.L1z() / L_in;
+    double j1x = var.L1x() / L_in, j1y = var.L1y() / L_in, j1z = var.L1z() / L_in;
 
-        double rhox = var.rx() / r, rhoy = var.ry() / r, rhoz = var.rz() / r;
-        /*---------------------------------------------------------------------------*\
+    double rhox = var.rx() / r, rhoy = var.ry() / r, rhoz = var.rz() / r;
+    /*---------------------------------------------------------------------------*\
             dot production
         \*---------------------------------------------------------------------------*/
-        double dj1rho = dot(j1x, j1y, j1z, rhox, rhoy, rhoz);
+    double dj1rho = dot(j1x, j1y, j1z, rhox, rhoy, rhoz);
 
-        double de1rho = dot(var.e1x(), var.e1y(), var.e1z(), rhox, rhoy, rhoz);
-        /*---------------------------------------------------------------------------*\
+    double de1rho = dot(var.e1x(), var.e1y(), var.e1z(), rhox, rhoy, rhoz);
+    /*---------------------------------------------------------------------------*\
             cross production
         \*---------------------------------------------------------------------------*/
-        auto const[cj1rho_x, cj1rho_y, cj1rho_z] = cross(j1x, j1y, j1z, rhox, rhoy, rhoz);
+    auto const [cj1rho_x, cj1rho_y, cj1rho_z] = cross(j1x, j1y, j1z, rhox, rhoy, rhoz);
 
-        auto const[cj1e1_x, cj1e1_y, cj1e1_z] = cross(j1x, j1y, j1z, var.e1x(), var.e1y(), var.e1z());
+    auto const [cj1e1_x, cj1e1_y, cj1e1_z] = cross(j1x, j1y, j1z, var.e1x(), var.e1y(), var.e1z());
 
-        auto const[ce1rho_x, ce1rho_y, ce1rho_z] = cross(var.e1x(), var.e1y(), var.e1z(), rhox, rhoy, rhoz);
-        /*---------------------------------------------------------------------------*\
+    auto const [ce1rho_x, ce1rho_y, ce1rho_z] = cross(var.e1x(), var.e1y(), var.e1z(), rhox, rhoy, rhoz);
+    /*---------------------------------------------------------------------------*\
             combinations
         \*---------------------------------------------------------------------------*/
-        double quad_coef = 1.5 / t_k_quad(args.m12(), args.m3(), a_in, r);
+    double quad_coef = 1.5 / t_k_quad(args.m12(), args.m3(), a_in, r);
 
-        double B1 = quad_coef * 5 * de1rho;
+    double B1 = quad_coef * 5 * de1rho;
 
-        double B2 = -quad_coef * dj1rho;
+    double B2 = -quad_coef * dj1rho;
 
-        double B3 = -2 * quad_coef;
+    double B3 = -2 * quad_coef;
 
-        double A1 = B1 * L_in;
+    double A1 = B1 * L_in;
 
-        double A2 = B2 * L_in;
+    double A2 = B2 * L_in;
 
-        double r3 = r2 * r;
+    double r3 = r2 * r;
 
-        double r4 = r2 * r2;
+    double r4 = r2 * r2;
 
-        double r5 = r2 * r3;
+    double r5 = r2 * r3;
 
-        double D = -0.75 * args.SA_acc_coef() * args.mu_in() * a_in * a_in;
+    double D = -0.75 * args.SA_acc_coef() * args.mu_in() * a_in * a_in;
 
-        double acc_r = -args.SA_acc_coef() * args.m12() / r3 + D * (25 * de1rho * de1rho - 5  * dj1rho * dj1rho + 1 - 6 * e1_sqr) / r5;
+    double acc_r = -args.SA_acc_coef() * args.m12() / r3 + D * (25 * de1rho * de1rho - 5 * dj1rho * dj1rho + 1 - 6 * e1_sqr) / r5;
 
-        double acc_n = D * 2 * dj1rho / r4;
+    double acc_n = D * 2 * dj1rho / r4;
 
-        double acc_e = -D * 10 * de1rho / r4;
+    double acc_e = -D * 10 * de1rho / r4;
 
-        dvar.add_L1(A1 * ce1rho_x + A2 * cj1rho_x,
-                    A1 * ce1rho_y + A2 * cj1rho_y,
-                    A1 * ce1rho_z + A2 * cj1rho_z);
+    dvar.add_L1(A1 * ce1rho_x + A2 * cj1rho_x,
+                A1 * ce1rho_y + A2 * cj1rho_y,
+                A1 * ce1rho_z + A2 * cj1rho_z);
 
-        dvar.add_e1(B1 * cj1rho_x + B2 * ce1rho_x + B3 * cj1e1_x,
-                    B1 * cj1rho_y + B2 * ce1rho_y + B3 * cj1e1_y,
-                    B1 * cj1rho_z + B2 * ce1rho_z + B3 * cj1e1_z);
+    dvar.add_e1(B1 * cj1rho_x + B2 * ce1rho_x + B3 * cj1e1_x,
+                B1 * cj1rho_y + B2 * ce1rho_y + B3 * cj1e1_y,
+                B1 * cj1rho_z + B2 * ce1rho_z + B3 * cj1e1_z);
 
-        dvar.set_r(var.vx(), var.vy(), var.vz());
+    dvar.set_r(var.vx(), var.vy(), var.vz());
 
-        dvar.add_v(acc_r * var.rx() + acc_n * j1x + acc_e * var.e1x(),
-                   acc_r * var.ry() + acc_n * j1y + acc_e * var.e1y(),
-                   acc_r * var.rz() + acc_n * j1z + acc_e * var.e1z());
+    dvar.add_v(acc_r * var.rx() + acc_n * j1x + acc_e * var.e1x(),
+               acc_r * var.ry() + acc_n * j1y + acc_e * var.e1y(),
+               acc_r * var.rz() + acc_n * j1z + acc_e * var.e1z());
 
+    if constexpr (Oct)
+    {
+        double epsilon = normed_oct_epsilon(args.m1(), args.m2(), a_in, r);
 
-        if constexpr(Oct) {
-            double epsilon = normed_oct_epsilon(args.m1(), args.m2(), a_in, r);
+        double oct_coef = quad_coef * epsilon * 5.0 / 8.0;
 
-            double oct_coef = quad_coef * epsilon * 5.0/ 8.0;
+        double E = 8 * e1_sqr - 1;
 
-            double E = 8*e1_sqr - 1;
+        double F1 = oct_coef * 10 * dj1rho * de1rho;
 
-            double F1 = oct_coef * 10 * dj1rho * de1rho;
+        double F2 = oct_coef * (E + 5 * dj1rho * dj1rho - 35 * de1rho * de1rho);
 
-            double F2 = oct_coef * (E + 5 * dj1rho * dj1rho -35  * de1rho * de1rho);
+        double F3 = oct_coef * 10 * dj1rho * de1rho;
 
-            double F3 = oct_coef * 10 * dj1rho * de1rho;
+        double H1 = F1 * L_in;
 
-            double H1 = F1 * L_in;
+        double H2 = F2 * L_in;
 
-            double H2 = F2 * L_in;
+        dvar.add_L1(H1 * cj1e1_x + H2 * ce1rho_x, H1 * cj1e1_y + H2 * ce1rho_y, H1 * cj1e1_z + H2 * ce1rho_z);
 
-            dvar.add_L1( H1 * cj1e1_x + H2 * ce1rho_x, H1 * cj1e1_y + H2 * ce1rho_y, H1 * cj1e1_z + H2 * ce1rho_z);
-
-            dvar.add_e1(F1 * cj1e1_x + F2 * cj1rho_x + F3 * ce1rho_x, F1 * cj1e1_y + F2 * cj1rho_y + F3 * ce1rho_y, F1 * cj1e1_z + F2 * cj1rho_z + F3 * ce1rho_z); 
-
-        }
+        dvar.add_e1(F1 * cj1e1_x + F2 * cj1rho_x + F3 * ce1rho_x, F1 * cj1e1_y + F2 * cj1rho_y + F3 * ce1rho_y, F1 * cj1e1_z + F2 * cj1rho_z + F3 * ce1rho_z);
     }
+}
 
 } // namespace secular
 #endif
