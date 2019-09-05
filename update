@@ -1,7 +1,9 @@
 #!/bin/bash
 
+git pull origin dev
+cd SpaceHub
 git pull origin master
-
-rm secular
+cd..
+make clean
 source ~/.bashrc
 make
