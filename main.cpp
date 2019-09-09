@@ -134,7 +134,7 @@ auto call_ode_int(std::string work_dir, ConcurrentFile output, bool is_double_av
     //STATIC_DISPATH(ctrl, const_parameters,
 
     for( ;time <= t_end && !stop(data, time); ) {
-        constexpr size_t max_attempts = 500;
+        constexpr size_t max_attempts =500;
 
         controlled_step_result res = success;
         size_t trials = 0;

@@ -182,19 +182,19 @@ inline void double_aved_LK(Args const &args, Container const &var, Container &dv
                                                                        var.e2z());
     /*---------------------------------------------------------------------------*\
             unit vectors
-        \*---------------------------------------------------------------------------*/
+    \*---------------------------------------------------------------------------*/
     double j1x = var.L1x() / L_in, j1y = var.L1y() / L_in, j1z = var.L1z() / L_in;
 
     double n2x = var.L2x() / L2_norm, n2y = var.L2y() / L2_norm, n2z = var.L2z() / L2_norm;
     /*---------------------------------------------------------------------------*\
             dot production
-        \*---------------------------------------------------------------------------*/
+    \*---------------------------------------------------------------------------*/
     double dj1n2 = dot(j1x, j1y, j1z, n2x, n2y, n2z);
 
     double de1n2 = dot(var.e1x(), var.e1y(), var.e1z(), n2x, n2y, n2z);
     /*---------------------------------------------------------------------------*\
             cross production
-        \*---------------------------------------------------------------------------*/
+    \*---------------------------------------------------------------------------*/
     auto const [cj1n2_x, cj1n2_y, cj1n2_z] = cross(j1x, j1y, j1z, n2x, n2y, n2z);
 
     auto const [cj1e1_x, cj1e1_y, cj1e1_z] = cross(j1x, j1y, j1z, var.e1x(), var.e1y(), var.e1z());
@@ -208,38 +208,38 @@ inline void double_aved_LK(Args const &args, Container const &var, Container &dv
     auto const [cn2e2_x, cn2e2_y, cn2e2_z] = cross(n2x, n2y, n2z, var.e2x(), var.e2y(), var.e2z());
     /*---------------------------------------------------------------------------*\
             combinations
-        \*---------------------------------------------------------------------------*/
-    double a_out_eff = a_out * j2;
+    \*---------------------------------------------------------------------------*/
+    double const a_out_eff = a_out * j2;
 
-    double quad_coef = 0.75 / t_k_quad(args.m12(), args.m3(), a_in, a_out_eff);
+    double const quad_coef = 0.75 / t_k_quad(args.m12(), args.m3(), a_in, a_out_eff);
 
-    double A = quad_coef * L_in;
+    double const A = quad_coef * L_in;
 
-    double A1 = A * dj1n2;
+    double const A1 = A * dj1n2;
 
-    double A2 = -A * 5 * de1n2;
+    double const A2 = -A * 5 * de1n2;
 
-    double B = quad_coef;
+    double const B = quad_coef;
 
-    double B1 = B * dj1n2;
+    double const B1 = B * dj1n2;
 
-    double B2 = B * 2;
+    double const B2 = B * 2;
 
-    double B3 = B * de1n2 * (-5);
+    double const B3 = B * de1n2 * (-5);
 
-    double C = quad_coef * L_in / L2_norm;
+    double const C = quad_coef * L_in / L2_norm;
 
-    double C1 = C * 5 * de1n2;
+    double const C1 = C * 5 * de1n2;
 
-    double C2 = C * dj1n2;
+    double const C2 = C * dj1n2;
 
-    double C3 = -C * (0.5 - 3 * e1_sqr + 12.5 * de1n2 * de1n2 - 2.5 * dj1n2 * dj1n2);
+    double const C3 = -C * (0.5 - 3 * e1_sqr + 12.5 * de1n2 * de1n2 - 2.5 * dj1n2 * dj1n2);
 
-    double dLx = A1 * cj1n2_x + A2 * ce1n2_x;
+    double const dLx = A1 * cj1n2_x + A2 * ce1n2_x;
 
-    double dLy = A1 * cj1n2_y + A2 * ce1n2_y;
+    double const dLy = A1 * cj1n2_y + A2 * ce1n2_y;
 
-    double dLz = A1 * cj1n2_z + A2 * ce1n2_z;
+    double const dLz = A1 * cj1n2_z + A2 * ce1n2_z;
 
     dvar.add_L1(dLx, dLy, dLz);
 
@@ -255,51 +255,51 @@ inline void double_aved_LK(Args const &args, Container const &var, Container &dv
 
     if constexpr (Oct)
     {
-        double oct_coef = -25.0/16 * quad_coef * normed_oct_epsilon(args.m1(), args.m2(), a_in, a_out_eff) / j2;
+        double const oct_coef = -25.0/16 * quad_coef * normed_oct_epsilon(args.m1(), args.m2(), a_in, a_out_eff) / j2;
 
         auto const [cj1e2_x, cj1e2_y, cj1e2_z] = cross(j1x, j1y, j1z, var.e2x(), var.e2y(), var.e2z());
 
-        double de1e2 = dot(var.e1x(), var.e1y(), var.e1z(), var.e2x(), var.e2y(), var.e2z());
+        double const de1e2 = dot(var.e1x(), var.e1y(), var.e1z(), var.e2x(), var.e2y(), var.e2z());
 
-        double dj1e2 = dot(j1x, j1y, j1z, var.e2x(), var.e2y(), var.e2z());
+        double const dj1e2 = dot(j1x, j1y, j1z, var.e2x(), var.e2y(), var.e2z());
 
-        double shared_C1 = 1.6 * e1_sqr - 0.2 - 7 * de1n2 * de1n2 + dj1n2 * dj1n2;
+        double const shared_C1 = 1.6 * e1_sqr - 0.2 - 7 * de1n2 * de1n2 + dj1n2 * dj1n2;
 
-        double E1 = oct_coef * 2 * (de1e2 * dj1n2 + de1n2 * dj1e2);
+        double const E1 = 0;//oct_coef * 2 * (de1e2 * dj1n2 + de1n2 * dj1e2);
 
-        double E2 = oct_coef * 2 * (dj1e2 * dj1n2 - 7 * de1e2 * de1n2);
+        double const E2 = 0;//oct_coef * 2 * (dj1e2 * dj1n2 - 7 * de1e2 * de1n2);
 
-        double E3 = oct_coef * 2 * de1n2 * dj1n2;
+        double const E3 = 0;//oct_coef * 2 * de1n2 * dj1n2;
 
-        double E4 = oct_coef * shared_C1;
+        double const E4 = oct_coef * shared_C1;
 
-        double E5 = oct_coef * 3.2 * de1e2;
+        double const E5 = 0;//oct_coef * 3.2 * de1e2;
 
-        double G = -L_in/L_out/j2;
+        double const G = -L_in/L2_norm;
 
-        double G1 = G * E1;
+        double const G1 = G * E1;
 
-        double G2 = G * E2;
+        double const G2 = G * E2;
 
-        double G3 = G * j2_sqr * E3;
+        double const G3 = G * j2_sqr * E3;
 
-        double G4 = G * j2_sqr * E4;
+        double const G4 = G * j2_sqr * E4;
 
-        double G5 =  -oct_coef * G * ( (0.4 - 3.2 * e1_sqr) * de1e2 + 14 * de1n2 * dj1e2 * dj1n2 + 7 * de1e2 * shared_C1);
+        double const G5 =  -oct_coef * G * ( (0.4 - 3.2 * e1_sqr) * de1e2 + 14 * de1n2 * dj1e2 * dj1n2 + 7 * de1e2 * shared_C1);
 
-        double oct_dLx = L_in * (E1 * cj1n2_x + E2 * ce1n2_x + E3 * cj1e2_x + E4 * ce1e2_x);
+        double const oct_dLx = L_in * (E1 * cj1n2_x + E2 * ce1n2_x + E3 * cj1e2_x + E4 * ce1e2_x);
 
-        double oct_dLy = L_in * (E1 * cj1n2_y + E2 * ce1n2_y + E3 * cj1e2_y + E4 * ce1e2_y);
+        double const oct_dLy = L_in * (E1 * cj1n2_y + E2 * ce1n2_y + E3 * cj1e2_y + E4 * ce1e2_y);
 
-        double oct_dLz = L_in * (E1 * cj1n2_z + E2 * ce1n2_z + E3 * cj1e2_z + E4 * ce1e2_z);
+        double const oct_dLz = L_in * (E1 * cj1n2_z + E2 * ce1n2_z + E3 * cj1e2_z + E4 * ce1e2_z);
 
-        //dvar.add_L1(oct_dLx, oct_dLy, oct_dLz);
+        dvar.add_L1(oct_dLx, oct_dLy, oct_dLz);
 
         dvar.sub_L2(oct_dLx, oct_dLx, oct_dLz);
 
-        /*dvar.add_e1(E1 * ce1n2_x + E2 * cj1n2_x + E3 * ce1e2_x + E4 * cj1e2_x + E5 * cj1e1_x,
+        dvar.add_e1(E1 * ce1n2_x + E2 * cj1n2_x + E3 * ce1e2_x + E4 * cj1e2_x + E5 * cj1e1_x,
                     E1 * ce1n2_y + E2 * cj1n2_y + E3 * ce1e2_y + E4 * cj1e2_x + E5 * cj1e1_y,
-                    E1 * ce1n2_z + E2 * cj1n2_z + E3 * ce1e2_z + E4 * cj1e2_x + E5 * cj1e1_z);*/
+                    E1 * ce1n2_z + E2 * cj1n2_z + E3 * ce1e2_z + E4 * cj1e2_x + E5 * cj1e1_z);
 
         dvar.add_e2(G1 * cj1e2_x + G2 * ce1e2_x + G3 * cj1n2_x + G4 * ce1n2_x + G5 * cn2e2_x,
                     G1 * cj1e2_y + G2 * ce1e2_y + G3 * cj1n2_y + G4 * ce1n2_y + G5 * cn2e2_y,
@@ -314,21 +314,21 @@ inline void single_aved_LK(Args const &args, Container const &var, Container &dv
     auto [e1_sqr, j1_sqr, j1, L1_norm, L_in, a_in] = calc_orbit_args(args.a_in_coef(), var.L1x(), var.L1y(), var.L1z(), var.e1x(), var.e1y(),
                                                                      var.e1z());
 
-    double r2 = norm2(var.rx(), var.ry(), var.rz());
+    double const r2 = norm2(var.rx(), var.ry(), var.rz());
 
-    double r = sqrt(r2);
+    double const r = sqrt(r2);
     /*---------------------------------------------------------------------------*\
             unit vectors
         \*---------------------------------------------------------------------------*/
-    double j1x = var.L1x() / L_in, j1y = var.L1y() / L_in, j1z = var.L1z() / L_in;
+    double const j1x = var.L1x() / L_in, j1y = var.L1y() / L_in, j1z = var.L1z() / L_in;
 
-    double rhox = var.rx() / r, rhoy = var.ry() / r, rhoz = var.rz() / r;
+    double const rhox = var.rx() / r, rhoy = var.ry() / r, rhoz = var.rz() / r;
     /*---------------------------------------------------------------------------*\
             dot production
         \*---------------------------------------------------------------------------*/
-    double dj1rho = dot(j1x, j1y, j1z, rhox, rhoy, rhoz);
+    double const dj1rho = dot(j1x, j1y, j1z, rhox, rhoy, rhoz);
 
-    double de1rho = dot(var.e1x(), var.e1y(), var.e1z(), rhox, rhoy, rhoz);
+    double const de1rho = dot(var.e1x(), var.e1y(), var.e1z(), rhox, rhoy, rhoz);
     /*---------------------------------------------------------------------------*\
             cross production
         \*---------------------------------------------------------------------------*/
@@ -340,31 +340,31 @@ inline void single_aved_LK(Args const &args, Container const &var, Container &dv
     /*---------------------------------------------------------------------------*\
             combinations
         \*---------------------------------------------------------------------------*/
-    double quad_coef = 1.5 / t_k_quad(args.m12(), args.m3(), a_in, r);
+    double const quad_coef = 1.5 / t_k_quad(args.m12(), args.m3(), a_in, r);
 
-    double B1 = quad_coef * 5 * de1rho;
+    double const B1 = quad_coef * 5 * de1rho;
 
-    double B2 = -quad_coef * dj1rho;
+    double const B2 = -quad_coef * dj1rho;
 
-    double B3 = -2 * quad_coef;
+    double const B3 = -2 * quad_coef;
 
-    double A1 = B1 * L_in;
+    double const A1 = B1 * L_in;
 
-    double A2 = B2 * L_in;
+    double const A2 = B2 * L_in;
 
-    double r3 = r2 * r;
+    double const r3 = r2 * r;
 
-    double r4 = r2 * r2;
+    double const r4 = r2 * r2;
 
-    double r5 = r2 * r3;
+    double const r5 = r2 * r3;
 
-    double D = -0.75 * args.SA_acc_coef() * args.mu_in() * a_in * a_in;
+    double const D = -0.75 * args.SA_acc_coef() * args.mu_in() * a_in * a_in;
 
-    double acc_r = -args.SA_acc_coef() * args.m12() / r3 + D * (25 * de1rho * de1rho - 5 * dj1rho * dj1rho + 1 - 6 * e1_sqr) / r5;
+    double const acc_r = -args.SA_acc_coef() * args.m12() / r3 + D * (25 * de1rho * de1rho - 5 * dj1rho * dj1rho + 1 - 6 * e1_sqr) / r5;
 
-    double acc_n = D * 2 * dj1rho / r4;
+    double const acc_n = D * 2 * dj1rho / r4;
 
-    double acc_e = -D * 10 * de1rho / r4;
+    double const acc_e = -D * 10 * de1rho / r4;
 
     dvar.add_L1(A1 * ce1rho_x + A2 * cj1rho_x,
                 A1 * ce1rho_y + A2 * cj1rho_y,
@@ -382,25 +382,25 @@ inline void single_aved_LK(Args const &args, Container const &var, Container &dv
 
     if constexpr (Oct)
     {
-        double epsilon = normed_oct_epsilon(args.m1(), args.m2(), a_in, r);
+        /*double const epsilon = normed_oct_epsilon(args.m1(), args.m2(), a_in, r);
 
-        double oct_coef = quad_coef * epsilon * 5.0 / 8.0;
+        double const oct_coef = quad_coef * epsilon * 5.0 / 8.0;
 
-        double E = 8 * e1_sqr - 1;
+        double const E = 8 * e1_sqr - 1;
 
-        double F1 = oct_coef * 10 * dj1rho * de1rho;
+        double const F1 = oct_coef * 10 * dj1rho * de1rho;
 
-        double F2 = oct_coef * (E + 5 * dj1rho * dj1rho - 35 * de1rho * de1rho);
+        double const F2 = oct_coef * (E + 5 * dj1rho * dj1rho - 35 * de1rho * de1rho);
 
-        double F3 = oct_coef * 10 * dj1rho * de1rho;
+        double const F3 = oct_coef * 10 * dj1rho * de1rho;
 
-        double H1 = F1 * L_in;
+        double const H1 = F1 * L_in;
 
-        double H2 = F2 * L_in;
+        double const H2 = F2 * L_in;
 
         dvar.add_L1(H1 * cj1e1_x + H2 * ce1rho_x, H1 * cj1e1_y + H2 * ce1rho_y, H1 * cj1e1_z + H2 * ce1rho_z);
 
-        dvar.add_e1(F1 * cj1e1_x + F2 * cj1rho_x + F3 * ce1rho_x, F1 * cj1e1_y + F2 * cj1rho_y + F3 * ce1rho_y, F1 * cj1e1_z + F2 * cj1rho_z + F3 * ce1rho_z);
+        dvar.add_e1(F1 * cj1e1_x + F2 * cj1rho_x + F3 * ce1rho_x, F1 * cj1e1_y + F2 * cj1rho_y + F3 * ce1rho_y, F1 * cj1e1_z + F2 * cj1rho_z + F3 * ce1rho_z);*/
     }
 }
 
