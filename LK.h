@@ -247,7 +247,7 @@ inline void double_aved_LK(Args const &args, Container const &var, Container &dv
                 B1 * ce1n2_y + B2 * cj1e1_y + B3 * cj1n2_y,
                 B1 * ce1n2_z + B2 * cj1e1_z + B3 * cj1n2_z);
 
-    dvar.add_L2(-dLx, -dLy, -dLz);
+    dvar.sub_L2(dLx, dLy, dLz);
 
     dvar.add_e2(C1 * ce1e2_x + C2 * ce2j1_x + C3 * cn2e2_x,
                 C1 * ce1e2_y + C2 * ce2j1_y + C3 * cn2e2_y,
@@ -255,7 +255,56 @@ inline void double_aved_LK(Args const &args, Container const &var, Container &dv
 
     if constexpr (Oct)
     {
-        double epsilon = normed_oct_epsilon(args.m1(), args.m2(), a_in, a_out_eff);
+        double oct_coef = -25.0/16 * quad_coef * normed_oct_epsilon(args.m1(), args.m2(), a_in, a_out_eff) / j2;
+
+        auto const [cj1e2_x, cj1e2_y, cj1e2_z] = cross(j1x, j1y, j1z, var.e2x(), var.e2y(), var.e2z());
+
+        double de1e2 = dot(var.e1x(), var.e1y(), var.e1z(), var.e2x(), var.e2y(), var.e2z());
+
+        double dj1e2 = dot(j1x, j1y, j1z, var.e2x(), var.e2y(), var.e2z());
+
+        double shared_C1 = 1.6 * e1_sqr - 0.2 - 7 * de1n2 * de1n2 + dj1n2 * dj1n2;
+
+        double E1 = oct_coef * 2 * (de1e2 * dj1n2 + de1n2 * dj1e2);
+
+        double E2 = oct_coef * 2 * (dj1e2 * dj1n2 - 7 * de1e2 * de1n2);
+
+        double E3 = oct_coef * 2 * de1n2 * dj1n2;
+
+        double E4 = oct_coef * shared_C1;
+
+        double E5 = oct_coef * 3.2 * de1e2;
+
+        double G = -L_in/L_out/j2;
+
+        double G1 = G * E1;
+
+        double G2 = G * E2;
+
+        double G3 = G * j2_sqr * E3;
+
+        double G4 = G * j2_sqr * E4;
+
+        double G5 =  -oct_coef * G * ( (0.4 - 3.2 * e1_sqr) * de1e2 + 14 * de1n2 * dj1e2 * dj1n2 + 7 * de1e2 * shared_C1);
+
+        double oct_dLx = L_in * (E1 * cj1n2_x + E2 * ce1n2_x + E3 * cj1e2_x + E4 * ce1e2_x);
+
+        double oct_dLy = L_in * (E1 * cj1n2_y + E2 * ce1n2_y + E3 * cj1e2_y + E4 * ce1e2_y);
+
+        double oct_dLz = L_in * (E1 * cj1n2_z + E2 * ce1n2_z + E3 * cj1e2_z + E4 * ce1e2_z);
+
+        //dvar.add_L1(oct_dLx, oct_dLy, oct_dLz);
+
+        dvar.sub_L2(oct_dLx, oct_dLx, oct_dLz);
+
+        /*dvar.add_e1(E1 * ce1n2_x + E2 * cj1n2_x + E3 * ce1e2_x + E4 * cj1e2_x + E5 * cj1e1_x,
+                    E1 * ce1n2_y + E2 * cj1n2_y + E3 * ce1e2_y + E4 * cj1e2_x + E5 * cj1e1_y,
+                    E1 * ce1n2_z + E2 * cj1n2_z + E3 * ce1e2_z + E4 * cj1e2_x + E5 * cj1e1_z);*/
+
+        dvar.add_e2(G1 * cj1e2_x + G2 * ce1e2_x + G3 * cj1n2_x + G4 * ce1n2_x + G5 * cn2e2_x,
+                    G1 * cj1e2_y + G2 * ce1e2_y + G3 * cj1n2_y + G4 * ce1n2_y + G5 * cn2e2_y,
+                    G1 * cj1e2_z + G2 * ce1e2_z + G3 * cj1n2_z + G4 * ce1n2_z + G5 * cn2e2_z);
+
     }
 }
 
