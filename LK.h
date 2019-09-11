@@ -265,17 +265,17 @@ inline void double_aved_LK(Args const &args, Container const &var, Container &dv
 
         double const shared_C1 = 1.6 * e1_sqr - 0.2 - 7 * de1n2 * de1n2 + dj1n2 * dj1n2;
 
-        double const E1 = 0;//oct_coef * 2 * (de1e2 * dj1n2 + de1n2 * dj1e2);
+        double const E1 = oct_coef * 2 * (de1e2 * dj1n2 + de1n2 * dj1e2);
 
-        double const E2 = 0;//oct_coef * 2 * (dj1e2 * dj1n2 - 7 * de1e2 * de1n2);
+        double const E2 = oct_coef * 2 * (dj1e2 * dj1n2 - 7 * de1e2 * de1n2);
 
-        double const E3 = 0;//oct_coef * 2 * de1n2 * dj1n2;
+        double const E3 = oct_coef * 2 * de1n2 * dj1n2;
 
         double const E4 = oct_coef * shared_C1;
 
         double const E5 = 0;//oct_coef * 3.2 * de1e2;
 
-        double const G = -L_in/L2_norm;
+       /* double const G = -L_in/L2_norm;
 
         double const G1 = G * E1;
 
@@ -285,7 +285,7 @@ inline void double_aved_LK(Args const &args, Container const &var, Container &dv
 
         double const G4 = G * j2_sqr * E4;
 
-        double const G5 =  -oct_coef * G * ( (0.4 - 3.2 * e1_sqr) * de1e2 + 14 * de1n2 * dj1e2 * dj1n2 + 7 * de1e2 * shared_C1);
+        double const G5 =  -oct_coef * G * ( (0.4 - 3.2 * e1_sqr) * de1e2 + 14 * de1n2 * dj1e2 * dj1n2 + 7 * de1e2 * shared_C1);*/
 
         double const oct_dLx = L_in * (E1 * cj1n2_x + E2 * ce1n2_x + E3 * cj1e2_x + E4 * ce1e2_x);
 
@@ -297,13 +297,13 @@ inline void double_aved_LK(Args const &args, Container const &var, Container &dv
 
         dvar.sub_L2(oct_dLx, oct_dLx, oct_dLz);
 
-        dvar.add_e1(E1 * ce1n2_x + E2 * cj1n2_x + E3 * ce1e2_x + E4 * cj1e2_x + E5 * cj1e1_x,
+        /*dvar.add_e1(E1 * ce1n2_x + E2 * cj1n2_x + E3 * ce1e2_x + E4 * cj1e2_x + E5 * cj1e1_x,
                     E1 * ce1n2_y + E2 * cj1n2_y + E3 * ce1e2_y + E4 * cj1e2_x + E5 * cj1e1_y,
                     E1 * ce1n2_z + E2 * cj1n2_z + E3 * ce1e2_z + E4 * cj1e2_x + E5 * cj1e1_z);
 
-        dvar.add_e2(G1 * cj1e2_x + G2 * ce1e2_x + G3 * cj1n2_x + G4 * ce1n2_x + G5 * cn2e2_x,
+        //dvar.add_e2(G1 * cj1e2_x + G2 * ce1e2_x + G3 * cj1n2_x + G4 * ce1n2_x + G5 * cn2e2_x,
                     G1 * cj1e2_y + G2 * ce1e2_y + G3 * cj1n2_y + G4 * ce1n2_y + G5 * cn2e2_y,
-                    G1 * cj1e2_z + G2 * ce1e2_z + G3 * cj1n2_z + G4 * ce1n2_z + G5 * cn2e2_z);
+                    G1 * cj1e2_z + G2 * ce1e2_z + G3 * cj1n2_z + G4 * ce1n2_z + G5 * cn2e2_z);*/
 
     }
 }
