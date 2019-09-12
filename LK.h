@@ -74,6 +74,11 @@ double normed_oct_epsilon(double m1, double m2, double a_in, double a_out_eff)
     return fabs(m1 - m2) / (m1 + m2) * a_in / a_out_eff;
 }
 
+double normed_oct_epsilon(double m1, double m2, double a_in, double a_out, double j2_sqr)
+{
+    return fabs(m1 - m2) / (m1 + m2) * a_in / (a_out* j2_sqr);
+}
+
 /*
     auto unpack_init(size_t b, std::vector<double> const &v) {
         return std::make_tuple(v[b], v[b + 1], v[b + 2], v[b + 3], v[b + 4], v[b + 5], v[b + 6], v[b + 7], v[b + 8], v[b + 9], v[b + 10], v[b + 11]);
@@ -184,7 +189,7 @@ inline void double_aved_LK(Args const &args, Container const &var, Container &dv
             unit vectors
     \*---------------------------------------------------------------------------*/
     double j1x = var.L1x() / L_in, j1y = var.L1y() / L_in, j1z = var.L1z() / L_in;
-
+    
     double n2x = var.L2x() / L2_norm, n2y = var.L2y() / L2_norm, n2z = var.L2z() / L2_norm;
     /*---------------------------------------------------------------------------*\
             dot production
@@ -273,9 +278,9 @@ inline void double_aved_LK(Args const &args, Container const &var, Container &dv
 
         double const E4 = oct_coef * shared_C1;
 
-        double const E5 = 0;//oct_coef * 3.2 * de1e2;
+        double const E5 = oct_coef * 3.2 * de1e2;
 
-       /* double const G = -L_in/L2_norm;
+        double const G = -L_in/L2_norm;
 
         double const G1 = G * E1;
 
@@ -285,7 +290,7 @@ inline void double_aved_LK(Args const &args, Container const &var, Container &dv
 
         double const G4 = G * j2_sqr * E4;
 
-        double const G5 =  -oct_coef * G * ( (0.4 - 3.2 * e1_sqr) * de1e2 + 14 * de1n2 * dj1e2 * dj1n2 + 7 * de1e2 * shared_C1);*/
+        double const G5 =  -oct_coef * G * ( (0.4 - 3.2 * e1_sqr) * de1e2 + 14 * de1n2 * dj1e2 * dj1n2 + 7 * de1e2 * shared_C1);
 
         double const oct_dLx = L_in * (E1 * cj1n2_x + E2 * ce1n2_x + E3 * cj1e2_x + E4 * ce1e2_x);
 
@@ -297,13 +302,13 @@ inline void double_aved_LK(Args const &args, Container const &var, Container &dv
 
         dvar.sub_L2(oct_dLx, oct_dLx, oct_dLz);
 
-        /*dvar.add_e1(E1 * ce1n2_x + E2 * cj1n2_x + E3 * ce1e2_x + E4 * cj1e2_x + E5 * cj1e1_x,
-                    E1 * ce1n2_y + E2 * cj1n2_y + E3 * ce1e2_y + E4 * cj1e2_x + E5 * cj1e1_y,
-                    E1 * ce1n2_z + E2 * cj1n2_z + E3 * ce1e2_z + E4 * cj1e2_x + E5 * cj1e1_z);
+        dvar.add_e1(E1 * ce1n2_x + E2 * cj1n2_x + E3 * ce1e2_x + E4 * cj1e2_x + E5 * cj1e1_x,
+                    E1 * ce1n2_y + E2 * cj1n2_y + E3 * ce1e2_y + E4 * cj1e2_y + E5 * cj1e1_y,
+                    E1 * ce1n2_z + E2 * cj1n2_z + E3 * ce1e2_z + E4 * cj1e2_z + E5 * cj1e1_z);
 
-        //dvar.add_e2(G1 * cj1e2_x + G2 * ce1e2_x + G3 * cj1n2_x + G4 * ce1n2_x + G5 * cn2e2_x,
+        dvar.add_e2(G1 * cj1e2_x + G2 * ce1e2_x + G3 * cj1n2_x + G4 * ce1n2_x + G5 * cn2e2_x,
                     G1 * cj1e2_y + G2 * ce1e2_y + G3 * cj1n2_y + G4 * ce1n2_y + G5 * cn2e2_y,
-                    G1 * cj1e2_z + G2 * ce1e2_z + G3 * cj1n2_z + G4 * ce1n2_z + G5 * cn2e2_z);*/
+                    G1 * cj1e2_z + G2 * ce1e2_z + G3 * cj1n2_z + G4 * ce1n2_z + G5 * cn2e2_z);
 
     }
 }
