@@ -275,7 +275,7 @@ bool is_on(double x) {
 
     const std::string str_ave[2] = {":SA", ":DA"};
     const std::string str_pole[2] = {"|quad", "| oct"};
-    const std::string str_gr[2] = {"", "|GR"};
+    const std::string str_gr[3] = {"", "|GR_{in}", "|GR_{in}|GR_{out}"};
     const std::string str_gw[2] = {"", "|GW"};
     const std::string str_sl[2] = {"", "|S_{in}L_{out}"};
     const std::string str_ll[2] = {"", "|LL"};

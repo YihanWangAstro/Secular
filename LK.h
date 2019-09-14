@@ -387,7 +387,7 @@ inline void single_aved_LK(Args const &args, Container const &var, Container &dv
 
     if constexpr (Oct)
     {
-        /*double const epsilon = normed_oct_epsilon(args.m1(), args.m2(), a_in, r);
+        double const epsilon = normed_oct_epsilon(args.m1(), args.m2(), a_in, r);
 
         double const oct_coef = quad_coef * epsilon * 5.0 / 8.0;
 
@@ -405,7 +405,7 @@ inline void single_aved_LK(Args const &args, Container const &var, Container &dv
 
         dvar.add_L1(H1 * cj1e1_x + H2 * ce1rho_x, H1 * cj1e1_y + H2 * ce1rho_y, H1 * cj1e1_z + H2 * ce1rho_z);
 
-        dvar.add_e1(F1 * cj1e1_x + F2 * cj1rho_x + F3 * ce1rho_x, F1 * cj1e1_y + F2 * cj1rho_y + F3 * ce1rho_y, F1 * cj1e1_z + F2 * cj1rho_z + F3 * ce1rho_z);*/
+        dvar.add_e1(F1 * cj1e1_x + F2 * cj1rho_x + F3 * ce1rho_x, F1 * cj1e1_y + F2 * cj1rho_y + F3 * ce1rho_y, F1 * cj1e1_z + F2 * cj1rho_z + F3 * ce1rho_z);
     }
 }
 
