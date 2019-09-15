@@ -49,16 +49,7 @@ namespace secular {
     };
 
     enum class deS {
-        off, on, bc
-    };
-
-    template<deS stat1, deS stat2, deS stat3, deS stat4, deS stat5>
-    struct SLstat {
-        constexpr static deS Sin_Lin{stat1};
-        constexpr static deS Sin_Lout{stat2};
-        constexpr static deS Sout_Lin{stat3};
-        constexpr static deS Sout_Lout{stat4};
-        constexpr static deS LL{stat5};
+        off, on, bc, all
     };
 
     template<typename Stat>
@@ -192,54 +183,61 @@ namespace secular {
 
 
 #define EVOLVE_SEL_IN(C, S)                                                                                                                  \
-    if constexpr (C != deS::off){                                                                                                            \
+    if (C == deS::on || C == deS::all){                                                                                                      \
         auto [dx, dy, dz] = cross_with_coef(d.S##L1_Omega(), var.L1x(), var.L1y(), var.L1z(), var.S##x(), var.S##y(), var.S##z());           \
         dvar.add_##S(dx, dy, dz);                                                                                                            \
-        if constexpr (C == deS::bc) {                                                                                                        \
-            dvar.sub_L1(dx, dy, dz);                                                                                                         \
-            auto [nex, ney, nez] = deSitter_e_vec(var.S##x(), var.S##y(), var.S##z(), var.L1x(), var.L1y(), var.L1z());                      \
-            dvar.add_e1(cross_with_coef(d.S##L1_Omega(), nex, ney, nez, var.e1x(), var.e1y(), var.e1z()));                                   \
-        }                                                                                                                                    \
+    }                                                                                                                                        \
+    if (C == deS::bc || C == deS::all) {                                                                                                     \
+        dvar.sub_L1(dx, dy, dz);                                                                                                             \
+        auto [nex, ney, nez] = deSitter_e_vec(var.S##x(), var.S##y(), var.S##z(), var.L1x(), var.L1y(), var.L1z());                          \
+        dvar.add_e1(cross_with_coef(d.S##L1_Omega(), nex, ney, nez, var.e1x(), var.e1y(), var.e1z()));                                       \
     }                                                                                                                                        \
 
 
 #define EVOLVE_SEL_OUT(C, S)                                                                                                                 \
-        if constexpr (C != deS::off){                                                                                                        \
+        if (C == deS::on || C == deS::all){                                                                                                  \
             auto [dx, dy, dz] = cross_with_coef(d.S##L2_Omega(), d.L2x(), d.L2y(), d.L2z(), var.S##x(), var.S##y(), var.S##z());             \
             dvar.add_##S(dx, dy, dz);                                                                                                        \
-            if constexpr (C == deS::bc) {                                                                                                    \
-                if constexpr (DA){                                                                                                           \
-                    dvar.sub_L2(dx, dy, dz);                                                                                                 \
-                    auto [nex, ney, nez] = deSitter_e_vec(var.S##x(), var.S##y(), var.S##z(), var.L2x(), var.L2y(), var.L2z());              \
-                    dvar.add_e2(cross_with_coef(d.S##L2_Omega(), nex, ney, nez, var.e2x(), var.e2y(), var.e2z()));                           \
-                } else {                                                                                                                     \
-                    dvar.add_v(SA_back_reaction(d.S##L2_Omega(), var.S##x(), var.S##y(), var.S##z(), var));                                  \
-                }                                                                                                                            \
+        }                                                                                                                                    \
+        if (C == deS::bc || C == deS::all) {                                                                                                 \
+            if constexpr (DA){                                                                                                               \
+                dvar.sub_L2(dx, dy, dz);                                                                                                     \
+                auto [nex, ney, nez] = deSitter_e_vec(var.S##x(), var.S##y(), var.S##z(), d.L2x(), d.L2y(), d.L2z());                        \
+                dvar.add_e2(cross_with_coef(d.S##L2_Omega(), nex, ney, nez, var.e2x(), var.e2y(), var.e2z()));                               \
+            } else {                                                                                                                         \
+                dvar.add_v(SA_back_reaction(d.S##L2_Omega(), var.S##x(), var.S##y(), var.S##z(), var));                                      \
             }                                                                                                                                \
         }                                                                                                                                    \
 
+#define EVOLVE_SS(C, SI, SJ, L)                                                                                                              \
+    if (C == deS::on || C == deS::all){                                                                                                      \
+        auto [nex, ney, nez] = deSitter_e_vec(var.SI##x(), var.SI##y(), var.SI##z(), var.L##x(), var.L##y(), var.L##z());                    \
+        auto [dx, dy, dz] = cross_with_coef(d.SI##SJ##_Omega(), nex, ney, nez, var.SJ##x(), var.SJ##y(), var.SJ##z());                       \
+        dvar.add_##SJ(dx, dy, dz);                                                                                                           \
+    }                                                                                                                                        \
 
-    template<bool DA, typename Stat, typename Args, typename Container>
-    inline void deSitter_precession(Args const &args, Container const &var, Container &dvar, double t) {
+
+    template<bool DA, typename Control, typename Args, typename Container>
+    inline void deSitter_precession(Control const& ctrl, Args const &args, Container const &var, Container &dvar, double t) {
         using deArgs =  deSitter_arg<DA, Stat, Args, Container>;
         deArgs d{args, var};//calculate the Omega and L2(Single average case)
 
         if constexpr(spin_num<Container>::size >= 1) {
-            EVOLVE_SEL_IN(Stat::Sin_Lin, S1);
-            EVOLVE_SEL_OUT(Stat::Sin_Lout, S1);
+            EVOLVE_SEL_IN(ctrl.Sin_Lin, S1);
+            EVOLVE_SEL_OUT(ctrl.Sin_Lout, S1);
         }
 
         if constexpr(spin_num<Container>::size >= 2) {
-            EVOLVE_SEL_IN(Stat::Sin_Lin, S2);
-            EVOLVE_SEL_OUT(Stat::Sin_Lout, S2);
+            EVOLVE_SEL_IN(ctrl.Sin_Lin, S2);
+            EVOLVE_SEL_OUT(ctrl.Sin_Lout, S2);
         }
 
         if constexpr(spin_num<Container>::size == 3) {
-            EVOLVE_SEL_IN(Stat::Sout_Lin, S3);
-            EVOLVE_SEL_OUT(Stat::Sout_Lout, S3);
+            EVOLVE_SEL_IN(ctrl.Sout_Lin, S3);
+            EVOLVE_SEL_OUT(ctrl.Sout_Lout, S3);
         }
 
-        if constexpr (Stat::LL == deS::on) {
+        if (ctrl.LL == deS::on || ctrl.LL == deS::all) {
             dvar.add_L1(cross_with_coef(d.LL(), d.L2x(), d.L2y(), d.L2z(), var.L1x(), var.L1y(), var.L1z()));//evolve L1
             dvar.add_e1(cross_with_coef(d.LL(), d.L2x(), d.L2y(), d.L2z(), var.e1x(), var.e1y(), var.e1z()));//evolve e1
         }
