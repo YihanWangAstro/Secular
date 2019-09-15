@@ -210,7 +210,7 @@ namespace secular {
             if constexpr (C == deS::bc) {                                                                                                    \
                 if constexpr (DA){                                                                                                           \
                     dvar.sub_L2(dx, dy, dz);                                                                                                 \
-                    auto [nex, ney, nez] = deSitter_e_vec(var.S##x(), var.S##y(), var.S##z(), var.L2x(), var.L2y(), var.L2z());              \
+                    auto [nex, ney, nez] = deSitter_e_vec(var.S##x(), var.S##y(), var.S##z(), d.L2x(), d.L2y(), d.L2z());                    \
                     dvar.add_e2(cross_with_coef(d.S##L2_Omega(), nex, ney, nez, var.e2x(), var.e2y(), var.e2z()));                           \
                 } else {                                                                                                                     \
                     dvar.add_v(SA_back_reaction(d.S##L2_Omega(), var.S##x(), var.S##y(), var.S##z(), var));                                  \
