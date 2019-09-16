@@ -14,11 +14,10 @@ namespace secular {
             
             DS_[2] = deSitter_coef(m2, m1);
             DS_[3] = deSitter_coef(m1 + m2, m3);
+
             LT_ = 0.5 * consts::G / (consts::C * consts::C); 
             
-            
             DS_[4] = deSitter_coef(m3, m1 + m2);
-            DS_[5] = DS_[4];
             
             LL_ = deSitter_coef(m1 + m2, m3);
         }
@@ -35,9 +34,9 @@ namespace secular {
 
         READ_GETTER(double, S2L2, DS_[3]);
 
-        READ_GETTER(double, S3L1, DS_[4]);
+        READ_GETTER(double, S3L1, LT_);
 
-        READ_GETTER(double, S3L2, DS_[5]);
+        READ_GETTER(double, S3L2, DS_[4]);
 
         READ_GETTER(double, S1S2, LT_);
 
@@ -46,7 +45,7 @@ namespace secular {
         READ_GETTER(double, S2S3, LT_);
 
     private:
-        double DS_[6];
+        double DS_[5];
         double LT_;
         double LL_;
 
@@ -136,13 +135,17 @@ namespace secular {
                 Omega_[2] = args.S2L1() / a_in_eff3_;
             if (ctrl.Sin_Lout != deS::off)
                 Omega_[3] = args.S2L2() / a_out_eff3_;
-            if (ctrl.Sin_Sin != deS::off)
-                Omega_[6] = args.S1S2() / a_in_eff3_;
+            
             
             if (ctrl.Sout_Lin != deS::off)
-                Omega_[4] = args.S3L1() / a_in_eff3_;
+                Omega_[4] = args.S3L1() / a_out_eff3_;
+
             if (ctrl.Sout_Lout != deS::off)
                 Omega_[5] = args.S3L2() / a_out_eff3_;
+
+            if (ctrl.Sin_Sin != deS::off)
+                Omega_[6] = args.S1S2() / a_in_eff3_;
+                
             if (ctrl.Sin_Sout != deS::off)
                 Omega_[7] = args.S1S3() / a_out_eff3_;
             
