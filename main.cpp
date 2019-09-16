@@ -126,8 +126,6 @@ auto call_ode_int(std::string work_dir, ConcurrentFile output, secular::Controle
 
     auto func = secular::Dynamic_dispatch<Container>(ctrl, const_parameters);
     writer(data, time);
-    
-    std::cout << data << std::endl;
 
     //STATIC_DISPATH(ctrl, const_parameters,
 
