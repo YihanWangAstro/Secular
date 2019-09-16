@@ -161,9 +161,6 @@ void single_thread_job(Controler const& ctrl, std::string work_dir, ConcurrentFi
 
                 secular::unpack_args_from_str(entry, v, PARAMETER_NUM);
 
-                //log << secular::get_log_title(task_id, is_double_ave, ctrl, spin_num) + "\r\n";
-                //log.flush();
-
                 ReturnFlag res = call_ode_int(work_dir, output, ctrl, v);;
                 
                 if(res == ReturnFlag::max_iter)
@@ -208,6 +205,9 @@ int main(int argc, char **argv) {
     auto output_file = make_thread_safe_fstream(work_dir + "last_state.txt", std::fstream::out);
 
     auto log_file = make_thread_safe_fstream(work_dir + "log.txt", std::fstream::out);
+
+    log << secular::get_log_title(task_id, ctrl, spin_num) + "\r\n";
+    log.flush();
 
     std::cout << task_num << " tasks in total will be processed.    " << thread_num << " threads will be created for computing!" << std::endl;
 

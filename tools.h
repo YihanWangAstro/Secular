@@ -149,7 +149,7 @@ bool is_number(const std::string& s)
 bool str_to_bool(std::string const& key){
     if(case_insens_equals(key, "true") || case_insens_equals(key, "1") || case_insens_equals(key, "on")){
         return true;
-    } else if (case_insens_equals(key, "flase") || case_insens_equals(key, "0") || case_insens_equals(key, "off")){
+    } else if (case_insens_equals(key, "false") || case_insens_equals(key, "0") || case_insens_equals(key, "off")){
         return false;
     } else {
         throw ReturnFlag::input_err;
@@ -296,16 +296,38 @@ bool is_on(double x) {
 
     const std::string str_ave[2] = {":SA", ":DA"};
     const std::string str_pole[2] = {"|quad", "| oct"};
-    const std::string str_gr[3] = {"", "|GR_{in}", "|GR_{in}|GR_{out}"};
-    const std::string str_gw[2] = {"", "|GW"};
-    const std::string str_sl[2] = {"", "|S_{in}L_{out}"};
-    const std::string str_ll[2] = {"", "|LL"};
-    const std::string str_s[4] = {"", "|S_{1}L_{in}", "|S_{1}L_{in}|S_{2}L_{in}", "|S_{1}L_{in}|S_{2}L_{in}|S_{3}L_{out}"};
+    const std::string str_gr_in[2] = {"", "|GR_{in}"};
+    const std::string str_gr_out[2] = {"", "|GR_{out}"};
+    const std::string str_gw_in[2] = {"", "|GW_{in}"};
+    const std::string str_gw_out[2] = {"", "|GW_{out}"};
+
+    const std::string str_sin_lin[4] = {"", "|^{dS}S_{in}L_{in}", "|^{back}S_{in}L_{in}", "|^{dS+back}S_{in}L_{in}"};
+    const std::string str_sin_lout[4] = {"", "|^{dS}S_{in}L_{out}", "|^{back}S_{in}L_{out}", "|^{dS+back}S_{in}L_{out}"};
+    const std::string str_sout_lin[4] = {"", "|^{LT}S_{out}L_{in}", "|^{back}S_{out}L_{in}", "|^{LT+back}S_{out}L_{in}"};
+    const std::string str_sout_lout[4] = {"", "|^{ds}S_{out}L_{out}", "|^{back}S_{out}L_{out}", "|^{ds+back}S_{out}L_{out}"};
+
+    const std::string str_sin_sin[4] = {"", "|^{LT}S_{in}S_{in}", "|^{back}S_{in}S_{in}", "|^{LT+back}S_{in}S_{in}"};
+    const std::string str_sin_sout[4] = {"", "|^{LT}S_{in}S_{out}", "|^{back}S_{in}S_{out}", "|^{LT+back}S_{in}S_{out}"};
+
+    const std::string str_ll[4] = {"", "|^{dS}L_{in}L_{out}", "|^{back}L_{in}L_{out}", "|^{dS+back}L_{in}L_{out}",};
+    
 
     template<typename Controler>
-    std::string get_log_title(size_t task_id, bool DA, Controler const &ctrl, size_t spin_num) {
-        return std::to_string(task_id) + str_ave[DA] + str_pole[ctrl.Oct] + str_gr[ctrl.GR] + str_gw[ctrl.GW] + str_sl[ctrl.SL] + str_ll[ctrl.LL] +
-               str_s[spin_num];
+    std::string get_log_title(size_t task_id, Controler const &ctrl, size_t spin_num) {
+        return std::to_string(task_id) 
+                 + str_ave[to_index(ctrl.ave_method)]
+                 + str_pole[ctrl.Oct] 
+                 + str_gr_in[ctrl.GR_in] 
+                 + str_gr_out[ctrl.GR_out]
+                 + str_gw_in[ctrl.GW_in] 
+                 + str_gw_out[ctrl.GW_out]
+                 + str_sin_lin[to_index(ctrl.Sin_Lin)] 
+                 + str_sin_lout[to_index(ctrl.Sin_Lout)]
+                 + str_sout_lin[to_index(ctrl.Sout_Lin)]
+                 + str_sout_lout[to_index(ctrl.Sout_Lout)]
+                 + str_sin_sin[to_index(ctrl.Sin_Sin)]
+                 + str_sin_sout[to_index(ctrl.Sin_Sout)]
+                 + str_ll[to_index(ctrl.LL)]
     }
 }
 #endif
