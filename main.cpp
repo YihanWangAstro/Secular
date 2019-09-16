@@ -206,7 +206,7 @@ int main(int argc, char **argv) {
 
     auto log_file = make_thread_safe_fstream(work_dir + "log.txt", std::fstream::out);
 
-    log << secular::get_log_title(task_id, ctrl, spin_num) + "\r\n";
+    log << secular::get_log_title(ctrl) + "\r\n";
     log.flush();
 
     std::cout << task_num << " tasks in total will be processed.    " << thread_num << " threads will be created for computing!" << std::endl;

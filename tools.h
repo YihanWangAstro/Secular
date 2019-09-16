@@ -313,8 +313,8 @@ bool is_on(double x) {
     
 
     template<typename Controler>
-    std::string get_log_title(size_t task_id, Controler const &ctrl, size_t spin_num) {
-        return std::to_string(task_id) 
+    std::string get_log_title(Controler const &ctrl) {
+        return std::string{"config:"} 
                  + str_ave[to_index(ctrl.ave_method)]
                  + str_pole[ctrl.Oct] 
                  + str_gr_in[ctrl.GR_in] 
