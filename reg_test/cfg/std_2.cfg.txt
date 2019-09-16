@@ -1,0 +1,14 @@
+LK_method = SA
+quad = on
+oct = off
+GR_in = off
+GR_out = off
+GW_in = 0
+GW_out = 0
+Sin_Lin = off
+Sin_Lout = off
+Sout_Lin = off
+Sout_Lout = off
+Sin_Sin = off
+Sin_Sout = off
+LL = off
