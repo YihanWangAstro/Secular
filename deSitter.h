@@ -112,13 +112,13 @@ namespace secular {
             }
 
             if (Lout_coupled == true) {
-                if (ctrl.LK_method == LK_method::DA) {
+                if (ctrl.ave_method == LK_method::DA) {
                     L2x_ = var.L2x(), L2y_ = var.L2y(), L2z_ = var.L2z();
 
                     a_out_eff_ = calc_a_eff(args.a_out_coef(), var.L2x(), var.L2y(), var.L2z(), var.e2x(), var.e2y(), var.e2z());
 
                     a_out_eff3_ = a_out_eff_ * a_out_eff_ * a_out_eff_;
-                } else if(ctrl.LK_method == LK_method::SA){
+                } else if(ctrl.ave_method == LK_method::SA){
                     std::tie(L2x_, L2y_, L2z_) = cross_with_coef(args.mu_out(), var.rx(), var.ry(), var.rz(), var.vx(), var.vy(), var.vz());
 
                     a_out_eff_ = norm(var.rx(), var.ry(), var.rz());
@@ -241,11 +241,11 @@ namespace secular {
             dvar.add_##S(dx, dy, dz);                                                                                                        \
         }                                                                                                                                    \
         if (C == deS::bc || C == deS::all) {                                                                                                 \
-            if (ctrl.LK_method == LK_method::DA){                                                                                            \
+            if (ctrl.ave_method == LK_method::DA){                                                                                            \
                 dvar.sub_L2(dx, dy, dz);                                                                                                     \
                 auto [nex, ney, nez] = deSitter_e_vec(var.S##x(), var.S##y(), var.S##z(), var.L2x(), var.L2y(), var.L2z());                  \
                 dvar.add_e2(cross_with_coef(OMEGA, nex, ney, nez, var.e2x(), var.e2y(), var.e2z()));                                         \
-            } else if(ctrl.LK_method == LK_method::SA) {                                                                                     \
+            } else if(ctrl.ave_method == LK_method::SA) {                                                                                     \
                 dvar.add_v(SA_back_reaction(OMEGA, var.S##x(), var.S##y(), var.S##z(), var));                                                \
             }                                                                                                                                \
         }                                                                                                                                    \

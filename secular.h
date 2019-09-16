@@ -119,7 +119,7 @@ namespace secular {
 
         double GW_in_ratio;
         double GW_out_ratio;
-        LK_method LK_method;
+        LK_method ave_method;
         bool Quad{true};
         bool Oct{false};
         bool GR_in;

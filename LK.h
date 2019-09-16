@@ -403,9 +403,9 @@ void single_aved_LK(Ctrl const& ctrl, Args const &args, Container const &var, Co
 
 template <typename Ctrl, typename Args, typename Container>
 inline void Lidov_Kozai(Ctrl const& ctrl, Args const &args, Container const &var, Container &dvar){
-    if(ctrl.LK_method == LK_method::DA){
+    if(ctrl.ave_method == LK_method::DA){
         double_aved_LK(ctrl, args, var, dvar);
-    } else if (ctrl.LK_method == LK_method::SA) {
+    } else if (ctrl.ave_method == LK_method::SA) {
         single_aved_LK(ctrl, args, var, dvar);
     }
 }

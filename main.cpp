@@ -109,7 +109,7 @@ auto call_ode_int(std::string work_dir, ConcurrentFile output, secular::Controle
 
     Container data;
 
-    initilize_orbit_args(ctrl.LK_method, data, init_args.begin() + ARGS_OFFSET);
+    initilize_orbit_args(ctrl.ave_method, data, init_args.begin() + ARGS_OFFSET);
 
     secular::SecularConst const_parameters{m1, m2, m3};
 
@@ -215,7 +215,7 @@ int main(int argc, char **argv) {
 
     secular::Controler ctrl;
 
-    ctrl.LK_method = str_to_LK_enum(cfg.get<std::string>("LK_method"));
+    ctrl.ave_method = str_to_LK_enum(cfg.get<std::string>("LK_method"));
     ctrl.Quad = str_to_bool(cfg.get<std::string>("quad"));
     ctrl.Oct = str_to_bool(cfg.get<std::string>("oct"));
 

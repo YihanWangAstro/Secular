@@ -41,7 +41,7 @@ namespace secular {
         }
 
         if (ctrl.GR_out == true) {
-            if (ctrl.LK_method == LK_method::DA) {
+            if (ctrl.ave_method == LK_method::DA) {
                 GR_PROCESS(a_out_coef(), GR_out_coef(), 2);
             } else{
               
