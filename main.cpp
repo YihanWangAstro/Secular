@@ -13,7 +13,8 @@
 using namespace space::multiThread;
 using namespace secular;
 
-double INT_ERROR = 1e-13;
+double ATOL = 1e-13;
+double RTOL = 1e-13;
 
 bool get_line(std::fstream &is, std::string &str) {
     std::getline(is, str);
@@ -117,7 +118,7 @@ auto call_ode_int(std::string work_dir, ConcurrentFile output, secular::Controle
 
     double time = 0;
 
-    stepper_type stepper{INT_ERROR, INT_ERROR};
+    stepper_type stepper{ATOL, RTOL};
 
     secular::Stream_observer writer{f_out, out_dt};
 
@@ -206,9 +207,6 @@ int main(int argc, char **argv) {
 
     auto log_file = make_thread_safe_fstream(work_dir + "log.txt", std::fstream::out);
 
-    log << secular::get_log_title(ctrl) + "\r\n";
-    log.flush();
-
     std::cout << task_num << " tasks in total will be processed.    " << thread_num << " threads will be created for computing!" << std::endl;
 
     space::tools::ConfigReader cfg{cfg_file_name};
@@ -243,6 +241,13 @@ int main(int argc, char **argv) {
     ctrl.Sin_Sout = str_to_spin_orbit_enum(cfg.get<std::string>("Sin_Sout"));
 
     ctrl.LL = str_to_spin_orbit_enum(cfg.get<std::string>("LL"));
+
+    ATOL = cfg.get<double>("absolute_tolerance");
+
+    RTOL = cfg.get<double>("relative_tolerance");
+
+    log_file << secular::get_log_title(ctrl) + "\r\n";
+    log_file.flush();
 
     space::tools::Timer timer;
     timer.start();

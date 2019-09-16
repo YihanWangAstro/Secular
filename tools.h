@@ -327,7 +327,7 @@ bool is_on(double x) {
                  + str_sout_lout[to_index(ctrl.Sout_Lout)]
                  + str_sin_sin[to_index(ctrl.Sin_Sin)]
                  + str_sin_sout[to_index(ctrl.Sin_Sout)]
-                 + str_ll[to_index(ctrl.LL)]
+                 + str_ll[to_index(ctrl.LL)];
     }
 }
 #endif

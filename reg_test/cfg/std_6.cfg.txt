@@ -1,14 +1,27 @@
+#averaged method: 'DA' for double average; 'SA' for single average
 LK_method = SA
+
+#Lidov-Kozai multipole: 'off' and 'on'
 quad = on
 oct = off
+
+#relativistic effect: 'off' and 'on' for first order GR precession; For GW radiation, '0.001' means that the evolution will stop at a = 0.001*a_0; set '0' to turn off the GW
 GR_in = on
 GR_out = off
 GW_in = 0
 GW_out = 0
+
+#deSitter precession: 'on' for precession; 'back reaction' for the back reaction; 'both' for precession & back reaction
 Sin_Lin = on
 Sin_Lout = off
-Sout_Lin = off
 Sout_Lout = off
+LL = on
+
+#Lens-thirring precession: 'on' for precession; 'back reaction' for the back reaction; 'both' for precession & back reaction
+Sout_Lin = off
 Sin_Sin = off
 Sin_Sout = off
-LL = on
+
+#error control:
+relative_tolerance = 1e-13
+absolute_tolerance = 1e-13
