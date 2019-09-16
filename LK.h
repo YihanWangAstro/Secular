@@ -63,6 +63,29 @@ private:
     }
 };
 
+enum class LK_method {
+    DA, SA
+};
+
+size_t to_index(LK_method x){
+    if(x == LK_method::SA)
+        return 0;
+    else if(x == LK_method::DA)
+        return 1;
+    else
+        return 0;
+}
+
+LK_method str_to_LK_enum(std::string const& key){
+    if(case_insens_equals(key, "DA")){
+        return LK_method::DA;
+    } else if(case_insens_equals(key, "SA")){
+        return LK_method::SA;
+    } else{
+        throw ReturnFlag::input_err;
+    }
+}
+
 double t_k_quad(double m_in, double m_out, double a_in, double a_out_eff)
 {
     double ratio = a_out_eff / sqrt(a_in);
@@ -85,52 +108,7 @@ double normed_oct_epsilon(double m1, double m2, double a_in, double a_out, doubl
     }*/
 
 template <typename Container, typename Iter>
-void initilize_orbit_args(bool DA, size_t spin_num, Container &c, Iter iter)
-{
-    if (DA)
-    {
-        initilize_DA(spin_num, c, iter);
-    }
-    else
-    {
-        initilize_SA(spin_num, c, iter);
-    }
-}
-
-template <typename Container, typename Iter>
-void initilize_DA(size_t spin_num, Container &c, Iter iter)
-{
-    auto [m1, m2, m3, a_in, a_out, e_in, e_out, omega_in, omega_out, Omega_in, i_in, i_out] = unpack_args<12>(iter); //unpack_vector(off_set, args);
-
-    double Omega_out = Omega_in - 180;
-
-    deg_to_rad(omega_in, omega_out, Omega_in, Omega_out, i_in, i_out);
-
-    auto [j1x, j1y, j1z] = secular::unit_j(i_in, Omega_in);
-
-    double L1 = secular::calc_angular_mom(m1, m2, a_in) * sqrt(1 - e_in * e_in);
-
-    c.set_L1(L1 * j1x, L1 * j1y, L1 * j1z);
-
-    auto [j2x, j2y, j2z] = secular::unit_j(i_out, Omega_out);
-
-    double L2 = secular::calc_angular_mom(m1 + m2, m3, a_out) * sqrt(1 - e_out * e_out);
-
-    c.set_L2(L2 * j2x, L2 * j2y, L2 * j2z);
-
-    auto [e1x, e1y, e1z] = secular::unit_e(i_in, omega_in, Omega_in);
-
-    c.set_e1(e_in * e1x, e_in * e1y, e_in * e1z);
-
-    auto [e2x, e2y, e2z] = secular::unit_e(i_out, omega_out, Omega_out);
-
-    c.set_e2(e_out * e2x, e_out * e2y, e_out * e2z);
-
-    std::copy_n(iter + 12, spin_num * 3, c.spin_begin());
-}
-
-template <typename Container, typename Iter>
-void initilize_SA(size_t spin_num, Container &c, Iter iter)
+void initilize_orbit_args(LK_method method, Container &c, Iter iter)
 {
     auto [m1, m2, m3, a_in, a_out, e_in, e_out, omega_in, omega_out, Omega_in, i_in, i_out] = unpack_args<12>(iter);
 
@@ -150,35 +128,49 @@ void initilize_SA(size_t spin_num, Container &c, Iter iter)
 
     c.set_e1(e_in * e1x, e_in * e1y, e_in * e1z);
 
-    double E_nu = space::orbit::calc_eccentric_anomaly(M_nu, e_out);
+    if (method == LK_method::DA) {
+        auto [j2x, j2y, j2z] = secular::unit_j(i_out, Omega_out);
 
-    double cosE = cos(E_nu);
+        double L2 = secular::calc_angular_mom(m1 + m2, m3, a_out) * sqrt(1 - e_out * e_out);
 
-    double nu_out = space::orbit::calc_true_anomaly(E_nu, e_out); //acos( ( cosE - o.e_out)/ (1 - o.e_out*cosE) );
+        c.set_L2(L2 * j2x, L2 * j2y, L2 * j2z);
 
-    double r = a_out * (1 - e_out * cosE);
+        auto [e2x, e2y, e2z] = secular::unit_e(i_out, omega_out, Omega_out);
 
-    auto [px, py, pz] = secular::unit_e(i_out, omega_out + nu_out, Omega_out);
+        c.set_e2(e_out * e2x, e_out * e2y, e_out * e2z);
+    } else if (method == LK_method::SA) {
+        double E_nu = space::orbit::calc_eccentric_anomaly(M_nu, e_out);
 
-    c.set_r(r * px, r * py, r * pz);
+        double cosE = cos(E_nu);
 
-    double v = sqrt(consts::G * (m1 + m2 + m3) / (a_out * (1 - e_out * e_out)));
+        double nu_out = space::orbit::calc_true_anomaly(E_nu, e_out); //acos( ( cosE - o.e_out)/ (1 - o.e_out*cosE) );
 
-    double ve = -v * sin(nu_out);
+        double r = a_out * (1 - e_out * cosE);
 
-    double vv = v * (e_out + cos(nu_out));
+        auto [px, py, pz] = secular::unit_e(i_out, omega_out + nu_out, Omega_out);
 
-    auto [e2x, e2y, e2z] = secular::unit_e(i_out, omega_out, Omega_out);
+        c.set_r(r * px, r * py, r * pz);
 
-    auto [vx, vy, vz] = secular::unit_peri_v(i_out, omega_out, Omega_out);
+        double v = sqrt(consts::G * (m1 + m2 + m3) / (a_out * (1 - e_out * e_out)));
 
-    c.set_v(ve * e2x + vv * vx, ve * e2y + vv * vy, ve * e2z + vv * vz);
+        double ve = -v * sin(nu_out);
 
-    std::copy_n(iter + 13, spin_num * 3, c.spin_begin());
+        double vv = v * (e_out + cos(nu_out));
+
+        auto [e2x, e2y, e2z] = secular::unit_e(i_out, omega_out, Omega_out);
+
+        auto [vx, vy, vz] = secular::unit_peri_v(i_out, omega_out, Omega_out);
+
+        c.set_v(ve * e2x + vv * vx, ve * e2y + vv * vy, ve * e2z + vv * vz);
+    } else {
+        throw ReturnFlag::input_err;
+    }
+
+    std::copy_n(iter + 13, 9, c.spin_begin());
 }
 
-template <bool Oct, typename Args, typename Container>
-inline void double_aved_LK(Args const &args, Container const &var, Container &dvar, double t)
+template <typename Ctrl, typename Args, typename Container>
+void double_aved_LK(Ctrl const& ctrl, Args const &args, Container const &var, Container &dvar)
 {
     auto [e1_sqr, j1_sqr, j1, L1_norm, L_in, a_in] = calc_orbit_args(args.a_in_coef(), var.L1x(), var.L1y(), var.L1z(), var.e1x(), var.e1y(),
                                                                      var.e1z());
@@ -258,7 +250,7 @@ inline void double_aved_LK(Args const &args, Container const &var, Container &dv
                 C1 * ce1e2_y + C2 * ce2j1_y + C3 * cn2e2_y,
                 C1 * ce1e2_z + C2 * ce2j1_z + C3 * cn2e2_z);
 
-    if constexpr (Oct)
+    if (ctrl.Oct == true)
     {
         double const oct_coef = -25.0/16 * quad_coef * normed_oct_epsilon(args.m1(), args.m2(), a_in, a_out_eff) / j2;
 
@@ -313,8 +305,8 @@ inline void double_aved_LK(Args const &args, Container const &var, Container &dv
     }
 }
 
-template <bool Oct, typename Args, typename Container>
-inline void single_aved_LK(Args const &args, Container const &var, Container &dvar, double t)
+template <typename Ctrl, typename Args, typename Container>
+void single_aved_LK(Ctrl const& ctrl, Args const &args, Container const &var, Container &dvar)
 {
     auto [e1_sqr, j1_sqr, j1, L1_norm, L_in, a_in] = calc_orbit_args(args.a_in_coef(), var.L1x(), var.L1y(), var.L1z(), var.e1x(), var.e1y(),
                                                                      var.e1z());
@@ -385,7 +377,7 @@ inline void single_aved_LK(Args const &args, Container const &var, Container &dv
                acc_r * var.ry() + acc_n * j1y + acc_e * var.e1y(),
                acc_r * var.rz() + acc_n * j1z + acc_e * var.e1z());
 
-    if constexpr (Oct)
+    if (ctrl.Oct == true)
     {
         double const epsilon = normed_oct_epsilon(args.m1(), args.m2(), a_in, r);
 
@@ -406,6 +398,15 @@ inline void single_aved_LK(Args const &args, Container const &var, Container &dv
         dvar.add_L1(H1 * cj1e1_x + H2 * ce1rho_x, H1 * cj1e1_y + H2 * ce1rho_y, H1 * cj1e1_z + H2 * ce1rho_z);
 
         dvar.add_e1(F1 * cj1e1_x + F2 * cj1rho_x + F3 * ce1rho_x, F1 * cj1e1_y + F2 * cj1rho_y + F3 * ce1rho_y, F1 * cj1e1_z + F2 * cj1rho_z + F3 * ce1rho_z);
+    }
+}
+
+template <typename Ctrl, typename Args, typename Container>
+inline void Lidov_Kozai(Ctrl const& ctrl, Args const &args, Container const &var, Container &dvar){
+    if(ctrl.LK_method == LK_method::DA){
+        double_aved_LK(ctrl, args, var, dvar);
+    } else if (ctrl.LK_method == LK_method::SA) {
+        single_aved_LK(ctrl, args, var, dvar);
     }
 }
 

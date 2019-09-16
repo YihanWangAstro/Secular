@@ -11,6 +11,7 @@
 #include <algorithm>
 
 using namespace space::multiThread;
+using namespace secular;
 
 double INT_ERROR = 1e-13;
 
@@ -67,13 +68,8 @@ auto resolve_sim_type(std::string const &line) {
     }
 }
 
-
-constexpr size_t CTRL_OFFSET = 3;
-constexpr size_t ARGS_OFFSET = 8;
-
-enum class ReturnFlag {
-    input_err, max_iter, finish
-};
+constexpr size_t ARGS_OFFSET = 3;
+constexpr size_t PARAMETER_NUM = 25;
 
 auto args_analy(size_t& start_id, size_t& end_id, std::string const&f){
     if(start_id <=0 || end_id <=0) {
@@ -91,11 +87,10 @@ auto args_analy(size_t& start_id, size_t& end_id, std::string const&f){
     return std::make_tuple(task_num, thread_num);
 }
 
-template<size_t spin_num>
-auto call_ode_int(std::string work_dir, ConcurrentFile output, bool is_double_ave, secular::Controler const &ctrl, std::vector<double> const &init_args) {
+auto call_ode_int(std::string work_dir, ConcurrentFile output, secular::Controler const &ctrl, std::vector<double> const &init_args) {
     using namespace boost::numeric::odeint;
 
-    using Container = secular::SecularArray<spin_num>;
+    using Container = secular::SecularArray;
     //using stepper_type = boost::numeric::odeint::runge_kutta_fehlberg78<Container>;
     using stepper_type = bulirsch_stoer<Container>;
 
@@ -114,9 +109,9 @@ auto call_ode_int(std::string work_dir, ConcurrentFile output, bool is_double_av
 
     Container data;
 
-    initilize_orbit_args(is_double_ave, spin_num, data, init_args.begin() + ARGS_OFFSET);
+    initilize_orbit_args(ctrl.LK_method, data, init_args.begin() + ARGS_OFFSET);
 
-    secular::SecularConst<spin_num> const_parameters{m1, m2, m3};
+    secular::SecularConst const_parameters{m1, m2, m3};
 
     double dt = 0.1 * secular::consts::year;
 
@@ -126,7 +121,7 @@ auto call_ode_int(std::string work_dir, ConcurrentFile output, bool is_double_av
 
     secular::Stream_observer writer{f_out, out_dt};
 
-    secular::SMA_Determinator stop{const_parameters.a_in_coef(), ctrl.stop_a_in()};
+    secular::SMA_Determinator stop{const_parameters.a_in_coef(), a_in_init * ctrl.GW_in_ratio};
 
     auto func = secular::Dynamic_dispatch<Container>(ctrl, const_parameters);
     writer(data, time);
@@ -156,44 +151,21 @@ auto call_ode_int(std::string work_dir, ConcurrentFile output, bool is_double_av
     return ReturnFlag::finish;
 }
 
-void single_thread_job(std::string work_dir, ConcurrentFile input, size_t start_id, size_t end_id, ConcurrentFile output, ConcurrentFile log) {
+void single_thread_job(Controler const& ctrl, std::string work_dir, ConcurrentFile input, size_t start_id, size_t end_id, ConcurrentFile output, ConcurrentFile log) {
     std::string entry;
     for (;input.execute(get_line, entry);) {
-            auto[task_id, AveType, spin_num] = resolve_sim_type(entry);
-
-			bool is_double_ave{ true };
-			if (AveType == SimArgT::DA) {
-				is_double_ave = true;
-			} else if (AveType == SimArgT::SA) {
-				is_double_ave = false;
-			} else if (AveType == SimArgT::empty) {
-				continue;
-			} else if (AveType == SimArgT::wrong) {
-				std::cout << "task" + std::to_string(task_id) + ":wrong input format!\r\n";
-				continue;
-			}
+            size_t task_id =  static_cast<size_t>(std::stoi(entry));
 
             if (start_id <= task_id && task_id <= end_id) {
                 std::vector<double> v;
 
-                secular::unpack_args_from_str(entry, v, is_double_ave, spin_num);
+                secular::unpack_args_from_str(entry, v, PARAMETER_NUM);
 
-                secular::Controler ctrl{v.begin() + CTRL_OFFSET, is_double_ave};
+                //log << secular::get_log_title(task_id, is_double_ave, ctrl, spin_num) + "\r\n";
+                //log.flush();
 
-                log << secular::get_log_title(task_id, is_double_ave, ctrl, spin_num) + "\r\n";
-                log.flush();
-
-                ReturnFlag res;
-                if (spin_num == 0) {
-                    res = call_ode_int<0>(work_dir, output, is_double_ave, ctrl, v);
-                } else if (spin_num == 1) {
-                    res = call_ode_int<1>(work_dir, output, is_double_ave, ctrl, v);
-                } else if (spin_num == 2) {
-                    res = call_ode_int<2>(work_dir, output, is_double_ave, ctrl, v);
-                } else if (spin_num == 3) {
-                    res = call_ode_int<3>(work_dir, output, is_double_ave, ctrl, v);
-                }
-
+                ReturnFlag res = call_ode_int(work_dir, output, ctrl, v);;
+                
                 if(res == ReturnFlag::max_iter)
                     log << std::to_string(task_id) + ":Max iteration number reaches!\n";
                     log.flush();
@@ -205,11 +177,12 @@ int main(int argc, char **argv) {
     std::ios::sync_with_stdio(false);
 
     std::string input_file_name;
+    std::string cfg_file_name;
     std::string work_dir;
     size_t start_task_id, end_task_id;
     std::string user_specified_core_num;
 
-    space::tools::read_command_line(argc, argv, user_specified_core_num, input_file_name, start_task_id, end_task_id, work_dir);
+    space::tools::read_command_line(argc, argv, user_specified_core_num, cfg_file_name,  input_file_name, start_task_id, end_task_id, work_dir);
 
     auto [task_num, thread_num] = args_analy(start_task_id, end_task_id, input_file_name);
 
@@ -238,9 +211,42 @@ int main(int argc, char **argv) {
 
     std::cout << task_num << " tasks in total will be processed.    " << thread_num << " threads will be created for computing!" << std::endl;
 
+    space::tools::ConfigReader cfg{cfg_file_name};
+
+    secular::Controler ctrl;
+
+    ctrl.LK_method = str_to_LK_enum(cfg.get<std::string>("LK_method"));
+    ctrl.Quad = str_to_bool(cfg.get<std::string>("quad"));
+    ctrl.Oct = str_to_bool(cfg.get<std::string>("oct"));
+
+    ctrl.GR_in = str_to_bool(cfg.get<std::string>("GR_in"));
+    ctrl.GR_out = str_to_bool(cfg.get<std::string>("GR_out"));
+
+    ctrl.GW_in_ratio = cfg.get<double>("GW_in");
+
+    ctrl.GW_in = is_on(ctrl.GW_in_ratio);
+
+    ctrl.GW_out_ratio = cfg.get<double>("GW_out");
+
+    ctrl.GW_out = is_on(ctrl.GW_out_ratio);
+
+    ctrl.Sin_Lin = str_to_spin_orbit_enum(cfg.get<std::string>("Sin_Lin"));
+
+    ctrl.Sin_Lout = str_to_spin_orbit_enum(cfg.get<std::string>("Sin_Lout"));
+
+    ctrl.Sout_Lin = str_to_spin_orbit_enum(cfg.get<std::string>("Sout_Lin"));
+
+    ctrl.Sout_Lout = str_to_spin_orbit_enum(cfg.get<std::string>("Sout_Lout"));
+
+    ctrl.Sin_Sin = str_to_spin_orbit_enum(cfg.get<std::string>("Sin_Sin"));
+
+    ctrl.Sin_Sout = str_to_spin_orbit_enum(cfg.get<std::string>("Sin_Sout"));
+
+    ctrl.LL = str_to_spin_orbit_enum(cfg.get<std::string>("LL"));
+
     space::tools::Timer timer;
     timer.start();
-    space::multiThread::multi_thread_run(thread_num, single_thread_job, work_dir, input_file, start_task_id, end_task_id, output_file, log_file);
+    space::multiThread::multi_thread_run(thread_num, single_thread_job, ctrl, work_dir, input_file, start_task_id, end_task_id, output_file, log_file);
     std::cout << "\r\n Time:" << timer.get_time() << " s\n";
     return 0;
 }

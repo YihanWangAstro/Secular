@@ -5,6 +5,7 @@
 #include <tuple>
 #include <vector>
 #include <sstream>
+#include <algorithm>
 namespace secular {
 
 #define STD_ACCESSOR(TYPE, NAME, MEMBER)                                                                                 \
@@ -104,15 +105,12 @@ inline auto cast_unpack(Iter iter) {
     //return std::make_tuple(static_cast<Args>(*iter++)...);
 }
 
-void unpack_args_from_str(std::string const &str, std::vector<double> &vec, bool DA, size_t spin_num) {
+void unpack_args_from_str(std::string const &str, std::vector<double> &vec, size_t num) {
     std::stringstream is{str};
-
-    size_t token_num = 20 + static_cast<size_t>(!DA) + spin_num * 3;
-
     double tmp;
 
-    vec.reserve(token_num);
-    for (size_t i = 0; i < token_num; ++i) {
+    vec.reserve(num);
+    for (size_t i = 0; i < num; ++i) {
         is >> tmp;
         vec.emplace_back(tmp);
     }
@@ -129,10 +127,33 @@ namespace consts {
         constexpr double year = 1;
 }
 
+enum class ReturnFlag {
+    input_err, max_iter, finish
+};
+
+bool case_insens_equals(std::string const& a, std::string const& b)
+{
+    return std::equal(a.begin(), a.end(),
+                      b.begin(), b.end(),
+                      [](char a, char b) {
+                          return tolower(a) == tolower(b);
+                      });
+}
+
 bool is_number(const std::string& s)
 {
     return !s.empty() && std::find_if(s.begin(),
         s.end(), [](char c) { return !std::isdigit(c); }) == s.end();
+}
+
+bool str_to_bool(std::string const& key){
+    if(case_insens_equals(key, "true") || case_insens_equals(key, "1") || case_insens_equals(key, "on")){
+        return true;
+    } else if (case_insens_equals(key, "flase") || case_insens_equals(key, "0") || case_insens_equals(key, "off")){
+        return false;
+    } else {
+        throw ReturnFlag::input_err;
+    }
 }
 
 bool is_on(double x) {
