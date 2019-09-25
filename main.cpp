@@ -23,7 +23,7 @@ bool get_line(std::fstream &is, std::string &str) {
     else
         return true;
 }
-
+/*
 enum class SimArgT {
 	SA, DA, empty, wrong
 };
@@ -67,7 +67,7 @@ auto resolve_sim_type(std::string const &line) {
         default :
             return std::make_tuple(static_cast<size_t>(0), SimArgT::wrong, 0u);
     }
-}
+}*/
 
 constexpr size_t ARGS_OFFSET = 3;
 constexpr size_t PARAMETER_NUM = 25;
@@ -211,36 +211,7 @@ int main(int argc, char **argv) {
 
     space::tools::ConfigReader cfg{cfg_file_name};
 
-    secular::Controler ctrl;
-
-    ctrl.ave_method = str_to_LK_enum(cfg.get<std::string>("LK_method"));
-    ctrl.Quad = str_to_bool(cfg.get<std::string>("quad"));
-    ctrl.Oct = str_to_bool(cfg.get<std::string>("oct"));
-
-    ctrl.GR_in = str_to_bool(cfg.get<std::string>("GR_in"));
-    ctrl.GR_out = str_to_bool(cfg.get<std::string>("GR_out"));
-
-    ctrl.GW_in_ratio = cfg.get<double>("GW_in");
-
-    ctrl.GW_in = is_on(ctrl.GW_in_ratio);
-
-    ctrl.GW_out_ratio = cfg.get<double>("GW_out");
-
-    ctrl.GW_out = is_on(ctrl.GW_out_ratio);
-
-    ctrl.Sin_Lin = str_to_spin_orbit_enum(cfg.get<std::string>("Sin_Lin"));
-
-    ctrl.Sin_Lout = str_to_spin_orbit_enum(cfg.get<std::string>("Sin_Lout"));
-
-    ctrl.Sout_Lin = str_to_spin_orbit_enum(cfg.get<std::string>("Sout_Lin"));
-
-    ctrl.Sout_Lout = str_to_spin_orbit_enum(cfg.get<std::string>("Sout_Lout"));
-
-    ctrl.Sin_Sin = str_to_spin_orbit_enum(cfg.get<std::string>("Sin_Sin"));
-
-    ctrl.Sin_Sout = str_to_spin_orbit_enum(cfg.get<std::string>("Sin_Sout"));
-
-    ctrl.LL = str_to_spin_orbit_enum(cfg.get<std::string>("LL"));
+    secular::Controler ctrl{cfg};
 
     ATOL = cfg.get<double>("absolute_tolerance");
 

@@ -10,6 +10,8 @@
 #include "deSitter.h"
 #include "tools.h"
 
+#include "SpaceHub/src/tools/config-reader.hpp"
+
 namespace secular {
 
     class SecularArray : public std::array<double, 21> {
@@ -137,6 +139,68 @@ namespace secular {
         void set_stop_a_in(double a_stop){
             GW_stop_a_ = a_stop;
         }
+
+        Controler(space::tools::ConfigReader& cfg) {
+            ave_method = str_to_LK_enum(cfg.get<std::string>("LK_method"));
+
+            Quad = str_to_bool(cfg.get<std::string>("quad"));
+
+            Oct = str_to_bool(cfg.get<std::string>("oct"));
+
+            GR_in = str_to_bool(cfg.get<std::string>("GR_in"));
+
+            GR_out = str_to_bool(cfg.get<std::string>("GR_out"));
+
+            GW_in_ratio = cfg.get<double>("GW_in");
+
+            GW_in = is_on(GW_in_ratio);
+
+            GW_out_ratio = cfg.get<double>("GW_out");
+
+            GW_out = is_on(GW_out_ratio);
+
+            Sin_Lin = str_to_spin_orbit_enum(cfg.get<std::string>("Sin_Lin"));
+
+            Sin_Lout = str_to_spin_orbit_enum(cfg.get<std::string>("Sin_Lout"));
+
+            Sout_Lin = str_to_spin_orbit_enum(cfg.get<std::string>("Sout_Lin"));
+
+            Sout_Lout = str_to_spin_orbit_enum(cfg.get<std::string>("Sout_Lout"));
+
+            Sin_Sin = str_to_spin_orbit_enum(cfg.get<std::string>("Sin_Sin"));
+
+            Sin_Sout = str_to_spin_orbit_enum(cfg.get<std::string>("Sin_Sout"));
+
+            LL = str_to_spin_orbit_enum(cfg.get<std::string>("LL"));
+        }
+
+        std::string initial_format(){
+            std::string base = "task_id  t_{end}[yr]  dt_{output}[yr]  m_{1}[m_{solar}]  m_{2}[m_{solar}]  m_{3}[m_{solar}]  a_{in}[au]  a_{out}[au]  e_{in}  e_{out}  omega_{in}[deg]  omega_{out}[deg]  Omega[deg]  i_{in}[deg]  i_{out}[deg]";
+            
+            if(need_anomaly())
+                base += "  M(mean anomaly)[deg]";
+            
+            if(need_S_in())
+                base += "  S_{1,x}  S_{1,y}  S_{1,z}  S_{2,x}  S_{2,y}  S_{2,z}";
+
+            if(need_S_out())
+                base += "  S_{3,x}  S_{3,y}  S_{3,z}";
+
+            return base;
+        }
+
+        bool need_anomaly(){
+            return ave_method == LK_method::SA;
+        }
+
+        bool need_S_in(){
+            return (Sin_Lin != deS::off) || (Sin_Lout != deS::off) || (Sin_Sin != deS::off) || (Sin_Sout != deS::off);
+        }
+
+        bool need_S_out(){
+            return (Sout_Lin != deS::off) || (Sout_Lout != deS::off) || (Sin_Sout != deS::off);
+        }
+
     private:
         double GW_stop_a_;
     };
