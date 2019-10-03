@@ -155,7 +155,7 @@ void initialize_orbit_args(LK_method method, Container &c, Iter iter) {
   } else {
     throw ReturnFlag::input_err;
   }
-  // std::copy_n(iter + 13, 9, c.spin_begin());
+  std::copy_n(iter + 13, 9, c.spin_begin());
 }
 
 template <typename Ctrl, typename Args, typename Container>
