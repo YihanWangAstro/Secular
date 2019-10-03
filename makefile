@@ -7,7 +7,7 @@ secular:
 	${CXX} -std=c++17 -march=native  -O3 -o secular main.cpp -I${PATH_TO_BOOST} -pthread
 
 init_format:
-	${CXX} -std=c++17 -march=native  -O3 -o init_format initial_format.cpp
+	${CXX} -std=c++17 -march=native  -O3 -o format initial_format.cpp
 
 clean:
-	rm secular
+	rm secular format
