@@ -84,13 +84,15 @@ double t_k_quad(double m_in, double m_out, double a_in, double a_out_eff) {
   return consts::r_G_sqrt * sqrt(m_in) / m_out * ratio * ratio * ratio;
 }
 
+/* standard  normed_oc_epsilon * e2/sqrt(1-e2^2) == standard eplision_oct*/
 double normed_oct_epsilon(double m1, double m2, double a_in, double a_out_eff) {
   return fabs(m1 - m2) / (m1 + m2) * a_in / a_out_eff;
 }
 
+/*
 double normed_oct_epsilon(double m1, double m2, double a_in, double a_out, double j2_sqr) {
   return fabs(m1 - m2) / (m1 + m2) * a_in / (a_out * j2_sqr);
-}
+}*/
 
 /*
     auto unpack_init(size_t b, std::vector<double> const &v) {
@@ -129,11 +131,12 @@ void initialize_orbit_args(LK_method method, Container &c, Iter iter) {
 
     c.set_e2(e_out * e2x, e_out * e2y, e_out * e2z);
   } else if (method == LK_method::SA) {
-    double E_nu = space::orbit::calc_eccentric_anomaly(M_nu, e_out);
+    double E_nu = space::orbit::M_anomaly_to_E_anomaly(M_nu, e_out);
 
     double cosE = cos(E_nu);
 
-    double nu_out = space::orbit::calc_true_anomaly(E_nu, e_out);  // acos( ( cosE - o.e_out)/ (1 - o.e_out*cosE) );
+    double nu_out =
+        space::orbit::E_anomaly_to_T_anomaly(E_nu, e_out);  // acos( ( cosE - o.e_out)/ (1 - o.e_out*cosE) );
 
     double r = a_out * (1 - e_out * cosE);
 
@@ -278,7 +281,7 @@ void double_aved_LK(Ctrl const &ctrl, Args const &args, Container const &var, Co
 
     dvar.add_L1(oct_dLx, oct_dLy, oct_dLz);
 
-    dvar.sub_L2(oct_dLx, oct_dLx, oct_dLz);
+    dvar.add_L2(-oct_dLx, -oct_dLy, -oct_dLz);
 
     dvar.add_e1(E1 * ce1n2_x + E2 * cj1n2_x + E3 * ce1e2_x + E4 * cj1e2_x + E5 * cj1e1_x,
                 E1 * ce1n2_y + E2 * cj1n2_y + E3 * ce1e2_y + E4 * cj1e2_y + E5 * cj1e1_y,

@@ -10,7 +10,7 @@
 #include "observer.h"
 #include "secular.h"
 
-using namespace space::multiThread;
+using namespace space::multi_thread;
 using namespace secular;
 
 double ATOL = 1e-13;
@@ -72,8 +72,8 @@ auto resolve_sim_type(std::string const &line) {
 constexpr size_t ARGS_OFFSET = 3;
 constexpr size_t PARAMETER_NUM = 25;
 
-auto args_analyze(size_t &start_id, size_t &end_id, std::string const &f) {
-  if (start_id <= 0 || end_id <= 0) {
+auto args_analyze(std::string const &f) {
+  /*if (start_id <= 0 || end_id <= 0) {
     std::cout << "task id cannot be smaller than 1!\r\n";
     exit(0);
   }
@@ -82,11 +82,11 @@ auto args_analyze(size_t &start_id, size_t &end_id, std::string const &f) {
     std::swap(start_id, end_id);
   }
 
-  size_t task_num = end_id - start_id + 1;
+  size_t task_num = end_id - start_id + 1;*/
 
-  size_t thread_num = std::min(task_num, space::multiThread::auto_thread);
+  size_t thread_num = space::multi_thread::auto_thread;
 
-  return std::make_tuple(task_num, thread_num);
+  return std::make_tuple(1, thread_num);
 }
 
 auto call_ode_int(std::string work_dir, ConcurrentFile output, secular::Controller const &ctrl,
@@ -94,8 +94,6 @@ auto call_ode_int(std::string work_dir, ConcurrentFile output, secular::Controll
   using namespace boost::numeric::odeint;
 
   using Container = secular::SecularArray;
-  // using stepper_type = boost::numeric::odeint::runge_kutta_fehlberg78<Container>;
-  using stepper_type = bulirsch_stoer<Container>;
 
   auto [task_id, t_end, out_dt] =
       secular::cast_unpack<decltype(init_args.begin()), size_t, double, double>(init_args.begin());
@@ -121,7 +119,9 @@ auto call_ode_int(std::string work_dir, ConcurrentFile output, secular::Controll
 
   double time = 0;
 
-  stepper_type stepper{ATOL, RTOL};
+  // auto stepper = make_controlled(ATOL, RTOL, runge_kutta_fehlberg78<Container>());
+
+  auto stepper = bulirsch_stoer<Container>{ATOL, RTOL};
 
   secular::Stream_observer writer{f_out, out_dt};
 
@@ -155,23 +155,21 @@ auto call_ode_int(std::string work_dir, ConcurrentFile output, secular::Controll
   return ReturnFlag::finish;
 }
 
-void single_thread_job(Controller const &ctrl, std::string work_dir, ConcurrentFile input, size_t start_id,
-                       size_t end_id, ConcurrentFile output, ConcurrentFile log) {
+void single_thread_job(Controller const &ctrl, std::string work_dir, ConcurrentFile input, ConcurrentFile output,
+                       ConcurrentFile log) {
   std::string entry;
   for (; input.execute(get_line, entry);) {
     size_t task_id = static_cast<size_t>(std::stoi(entry));
 
-    if (start_id <= task_id && task_id <= end_id) {
-      std::vector<double> v;
+    std::vector<double> v;
 
-      secular::unpack_args_from_str(entry, v, PARAMETER_NUM);
+    secular::unpack_args_from_str(entry, v, PARAMETER_NUM);
 
-      ReturnFlag res = call_ode_int(work_dir, output, ctrl, v);
+    ReturnFlag res = call_ode_int(work_dir, output, ctrl, v);
 
-      if (res == ReturnFlag::max_iter) {
-        log << std::to_string(task_id) + ":Max iteration number reaches!\n";
-        log.flush();
-      }
+    if (res == ReturnFlag::max_iter) {
+      log << std::to_string(task_id) + ":Max iteration number reaches!\n";
+      log.flush();
     }
   }
 }
@@ -181,13 +179,11 @@ int main(int argc, char **argv) {
   std::string input_file_name;
   std::string cfg_file_name;
   std::string work_dir;
-  size_t start_task_id, end_task_id;
   std::string user_specified_core_num;
 
-  space::tools::read_command_line(argc, argv, user_specified_core_num, cfg_file_name, input_file_name, start_task_id,
-                                  end_task_id, work_dir);
+  space::tools::read_command_line(argc, argv, user_specified_core_num, cfg_file_name, input_file_name, work_dir);
 
-  auto [task_num, thread_num] = args_analyze(start_task_id, end_task_id, input_file_name);
+  auto [task_num, thread_num] = args_analyze(input_file_name);
 
   if (user_specified_core_num != "auto") {
     if (secular::is_number(user_specified_core_num)) {
@@ -212,8 +208,8 @@ int main(int argc, char **argv) {
 
   auto log_file = make_thread_safe_fstream(work_dir + "log.txt", std::fstream::out);
 
-  std::cout << task_num << " tasks in total will be processed.    " << thread_num
-            << " threads will be created for computing!" << std::endl;
+  // std::cout << task_num << " tasks in total will be processed.    " << thread_num
+  //         << " threads will be created for computing!" << std::endl;
 
   space::tools::ConfigReader cfg{cfg_file_name};
 
@@ -228,8 +224,7 @@ int main(int argc, char **argv) {
 
   space::tools::Timer timer;
   timer.start();
-  space::multiThread::multi_thread_run(thread_num, single_thread_job, ctrl, work_dir, input_file, start_task_id,
-                                       end_task_id, output_file, log_file);
+  space::multi_thread::multi_thread(thread_num, single_thread_job, ctrl, work_dir, input_file, output_file, log_file);
   std::cout << "\r\n Time:" << timer.get_time() << " s\n";
   return 0;
 }
