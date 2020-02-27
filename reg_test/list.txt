@@ -1,3 +1,0 @@
-1. SA quad only 
-2. SA quad only non-zero e_out
-3. SA quad only more general case
