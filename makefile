@@ -1,4 +1,4 @@
-all: secular dev
+all:  dev
 
 PATH_TO_BOOST=./boost_1_70_0/
 PATH_TO_SPACEHUB=./

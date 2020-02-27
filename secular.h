@@ -2,482 +2,178 @@
 #define SECULAR_H
 
 #include <array>
-#include <tuple>
 #include <memory>
+#include <tuple>
 
 #include "LK.h"
-#include "relativistic.h"
 #include "deSitter.h"
+#include "relativistic.h"
 
 namespace secular {
 
-    template<size_t spin_num>
-    class SecularArray : public std::array<double, 12 + 3 * spin_num> {
-        static_assert(spin_num <= 3, "The max spin number is 3!");
-    public:
-        SecularArray() = default;
+class SecularArray : public std::array<double, 21> {
+ public:
+  SecularArray() = default;
 
-        READ_GETTER(double, L1x, (*this)[0]);
+  SecularArray(size_t num) : spin_num{num} {};
 
-        READ_GETTER(double, L1y, (*this)[1]);
+  READ_GETTER(double, L1x, (*this)[0]);
 
-        READ_GETTER(double, L1z, (*this)[2]);
+  READ_GETTER(double, L1y, (*this)[1]);
 
-        READ_GETTER(double, e1x, (*this)[3]);
+  READ_GETTER(double, L1z, (*this)[2]);
 
-        READ_GETTER(double, e1y, (*this)[4]);
+  READ_GETTER(double, e1x, (*this)[3]);
 
-        READ_GETTER(double, e1z, (*this)[5]);
+  READ_GETTER(double, e1y, (*this)[4]);
 
-        READ_GETTER(double, L2x, (*this)[6]);
+  READ_GETTER(double, e1z, (*this)[5]);
 
-        READ_GETTER(double, L2y, (*this)[7]);
+  READ_GETTER(double, L2x, (*this)[6]);
 
-        READ_GETTER(double, L2z, (*this)[8]);
+  READ_GETTER(double, L2y, (*this)[7]);
 
-        READ_GETTER(double, e2x, (*this)[9]);
+  READ_GETTER(double, L2z, (*this)[8]);
 
-        READ_GETTER(double, e2y, (*this)[10]);
+  READ_GETTER(double, e2x, (*this)[9]);
 
-        READ_GETTER(double, e2z, (*this)[11]);
+  READ_GETTER(double, e2y, (*this)[10]);
 
-        READ_GETTER(double, rx, (*this)[6]);
+  READ_GETTER(double, e2z, (*this)[11]);
 
-        READ_GETTER(double, ry, (*this)[7]);
+  READ_GETTER(double, rx, (*this)[6]);
 
-        READ_GETTER(double, rz, (*this)[8]);
+  READ_GETTER(double, ry, (*this)[7]);
 
-        READ_GETTER(double, vx, (*this)[9]);
+  READ_GETTER(double, rz, (*this)[8]);
 
-        READ_GETTER(double, vy, (*this)[10]);
+  READ_GETTER(double, vx, (*this)[9]);
 
-        READ_GETTER(double, vz, (*this)[11]);
+  READ_GETTER(double, vy, (*this)[10]);
 
-        READ_GETTER(auto, L1, std::tie((*this)[0], (*this)[1], (*this)[2]));
+  READ_GETTER(double, vz, (*this)[11]);
 
-        READ_GETTER(auto, e1, std::tie((*this)[3], (*this)[4], (*this)[5]));
+  READ_GETTER(auto, L1, std::tie((*this)[0], (*this)[1], (*this)[2]));
 
-        READ_GETTER(auto, L2, std::tie((*this)[6], (*this)[7], (*this)[8]));
+  READ_GETTER(auto, e1, std::tie((*this)[3], (*this)[4], (*this)[5]));
 
-        READ_GETTER(auto, e2, std::tie((*this)[9], (*this)[10], (*this)[11]));
+  READ_GETTER(auto, L2, std::tie((*this)[6], (*this)[7], (*this)[8]));
 
-        READ_GETTER(auto, r, std::tie((*this)[6], (*this)[7], (*this)[8]));
+  READ_GETTER(auto, e2, std::tie((*this)[9], (*this)[10], (*this)[11]));
 
-        READ_GETTER(auto, v, std::tie((*this)[9], (*this)[10], (*this)[11]));
+  READ_GETTER(auto, r, std::tie((*this)[6], (*this)[7], (*this)[8]));
 
-        STD_3WAY_SETTER(L1, (*this)[0], (*this)[1], (*this)[2]);
+  READ_GETTER(auto, v, std::tie((*this)[9], (*this)[10], (*this)[11]));
 
-        STD_3WAY_SETTER(e1, (*this)[3], (*this)[4], (*this)[5]);
+  STD_3WAY_SETTER(L1, (*this)[0], (*this)[1], (*this)[2]);
 
-        STD_3WAY_SETTER(L2, (*this)[6], (*this)[7], (*this)[8]);
+  STD_3WAY_SETTER(e1, (*this)[3], (*this)[4], (*this)[5]);
 
-        STD_3WAY_SETTER(e2, (*this)[9], (*this)[10], (*this)[11]);
+  STD_3WAY_SETTER(L2, (*this)[6], (*this)[7], (*this)[8]);
 
-        STD_3WAY_SETTER(r, (*this)[6], (*this)[7], (*this)[8]);
+  STD_3WAY_SETTER(e2, (*this)[9], (*this)[10], (*this)[11]);
 
-        STD_3WAY_SETTER(v, (*this)[9], (*this)[10], (*this)[11]);
+  STD_3WAY_SETTER(r, (*this)[6], (*this)[7], (*this)[8]);
 
-        OPT_READ_GETTER(spin_num > 0, double, S1x, (*this)[12]);
+  STD_3WAY_SETTER(v, (*this)[9], (*this)[10], (*this)[11]);
 
-        OPT_READ_GETTER(spin_num > 0, double, S1y, (*this)[13]);
+  READ_GETTER(double, S1x, (*this)[12]);
 
-        OPT_READ_GETTER(spin_num > 0, double, S1z, (*this)[14]);
+  READ_GETTER(double, S1y, (*this)[13]);
 
-        OPT_READ_GETTER(spin_num > 1, double, S2x, (*this)[15]);
+  READ_GETTER(double, S1z, (*this)[14]);
 
-        OPT_READ_GETTER(spin_num > 1, double, S2y, (*this)[16]);
+  READ_GETTER(double, S2x, (*this)[15]);
 
-        OPT_READ_GETTER(spin_num > 1, double, S2z, (*this)[17]);
+  READ_GETTER(double, S2y, (*this)[16]);
 
-        OPT_READ_GETTER(spin_num > 2, double, S3x, (*this)[18]);
+  READ_GETTER(double, S2z, (*this)[17]);
 
-        OPT_READ_GETTER(spin_num > 2, double, S3y, (*this)[19]);
+  READ_GETTER(double, S3x, (*this)[18]);
 
-        OPT_READ_GETTER(spin_num > 2, double, S3z, (*this)[20]);
+  READ_GETTER(double, S3y, (*this)[19]);
 
-        OPT_3WAY_SETTER(spin_num > 0, S1, (*this)[12], (*this)[13], (*this)[14]);
+  READ_GETTER(double, S3z, (*this)[20]);
 
-        OPT_3WAY_SETTER(spin_num > 1, S2, (*this)[15], (*this)[16], (*this)[17]);
+  STD_3WAY_SETTER(S1, (*this)[12], (*this)[13], (*this)[14]);
 
-        OPT_3WAY_SETTER(spin_num > 2, S3, (*this)[18], (*this)[19], (*this)[20]);
+  STD_3WAY_SETTER(S2, (*this)[15], (*this)[16], (*this)[17]);
 
-        friend std::ostream& operator<<(std::ostream&os, SecularArray const& arr) {
-            for(auto a : arr){
-                os << a << ' ';
-            }
-            return os;
-        }
+  STD_3WAY_SETTER(S3, (*this)[18], (*this)[19], (*this)[20]);
 
-        auto spin_begin() {
-            return this->begin() + 12;
-        }
-
-        constexpr static size_t s_num{spin_num};
-    };
-
-    struct Controler {
-        template<typename Iter>
-        Controler(Iter iter, bool _DA) {
-            DA = _DA;
-            Oct = static_cast<bool>(*iter), iter++;
-            GR = static_cast<int>(*iter), iter++;
-            GW_stop_a_ = static_cast<double>(*iter), iter++;
-            GW = is_on(GW_stop_a_ );
-            SL = static_cast<bool>(*iter), iter++;
-            LL = static_cast<bool>(*iter);
-        }
-
-        double stop_a_in() const{
-            return GW_stop_a_;
-        }
-
-        bool DA;
-        bool Oct;
-        int GR;
-        bool GW;
-        bool SL;
-        bool LL;
-    private:
-        double GW_stop_a_;
-    };
-
-    template<size_t spin_num>
-    class SecularConst {
-    public:
-        SecularConst(double _m1, double _m2, double _m3) : basic_{_m1, _m2, _m3}, GR_in_{basic_.m12(), basic_.mu_in()}, GR_out_{basic_.m_tot(), basic_.mu_out()}, SL_{_m1, _m2, _m3} {}
-
-        SecularConst() = default;
-
-        READ_GETTER(double, m1, basic_.m1());
-
-        READ_GETTER(double, m2, basic_.m2());
-
-        READ_GETTER(double, m3, basic_.m3());
-
-        READ_GETTER(double, m12, basic_.m12());
-
-        READ_GETTER(double, m_tot, basic_.m_tot());
-
-        READ_GETTER(double, mu_in, basic_.mu_in());
-
-        READ_GETTER(double, mu_out, basic_.mu_out());
-
-        READ_GETTER(double, a_in_coef, basic_.a_in_coef());
-
-        READ_GETTER(double, a_out_coef, basic_.a_out_coef());
-
-        READ_GETTER(double, SA_acc_coef, basic_.SA_acc_coef());
-
-        READ_GETTER(double, GR_in_coef, GR_in_.GR_coef());
-
-        READ_GETTER(double, GW_L_in_coef, GR_in_.GW_L_coef());
-
-        READ_GETTER(double, GW_e_in_coef, GR_in_.GW_L_coef());
-
-        READ_GETTER(double, GR_out_coef, GR_out_.GR_coef());
-
-        READ_GETTER(double, GW_L_out_coef, GR_out_.GW_L_coef());
-
-        READ_GETTER(double, GW_e_out_coef, GR_out_.GW_L_coef());
-
-        READ_GETTER(double, LL, SL_.LL());
-
-        READ_GETTER(double, S1L1, SL_.S1L1());
-
-        READ_GETTER(double, S1L2, SL_.S1L2());
-
-        READ_GETTER(double, S2L1, SL_.S2L1());
-
-        READ_GETTER(double, S2L2, SL_.S2L2());
-
-        READ_GETTER(double, S3L1, SL_.S3L1());
-
-        READ_GETTER(double, S3L2, SL_.S3L2());
-    private:
-        BasicConst basic_;
-        GRConst GR_in_;
-        GRConst GR_out_;
-        SLConst<spin_num> SL_;
-    };
-
-    template<typename Container>
-    struct Dynamic_dispatch {
-        using ConstArg = SecularConst<spin_num<Container>::size>;
-
-        Dynamic_dispatch(Controler const &_ctrl, ConstArg const &_args) : ctrl{&_ctrl}, args{&_args} {}
-
-        void operator()(Container const &x, Container &dxdt, double t) {
-            std::fill(dxdt.begin(), dxdt.end(), 0);
-
-            if (ctrl->DA == true) {
-                if (ctrl->Oct == true) {
-                    double_aved_LK<true, ConstArg, Container>(*args, x, dxdt, t);
-                } else {
-                    double_aved_LK<false, ConstArg, Container>(*args, x, dxdt, t);
-                }
-
-                if (ctrl->LL == true) {
-                    if (ctrl->SL == true) {
-                        deSitter_precession<true, SLstat<deS::on, deS::on, deS::off, deS::bc, deS::on>, ConstArg, Container>(*args, x, dxdt, t);
-                    } else {
-                        deSitter_precession<true, SLstat<deS::on, deS::off, deS::off, deS::bc, deS::on>, ConstArg, Container>(*args, x, dxdt, t);
-                    }
-                } else {
-                    if (ctrl->SL == true) {
-                        deSitter_precession<true, SLstat<deS::on, deS::on, deS::off, deS::bc, deS::off>, ConstArg, Container>(*args, x, dxdt, t);
-                    } else {
-                        deSitter_precession<true, SLstat<deS::on, deS::off, deS::off, deS::bc, deS::off>, ConstArg, Container>(*args, x, dxdt, t);
-                    }
-                }
-
-                if (ctrl->GR == 1) {
-                    GR_precession<ConstArg, Container, true, 1>(*args, x, dxdt, t);
-                } else if(ctrl->GR == 2) {
-                    GR_precession<ConstArg, Container, true, 2>(*args, x, dxdt, t);
-                }
-            } else {
-                if (ctrl->Oct == true) {
-                    single_aved_LK<true, ConstArg, Container>(*args, x, dxdt, t);
-                } else {
-                    single_aved_LK<false, ConstArg, Container>(*args, x, dxdt, t);
-                }
-
-                if (ctrl->LL == true) {
-                    if (ctrl->SL == true) {
-                        deSitter_precession<false, SLstat<deS::on, deS::on, deS::off, deS::bc, deS::on>, ConstArg, Container>(*args, x, dxdt, t);
-                    } else {
-                        deSitter_precession<false, SLstat<deS::on, deS::off, deS::off, deS::bc, deS::on>, ConstArg, Container>(*args, x, dxdt, t);
-                    }
-                } else {
-                    if (ctrl->SL == true) {
-                        deSitter_precession<false, SLstat<deS::on, deS::on, deS::off, deS::bc, deS::off>, ConstArg, Container>(*args, x, dxdt, t);
-                    } else {
-                        deSitter_precession<false, SLstat<deS::on, deS::off, deS::off, deS::bc, deS::off>, ConstArg, Container>(*args, x, dxdt, t);
-                    }
-                }
-
-                if (ctrl->GR == 1) {
-                    GR_precession<ConstArg, Container, false, 1>(*args, x, dxdt, t);
-                } else if(ctrl->GR == 2) {
-                    GR_precession<ConstArg, Container, false, 2>(*args, x, dxdt, t);
-                }
-            }
-
-            if (ctrl->GW == true) {
-                GW_radiation(*args, x, dxdt, t);
-            }
-        }
-
-        Controler const *ctrl;
-        SecularConst<spin_num<Container>::size> const *args;
-    };
-
-/*
-    template<typename Container, bool DA, bool Oct, int GR, bool GW, bool SL, bool LL>
-    struct Static_functor {
-        using ConstArg = SecularConst<spin_num<Container>::size>;
-
-        Static_functor(ConstArg const &_args) : args{&_args} {}
-
-        void operator()(Container const &x, Container &dxdt, double t) {
-            std::fill(dxdt.begin(), dxdt.end(), 0);
-            if constexpr(DA == true) {
-                if constexpr(Oct == true) {
-                    double_aved_LK<true, ConstArg, Container>(*args, x, dxdt, t);
-                } else {
-                    double_aved_LK<false, ConstArg, Container>(*args, x, dxdt, t);
-                }
-
-                if constexpr (LL == true) {
-                    if constexpr(SL == true) {
-                        deSitter_precession<true, SLstat<deS::on, deS::on, deS::off, deS::bc, deS::on>, ConstArg, Container>(*args, x, dxdt, t);
-                    } else {
-                        deSitter_precession<true, SLstat<deS::on, deS::off, deS::off, deS::bc, deS::on>, ConstArg, Container>(*args, x, dxdt, t);
-                    }
-                } else {
-                    if constexpr(SL == true) {
-                        deSitter_precession<true, SLstat<deS::on, deS::on, deS::off, deS::bc, deS::off>, ConstArg, Container>(*args, x, dxdt, t);
-                    } else {
-                        deSitter_precession<true, SLstat<deS::on, deS::off, deS::off, deS::bc, deS::off>, ConstArg, Container>(*args, x, dxdt, t);
-                    }
-                }
-            } else {
-                if constexpr(Oct == true) {
-                    single_aved_LK<true, ConstArg, Container>(*args, x, dxdt, t);
-                } else {
-                    single_aved_LK<false, ConstArg, Container>(*args, x, dxdt, t);
-                }
-
-                if constexpr(LL == true) {
-                    if constexpr(SL == true) {
-                        deSitter_precession<false, SLstat<deS::on, deS::on, deS::off, deS::bc, deS::on>, ConstArg, Container>(*args, x, dxdt, t);
-                    } else {
-                        deSitter_precession<false, SLstat<deS::on, deS::off, deS::off, deS::bc, deS::on>, ConstArg, Container>(*args, x, dxdt, t);
-                    }
-                } else {
-                    if constexpr(SL == true) {
-                        deSitter_precession<false, SLstat<deS::on, deS::on, deS::off, deS::bc, deS::off>, ConstArg, Container>(*args, x, dxdt, t);
-                    } else {
-                        deSitter_precession<false, SLstat<deS::on, deS::off, deS::off, deS::bc, deS::off>, ConstArg, Container>(*args, x, dxdt, t);
-                    }
-                }
-            }
-
-            if constexpr(GR == true) {
-                GR_precession<ConstArg, Container, DA>(*args, x, dxdt, t);
-            }
-
-            if constexpr(GW == true) {
-                GW_radiation(*args, x, dxdt, t);
-            }
-        }
-
-        ConstArg const *args;
-    };
-
-    int ctrl_to_int(Controler const &c) {
-        return static_cast<int>(c.DA)
-               + (static_cast<int>(c.Oct) << 1)
-               + (static_cast<int>(c.GR) << 2)
-               + (static_cast<int>(c.GW) << 3)
-               + (static_cast<int>(c.SL) << 4)
-               + (static_cast<int>(c.LL) << 5);
+  friend std::ostream &operator<<(std::ostream &os, SecularArray const &arr) {
+    for (auto a : arr) {
+      os << a << ' ';
     }
+    return os;
+  }
 
+  auto spin_begin() { return this->begin() + 12; }
 
-#define STATIC_DISPATH(ctrl, args, expr)       {                                                                  \
-        int f_id = ctrl_to_int(ctrl);                                                                             \
-                                                                                                                  \
-        switch (f_id) {                                                                                           \
-          case 0:                                                                                                 \
-              {auto func =  secular::Static_functor<Container, false, false, false, false, false, false>(args) ; expr; break;}\
-          case 1:                                                                                                 \
-              {auto func =  secular::Static_functor<Container, true, false, false, false, false, false>(args) ; expr;break;}\
-          case 2:                                                                                                 \
-              {auto func =  secular::Static_functor<Container, false, true, false, false, false, false>(args) ; expr;break;}\
-          case 3:                                                                                                 \
-              {auto func =  secular::Static_functor<Container, true, true, false, false, false, false>(args) ; expr;break;}\
-          case 4:                                                                                                 \
-              {auto func =  secular::Static_functor<Container, false, false, true, false, false, false>(args) ; expr;break;}\
-          case 5:                                                                                                 \
-              {auto func =  secular::Static_functor<Container, true, false, true, false, false, false>(args) ; expr;break;}\
-          case 6:                                                                                                 \
-              {auto func =  secular::Static_functor<Container, false, true, true, false, false, false>(args) ; expr;break;}\
-          case 7:                                                                                                 \
-              {auto func =  secular::Static_functor<Container, true, true, true, false, false, false>(args) ; expr;break;}\
-          case 8:                                                                                                 \
-              {auto func =  secular::Static_functor<Container, false, false, false, true, false, false>(args) ; expr;break;}\
-          case 9:                                                                                                 \
-              {auto func =  secular::Static_functor<Container, true, false, false, true, false, false>(args) ; expr;break;}\
-          case 10:                                                                                                 \
-              {auto func =  secular::Static_functor<Container, false, true, false, true, false, false>(args) ; expr;break;}\
-          case 11:                                                                                                 \
-              {auto func =  secular::Static_functor<Container, true, true, false, true, false, false>(args) ; expr;break;}\
-          case 12:                                                                                                 \
-              {auto func =  secular::Static_functor<Container, false, false, true, true, false, false>(args) ; expr;break;}\
-          case 13:                                                                                                 \
-              {auto func =  secular::Static_functor<Container, true, false, true, true, false, false>(args) ; expr;break;}\
-          case 14:                                                                                                 \
-              {auto func =  secular::Static_functor<Container, false, true, true, true, false, false>(args) ; expr;break;}\
-          case 15:                                                                                                 \
-              {auto func =  secular::Static_functor<Container, true, true, true, true, false, false>(args) ; expr;break;}\
-          case 16:                                                                                                 \
-              {auto func =  secular::Static_functor<Container, false, false, false, false, true, false>(args) ; expr;break;}\
-          case 17:                                                                                                 \
-              {auto func =  secular::Static_functor<Container, true, false, false, false, true, false>(args) ; expr;break;}\
-          case 18:                                                                                                 \
-              {auto func =  secular::Static_functor<Container, false, true, false, false, true, false>(args) ; expr;break;}\
-          case 19:                                                                                                 \
-              {auto func =  secular::Static_functor<Container, true, true, false, false, true, false>(args) ; expr;break;}\
-          case 20:                                                                                                 \
-              {auto func =  secular::Static_functor<Container, false, false, true, false, true, false>(args) ; expr;break;}\
-          case 21:                                                                                                 \
-              {auto func =  secular::Static_functor<Container, true, false, true, false, true, false>(args) ; expr;break;}\
-          case 22:                                                                                                 \
-              {auto func =  secular::Static_functor<Container, false, true, true, false, true, false>(args) ; expr;break;}\
-          case 23:                                                                                                 \
-              {auto func =  secular::Static_functor<Container, true, true, true, false, true, false>(args) ; expr;break;}\
-          case 24:                                                                                                 \
-              {auto func =  secular::Static_functor<Container, false, false, false, true, true, false>(args) ; expr;break;}\
-          case 25:                                                                                                 \
-              {auto func =  secular::Static_functor<Container, true, false, false, true, true, false>(args) ; expr;break;}\
-          case 26:                                                                                                 \
-              {auto func =  secular::Static_functor<Container, false, true, false, true, true, false>(args) ; expr;break;}\
-          case 27:                                                                                                 \
-              {auto func =  secular::Static_functor<Container, true, true, false, true, true, false>(args) ; expr;break;}\
-          case 28:                                                                                                 \
-              {auto func =  secular::Static_functor<Container, false, false, true, true, true, false>(args) ; expr;break;}\
-          case 29:                                                                                                 \
-              {auto func =  secular::Static_functor<Container, true, false, true, true, true, false>(args) ; expr;break;}\
-          case 30:                                                                                                 \
-              {auto func =  secular::Static_functor<Container, false, true, true, true, true, false>(args) ; expr;break;}\
-          case 31:                                                                                                 \
-              {auto func =  secular::Static_functor<Container, true, true, true, true, true, false>(args) ; expr;break;}\
-          case 32:                                                                                                 \
-              {auto func =  secular::Static_functor<Container, false, false, false, false, false, true>(args) ; expr;break;}\
-          case 33:                                                                                                 \
-              {auto func =  secular::Static_functor<Container, true, false, false, false, false, true>(args) ; expr;break;}\
-          case 34:                                                                                                 \
-              {auto func =  secular::Static_functor<Container, false, true, false, false, false, true>(args) ; expr;break;}\
-          case 35:                                                                                                 \
-              {auto func =  secular::Static_functor<Container, true, true, false, false, false, true>(args) ; expr;break;}\
-          case 36:                                                                                                 \
-              {auto func =  secular::Static_functor<Container, false, false, true, false, false, true>(args) ; expr;break;}\
-          case 37:                                                                                                 \
-              {auto func =  secular::Static_functor<Container, true, false, true, false, false, true>(args) ; expr;break;}\
-          case 38:                                                                                                 \
-              {auto func =  secular::Static_functor<Container, false, true, true, false, false, true>(args) ; expr;break;}\
-          case 39:                                                                                                 \
-              {auto func =  secular::Static_functor<Container, true, true, true, false, false, true>(args) ; expr;break;}\
-          case 40:                                                                                                 \
-              {auto func =  secular::Static_functor<Container, false, false, false, true, false, true>(args) ; expr;break;}\
-          case 41:                                                                                                 \
-              {auto func =  secular::Static_functor<Container, true, false, false, true, false, true>(args) ; expr;break;}\
-          case 42:                                                                                                 \
-              {auto func =  secular::Static_functor<Container, false, true, false, true, false, true>(args) ; expr;break;}\
-          case 43:                                                                                                 \
-              {auto func =  secular::Static_functor<Container, true, true, false, true, false, true>(args) ; expr;break;}\
-          case 44:                                                                                                 \
-              {auto func =  secular::Static_functor<Container, false, false, true, true, false, true>(args) ; expr;break;}\
-          case 45:                                                                                                 \
-              {auto func =  secular::Static_functor<Container, true, false, true, true, false, true>(args) ;expr; break;}\
-          case 46:                                                                                                 \
-              {auto func =  secular::Static_functor<Container, false, true, true, true, false, true>(args) ; expr;break;}\
-          case 47:                                                                                                 \
-              {auto func =  secular::Static_functor<Container, true, true, true, true, false, true>(args) ; expr;break;}\
-          case 48:                                                                                                 \
-              {auto func =  secular::Static_functor<Container, false, false, false, false, true, true>(args) ; expr;break;}\
-          case 49:                                                                                                 \
-              {auto func =  secular::Static_functor<Container, true, false, false, false, true, true>(args) ; expr;break;}\
-          case 50:                                                                                                 \
-              {auto func =  secular::Static_functor<Container, false, true, false, false, true, true>(args) ; expr;break;}\
-          case 51:                                                                                                 \
-              {auto func =  secular::Static_functor<Container, true, true, false, false, true, true>(args) ; expr;break;}\
-          case 52:                                                                                                 \
-              {auto func =  secular::Static_functor<Container, false, false, true, false, true, true>(args) ; expr;break;}\
-          case 53:                                                                                                 \
-              {auto func =  secular::Static_functor<Container, true, false, true, false, true, true>(args) ; expr;break;}\
-          case 54:                                                                                                 \
-              {auto func =  secular::Static_functor<Container, false, true, true, false, true, true>(args) ; expr;break;}\
-          case 55:                                                                                                 \
-              {auto func =  secular::Static_functor<Container, true, true, true, false, true, true>(args) ; expr;break;}\
-          case 56:                                                                                                 \
-              {auto func =  secular::Static_functor<Container, false, false, false, true, true, true>(args) ; expr;break;}\
-          case 57:                                                                                                 \
-              {auto func =  secular::Static_functor<Container, true, false, false, true, true, true>(args) ; expr;break;}\
-          case 58:                                                                                                 \
-              {auto func =  secular::Static_functor<Container, false, true, false, true, true, true>(args) ; expr;break;}\
-          case 59:                                                                                                 \
-              {auto func =  secular::Static_functor<Container, true, true, false, true, true, true>(args) ; expr;break;}\
-          case 60:                                                                                                 \
-              {auto func =  secular::Static_functor<Container, false, false, true, true, true, true>(args) ; expr;break;}\
-          case 61:                                                                                                 \
-              {auto func =  secular::Static_functor<Container, true, false, true, true, true, true>(args) ; expr;break;}\
-          case 62:                                                                                                 \
-              {auto func =  secular::Static_functor<Container, false, true, true, true, true, true>(args) ; expr;break;}\
-          case 63:                                                                                                 \
-              {auto func =  secular::Static_functor<Container, true, true, true, true, true, true>(args) ; expr;break;}\
-        }           }                                                                                              \
-*/
-} // namespace secular
+  size_t spin_num{0};
+};
+
+class SecularConst {
+ public:
+  SecularConst(double _m1, double _m2, double _m3)
+      : basic_{_m1, _m2, _m3},
+        GR_in_{basic_.m12(), basic_.mu_in()},
+        GR_out_{basic_.m_tot(), basic_.mu_out()},
+        SL_{_m1, _m2, _m3} {}
+
+  SecularConst() = default;
+
+  READ_GETTER(double, m1, basic_.m1());
+
+  READ_GETTER(double, m2, basic_.m2());
+
+  READ_GETTER(double, m3, basic_.m3());
+
+  READ_GETTER(double, m12, basic_.m12());
+
+  READ_GETTER(double, m_tot, basic_.m_tot());
+
+  READ_GETTER(double, mu_in, basic_.mu_in());
+
+  READ_GETTER(double, mu_out, basic_.mu_out());
+
+  READ_GETTER(double, a_in_coef, basic_.a_in_coef());
+
+  READ_GETTER(double, a_out_coef, basic_.a_out_coef());
+
+  READ_GETTER(double, SA_acc_coef, basic_.SA_acc_coef());
+
+  READ_GETTER(double, GR_in_coef, GR_in_.GR_coef());
+
+  READ_GETTER(double, GW_L_in_coef, GR_in_.GW_L_coef());
+
+  READ_GETTER(double, GW_e_in_coef, GR_in_.GW_L_coef());
+
+  READ_GETTER(double, GR_out_coef, GR_out_.GR_coef());
+
+  READ_GETTER(double, GW_L_out_coef, GR_out_.GW_L_coef());
+
+  READ_GETTER(double, GW_e_out_coef, GR_out_.GW_L_coef());
+
+  READ_GETTER(double, LL, SL_.LL());
+
+  READ_GETTER(double, S1L1, SL_.S1L1());
+
+  READ_GETTER(double, S1L2, SL_.S1L2());
+
+  READ_GETTER(double, S2L1, SL_.S2L1());
+
+  READ_GETTER(double, S2L2, SL_.S2L2());
+
+  READ_GETTER(double, S3L1, SL_.S3L1());
+
+  READ_GETTER(double, S3L2, SL_.S3L2());
+
+ private:
+  BasicConst basic_;
+  GRConst GR_in_;
+  GRConst GR_out_;
+  SLConst SL_;
+};
+}  // namespace secular
 #endif

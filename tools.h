@@ -7,6 +7,8 @@
 #include <vector>
 namespace secular {
 
+enum class OrbIdx { in, out, in_out, off };
+
 #define STD_ACCESSOR(TYPE, NAME, MEMBER)  \
   inline TYPE &NAME() { return MEMBER; }; \
   inline TYPE const &NAME() const { return MEMBER; };
@@ -70,6 +72,7 @@ namespace secular {
     X -= std::get<0>(t), Y -= std::get<1>(t), Z -= std::get<2>(t);      \
   }
 
+/*
 template <typename Iter, size_t... I>
 inline auto _unpack_array_(Iter iter, std::index_sequence<I...>) {
   return std::make_tuple(*(iter + I)...);
@@ -89,21 +92,7 @@ template <typename Iter, typename... Args>
 inline auto cast_unpack(Iter iter) {
   return _cast_unpack_(iter, std::make_tuple(static_cast<Args>(0)...), std::make_index_sequence<sizeof...(Args)>());
   // return std::make_tuple(static_cast<Args>(*iter++)...);
-}
-
-void unpack_args_from_str(std::string const &str, std::vector<double> &vec, bool DA, size_t spin_num) {
-  std::stringstream is{str};
-
-  size_t token_num = 20 + static_cast<size_t>(!DA) + spin_num * 3;
-
-  double tmp;
-
-  vec.reserve(token_num);
-  for (size_t i = 0; i < token_num; ++i) {
-    is >> tmp;
-    vec.emplace_back(tmp);
-  }
-}
+}*/
 
 #define UNPACK3(x) std::get<0>(x), std::get<1>(x), std::get<2>(x)
 
@@ -116,16 +105,16 @@ constexpr double r_G_sqrt = 1.0 / (2 * pi);
 constexpr double year = 1;
 }  // namespace consts
 
-bool is_number(const std::string &s) {
+/*bool is_number(const std::string &s) {
   return !s.empty() && std::find_if(s.begin(), s.end(), [](char c) { return !std::isdigit(c); }) == s.end();
 }
 
-bool is_on(double x) { return x > 5e-15; }
+/*bool is_on(double x) { return x > 5e-15; }
 
 template <typename Container>
 struct spin_num {
   static constexpr size_t size{Container::s_num};
-};
+};*/
 
 using Tup3d = std::tuple<double, double, double>;
 
@@ -191,6 +180,14 @@ template <typename... Args>
 void deg_to_rad(Args &... args) {
   constexpr double rad = consts::pi / 180.0;
   ((args *= rad), ...);
+}
+
+bool get_line(std::fstream &is, std::string &str) {
+  std::getline(is, str);
+  if (!is)
+    return false;
+  else
+    return true;
 }
 
 inline auto calc_orbit_args(double Coef, double lx, double ly, double lz, double ex, double ey, double ez) {

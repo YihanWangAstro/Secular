@@ -7,7 +7,7 @@
 #include "tools.h"
 namespace secular {
 struct Stream_observer {
-  Stream_observer(std::ostream& out, double dt) : dt_{dt}, t_out_{0.0}, f_out_{out}, switch_{secular::is_on(dt)} {}
+  Stream_observer(std::ostream& out, double dt, bool if_write) : dt_{dt}, t_out_{0.0}, f_out_{out}, switch_{if_write} {}
 
   template <typename State>
   void operator()(State const& x, double t) {
@@ -25,7 +25,7 @@ struct Stream_observer {
 };
 
 struct SMA_Determinator {
-  SMA_Determinator(double a_coef, double a_min) : a_min_{a_min}, a_coef_{a_coef}, detect_{secular::is_on(a_min)} {}
+  SMA_Determinator(double a_coef, double a_min) : a_min_{a_min}, a_coef_{a_coef}, detect_{fabs(a_min) > 1e-13} {}
 
   template <typename State>
   bool operator()(State const& x, double t) {
