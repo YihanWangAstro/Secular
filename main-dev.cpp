@@ -17,29 +17,29 @@ using namespace secular;
 
 double INT_ERROR = 1e-13;
 
-static bool collect_flag{true};
+static bool COLLECT_FLAG{true};
 
-static bool stat_final_flag{false};
+static bool STAT_FINAL_FLAG{false};
 
-static bool step_output_flag{true};
+static bool STEP_OUTPUT_FLAG{true};
 
-static size_t cpu_core{1};
+static size_t CPU_CORE{1};
 
-static bool SA_flag{false};
+static bool SINGLE_AVE_FLAG{false};
 
-static bool oct_flag{false};
+static bool OCT_FLAG{false};
 
-static OrbIdx gr_flag{OrbIdx::off};
+static OrbIdx GR_FLAG{OrbIdx::off};
 
-static OrbIdx gw_flag{OrbIdx::off};
+static OrbIdx GW_FLAG{OrbIdx::off};
 
-static SLstat SL_stat{deS::off, deS::off, deS::off, deS::off, deS::off};
+static SLstat SL_STAT{deS::off, deS::off, deS::off, deS::off, deS::off};
 
-static bool stop_flag{false};
+static bool STOP_FLAG{false};
 
 std::string prefix{"./"};
 
-static double stop_a{0.0};
+static double STOP_A{0.0};
 
 template <typename Container>
 struct Equation_of_Motion {
@@ -48,13 +48,13 @@ struct Equation_of_Motion {
   void operator()(Container const& x, Container& dxdt, double t) {
     std::fill(dxdt.begin(), dxdt.end(), 0);
 
-    Lidov_Kozai(SA_flag, oct_flag, *args, x, dxdt, t);
+    Lidov_Kozai(SINGLE_AVE_FLAG, OCT_FLAG, *args, x, dxdt, t);
 
-    GR_precession(SA_flag, gr_flag, *args, x, dxdt, t);
+    GR_precession(SINGLE_AVE_FLAG, GR_FLAG, *args, x, dxdt, t);
 
-    GW_radiation(gw_flag, *args, x, dxdt, t);
+    GW_radiation(GW_FLAG, *args, x, dxdt, t);
 
-    deSitter_precession(SA_flag, SL_stat, *args, x, dxdt, t);
+    deSitter_precession(SINGLE_AVE_FLAG, SL_STAT, *args, x, dxdt, t);
   }
   SecularConst const* args;
 };
@@ -131,46 +131,46 @@ void read_options(int argc, char** argv) {
         exit(0);
         break;
       case 'm':
-        set_optarg(SA_flag, optarg, {"double", "single"}, std::array{false, true});
+        set_optarg(SINGLE_AVE_FLAG, optarg, {"double", "single"}, std::array{false, true});
         break;
       case 'b':
-        set_optarg(oct_flag, optarg, {"on", "off"}, std::array{true, false});
+        set_optarg(OCT_FLAG, optarg, {"on", "off"}, std::array{true, false});
         break;
       case 'c':
-        set_optarg(collect_flag, optarg, {"on", "off"}, std::array{true, false});
+        set_optarg(COLLECT_FLAG, optarg, {"on", "off"}, std::array{true, false});
         break;
       case 'g':
-        set_optarg(gr_flag, optarg, {"both", "in", "out", "off"},
+        set_optarg(GR_FLAG, optarg, {"both", "in", "out", "off"},
                    std::array{OrbIdx::in_out, OrbIdx::in, OrbIdx::out, OrbIdx::off});
         break;
       case 'w':
-        set_optarg(gw_flag, optarg, {"both", "in", "out", "off"},
+        set_optarg(GW_FLAG, optarg, {"both", "in", "out", "off"},
                    std::array{OrbIdx::in_out, OrbIdx::in, OrbIdx::out, OrbIdx::off});
         break;
       case '1':
-        set_optarg(SL_stat.LL, optarg, {"both", "noback", "off"}, std::array{deS::bc, deS::on, deS::off});
+        set_optarg(SL_STAT.LL, optarg, {"both", "noback", "off"}, std::array{deS::bc, deS::on, deS::off});
         break;
       case '2':
-        set_optarg(SL_stat.Sin_Lin, optarg, {"both", "noback", "off"}, std::array{deS::bc, deS::on, deS::off});
+        set_optarg(SL_STAT.Sin_Lin, optarg, {"both", "noback", "off"}, std::array{deS::bc, deS::on, deS::off});
         break;
       case '3':
-        set_optarg(SL_stat.Sin_Lout, optarg, {"both", "noback", "off"}, std::array{deS::bc, deS::on, deS::off});
+        set_optarg(SL_STAT.Sin_Lout, optarg, {"both", "noback", "off"}, std::array{deS::bc, deS::on, deS::off});
         break;
       case '4':
-        set_optarg(SL_stat.Sout_Lin, optarg, {"both", "noback", "off"}, std::array{deS::bc, deS::on, deS::off});
+        set_optarg(SL_STAT.Sout_Lin, optarg, {"both", "noback", "off"}, std::array{deS::bc, deS::on, deS::off});
         break;
       case '5':
-        set_optarg(SL_stat.Sout_Lout, optarg, {"both", "noback", "off"}, std::array{deS::bc, deS::on, deS::off});
+        set_optarg(SL_STAT.Sout_Lout, optarg, {"both", "noback", "off"}, std::array{deS::bc, deS::on, deS::off});
         break;
       case 'o':
         prefix = std::string(optarg);
         break;
       case 's':
-        stop_a = std::stod(optarg);
-        stop_flag = true;
+        STOP_A = std::stod(optarg);
+        STOP_FLAG = true;
         break;
       case 'n':
-        cpu_core = static_cast<size_t>(std::stoi(optarg));
+        CPU_CORE = static_cast<size_t>(std::stoi(optarg));
         break;
       case 't':
         INT_ERROR = pow(10.0, -std::stoi(optarg));
@@ -200,9 +200,6 @@ void run(ConcurrentFile input_file, ConcurrentFile stat_output) {
   using namespace boost::numeric::odeint;
 
   using Container = secular::SecularArray;
-  // using stepper_type = boost::numeric::odeint::runge_kutta_fehlberg78<Container>;
-
-  using stepper_type = bulirsch_stoer<Container>;
 
   std::string entry;
   for (; input_file.execute(get_line, entry);) {
@@ -240,20 +237,22 @@ void run(ConcurrentFile input_file, ConcurrentFile stat_output) {
 
     std::fstream f_out;
 
-    if (step_output_flag) {
+    if (STEP_OUTPUT_FLAG) {
       f_out.open(prefix + "output_" + std::to_string(task_id) + ".txt", std::fstream::out);
       f_out << std::setprecision(12);
     }
 
-    secular::Stream_observer writer{f_out, out_dt, step_output_flag};
+    secular::Stream_observer writer{f_out, out_dt, STEP_OUTPUT_FLAG};
 
-    secular::SMA_Determinator stop{const_parameters.a_in_coef(), stop_a};
-
-    stepper_type stepper{INT_ERROR, INT_ERROR};
+    secular::SMA_Determinator stop{const_parameters.a_in_coef(), STOP_A, STOP_FLAG};
 
     auto func = Equation_of_Motion<Container>(const_parameters);
 
     writer(data, time);
+
+    auto stepper = make_controlled(INT_ERROR, INT_ERROR, runge_kutta_fehlberg78<Container>());
+
+    auto stepper = bulirsch_stoer<Container>{INT_ERROR, INT_ERROR};
 
     for (; time <= t_end && !stop(data, time);) {
       constexpr size_t max_attempts = 500;
@@ -271,7 +270,6 @@ void run(ConcurrentFile input_file, ConcurrentFile stat_output) {
       }
       writer(data, time);
     }
-    //)
 
     stat_output << PACK(task_id, ' ', time, ' ', data, "\r\n");
     stat_output.flush();
@@ -283,13 +281,13 @@ int main(int argc, char** argv) {
 
   std::string input_file_name{argv[optind]};
 
-  std::cout << input_file_name << ' ' << cpu_core << std::endl;
+  std::cout << input_file_name << ' ' << CPU_CORE << std::endl;
 
   auto input_file = make_thread_safe_fstream(input_file_name, std::fstream::in);
 
   auto output_file = make_thread_safe_fstream(prefix + "/collection.txt", std::fstream::out);
 
-  multi_thread(cpu_core, run, input_file, output_file);
+  multi_thread(CPU_CORE, run, input_file, output_file);
 
   return 0;
 }

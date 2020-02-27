@@ -25,7 +25,7 @@ struct Stream_observer {
 };
 
 struct SMA_Determinator {
-  SMA_Determinator(double a_coef, double a_min) : a_min_{a_min}, a_coef_{a_coef}, detect_{fabs(a_min) > 1e-13} {}
+  SMA_Determinator(double a_coef, double a_min, bool stop) : a_min_{a_min}, a_coef_{a_coef}, detect_{stop} {}
 
   template <typename State>
   bool operator()(State const& x, double t) {
