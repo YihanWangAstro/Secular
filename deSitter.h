@@ -8,15 +8,15 @@ namespace secular {
 class SLConst {
  public:
   SLConst(double m1, double m2, double m3) {
-    DS_[0] = deSitter_coef(m1, m2);
-    DS_[1] = deSitter_coef(m1 + m2, m3);
+    deSiiter_[0] = deSitter_coef(m1, m2);
+    deSiiter_[1] = deSitter_coef(m1 + m2, m3);
 
-    DS_[2] = deSitter_coef(m2, m1);
-    DS_[3] = deSitter_coef(m1 + m2, m3);
+    deSiiter_[2] = deSitter_coef(m2, m1);
+    deSiiter_[3] = deSitter_coef(m1 + m2, m3);
 
-    LT_ = 0.5 * consts::G / (consts::C * consts::C);
+    LensThirring_ = 0.5 * consts::G / (consts::C * consts::C);
 
-    DS_[4] = deSitter_coef(m3, m1 + m2);
+    deSiiter_[4] = deSitter_coef(m3, m1 + m2);
 
     LL_ = deSitter_coef(m1 + m2, m3);
   }
@@ -25,27 +25,27 @@ class SLConst {
 
   READ_GETTER(double, LL, LL_);
 
-  READ_GETTER(double, S1L1, DS_[0]);
+  READ_GETTER(double, S1L1, deSiiter_[0]);
 
-  READ_GETTER(double, S1L2, DS_[1]);
+  READ_GETTER(double, S1L2, deSiiter_[1]);
 
-  READ_GETTER(double, S2L1, DS_[2]);
+  READ_GETTER(double, S2L1, deSiiter_[2]);
 
-  READ_GETTER(double, S2L2, DS_[3]);
+  READ_GETTER(double, S2L2, deSiiter_[3]);
 
-  READ_GETTER(double, S3L1, LT_);
+  READ_GETTER(double, S3L1, LensThirring_);
 
-  READ_GETTER(double, S3L2, DS_[4]);
+  READ_GETTER(double, S3L2, deSiiter_[4]);
 
-  READ_GETTER(double, S1S2, LT_);
+  READ_GETTER(double, S1S2, LensThirring_);
 
-  READ_GETTER(double, S1S3, LT_);
+  READ_GETTER(double, S1S3, LensThirring_);
 
-  READ_GETTER(double, S2S3, LT_);
+  READ_GETTER(double, S2S3, LensThirring_);
 
  private:
-  double DS_[5];
-  double LT_;
+  double deSiiter_[5];
+  double LensThirring_;
   double LL_;
 
   inline double deSitter_coef(double m_self, double m_other) {
@@ -269,17 +269,20 @@ void spin_orbit_coupling(Control const &ctrl, Args const &args, Container const 
   LENS_THIRRING_IN(ctrl.Sin_Sin, d.S1S2_Omega(), S1, S2);
   LENS_THIRRING_IN(ctrl.Sin_Sin, d.S1S2_Omega(), S2, S1);
 
-  LENS_THIRRING_OUT(ctrl.Sout_Lin, d.S3L1_Omega(), S3, L1);
-  LENS_THIRRING_OUT(ctrl.Sout_Lin, d.S3L1_Omega(), S3, e1);
-  // if the back rection on, L1 E1 will back react to Lout twice !!need to fix it
-  // LENS_THIRRING_OUT(ctrl.Sout_Lin, d.S3L1_Omega(), L1, S3);
+  LENS_THIRRING_OUT(ctrl.Sout_Lin, d.S3L1_Omega(), L1, S3);
+  if (ctrl.Sout_Lin == deS::bc || ctrl.Sout_Lin == deS::all) {
+    LENS_THIRRING_OUT(deS::on, d.S3L1_Omega(), S3, L1);
+    LENS_THIRRING_OUT(deS::on, d.S3L1_Omega(), S3, e1);
+  }
 
   DESITTER_OUT(ctrl.Sout_Lout, d.S3L2_Omega(), S3);
 
   LENS_THIRRING_OUT(ctrl.Sin_Sout, d.S1S3_Omega(), S3, S1);
-  LENS_THIRRING_OUT(ctrl.Sin_Sout, d.S1S3_Omega(), S1, S3);
   LENS_THIRRING_OUT(ctrl.Sin_Sout, d.S2S3_Omega(), S3, S2);
-  LENS_THIRRING_OUT(ctrl.Sin_Sout, d.S2S3_Omega(), S2, S3);
+  if (ctrl.Sin_Sout == deS::bc || ctrl.Sin_Sout == deS::all) {
+    LENS_THIRRING_OUT(deS::on, d.S1S3_Omega(), S1, S3);
+    LENS_THIRRING_OUT(deS::on, d.S2S3_Omega(), S2, S3);
+  }
 
   DESITTER_OUT(ctrl.LL, d.LL(), L1);
   DESITTER_OUT(ctrl.LL, d.LL(), e1);

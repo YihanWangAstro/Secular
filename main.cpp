@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <iomanip>
 #include <iostream>
+
 #include "SpaceHub/src/multi-thread/multi-thread.hpp"
 #include "SpaceHub/src/tools/config-reader.hpp"
 #include "SpaceHub/src/tools/timer.hpp"
@@ -132,7 +133,6 @@ size_t decide_thread_num(std::string const &user_specified_core_num, std::string
 }
 
 int main(int argc, char **argv) {
-  std::cout << logo << std::endl;
   std::ios::sync_with_stdio(false);
   std::string input_file_name;
   std::string cfg_file_name;
