@@ -83,30 +83,31 @@ deS str_to_spin_orbit_enum(std::string const &key) {
 }
 
 template <typename Ctrl>
-bool is_Lin_coupled(Ctrl const &ctrl) {
+bool is_Lin_needed(Ctrl const &ctrl) {
   return ctrl.LL != deS::off || ctrl.Sin_Lin != deS::off || ctrl.Sout_Lin != deS::off || ctrl.Sin_Sin != deS::off;
 };
 
 template <typename Ctrl>
-bool is_Lout_coupled(Ctrl const &ctrl) {
-  return ctrl.LL != deS::off || ctrl.Sin_Lout != deS::off || ctrl.Sout_Lout != deS::off || ctrl.Sin_Sout != deS::off;
+bool is_Lout_needed(Ctrl const &ctrl) {
+  return ctrl.LL != deS::off || ctrl.Sin_Lout != deS::off || ctrl.Sout_Lout != deS::off || ctrl.Sin_Sout != deS::off ||
+         ctrl.Sout_Lin != deS::off;
 };
 
 template <typename Ctrl, typename Args, typename Container>
 class deSitter_arg {
  public:
   deSitter_arg(Ctrl const &ctrl, Args const &args, Container const &var) {
-    bool const Lin_coupled{is_Lin_coupled(ctrl)};
+    bool const Lin_needed{is_Lin_needed(ctrl)};
 
-    bool const Lout_coupled{is_Lout_coupled(ctrl)};
+    bool const Lout_needed{is_Lout_needed(ctrl)};
 
-    if (Lin_coupled == true) {
+    if (Lin_needed == true) {
       a_in_eff_ = calc_a_eff(args.a_in_coef(), var.L1x(), var.L1y(), var.L1z(), var.e1x(), var.e1y(), var.e1z());
 
       a_in_eff3_ = a_in_eff_ * a_in_eff_ * a_in_eff_;
     }
 
-    if (Lout_coupled == true) {
+    if (Lout_needed == true) {
       if (ctrl.ave_method == LK_method::DA) {
         L2x_ = var.L2x(), L2y_ = var.L2y(), L2z_ = var.L2z();
 
@@ -169,9 +170,9 @@ class deSitter_arg {
   READ_GETTER(double, L2z, L2z_);
 
  private:
-  double L2x_;
-  double L2y_;
-  double L2z_;
+  double L2x_{0};
+  double L2y_{0};
+  double L2z_{0};
   double Omega_[8];
   double LL_;
   double a_in_eff_;
@@ -269,9 +270,9 @@ void spin_orbit_coupling(Control const &ctrl, Args const &args, Container const 
   LENS_THIRRING_IN(ctrl.Sin_Sin, d.S1S2_Omega(), S2, S1);
 
   LENS_THIRRING_OUT(ctrl.Sout_Lin, d.S3L1_Omega(), S3, L1);
-  LENS_THIRRING_OUT(ctrl.Sout_Lin, d.S3L1_Omega(), S3,
-                    e1);  // if the back rection on, L1 E1 will back react to Lout twice !!need to fix it
-  LENS_THIRRING_OUT(ctrl.Sout_Lin, d.S3L1_Omega(), L1, S1);
+  LENS_THIRRING_OUT(ctrl.Sout_Lin, d.S3L1_Omega(), S3, e1);
+  // if the back rection on, L1 E1 will back react to Lout twice !!need to fix it
+  // LENS_THIRRING_OUT(ctrl.Sout_Lin, d.S3L1_Omega(), L1, S3);
 
   DESITTER_OUT(ctrl.Sout_Lout, d.S3L2_Omega(), S3);
 

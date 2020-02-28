@@ -23,71 +23,9 @@ bool get_line(std::fstream &is, std::string &str) {
   else
     return true;
 }
-/*
-enum class SimArgT {
-        SA, DA, empty, wrong
-};
-
-auto resolve_sim_type(std::string const &line) {
-    bool in_space = true;
-    size_t token_num = 0;
-    for (auto c : line) {
-        if (std::isspace(c)) {
-            in_space = true;
-        } else if (in_space) {
-            token_num++;
-            in_space = false;
-        }
-    }
-    size_t id = 0;
-
-    if (token_num > 0) {
-        id = std::stoi(line);
-    } else {
-        return std::make_tuple(id, SimArgT::empty, 0u);
-    }
-
-    switch (token_num) {
-        case 20 :
-            return std::make_tuple(id, SimArgT::DA, 0u);
-        case 21 :
-            return std::make_tuple(id, SimArgT::SA, 0u);
-        case 23 :
-            return std::make_tuple(id, SimArgT::DA, 1u);
-        case 24 :
-            return std::make_tuple(id, SimArgT::SA, 1u);
-        case 26 :
-            return std::make_tuple(id, SimArgT::DA, 2u);
-        case 27 :
-            return std::make_tuple(id, SimArgT::SA, 2u);
-        case 29 :
-            return std::make_tuple(id, SimArgT::DA, 3u);
-        case 30 :
-            return std::make_tuple(id, SimArgT::SA, 3u);
-        default :
-            return std::make_tuple(static_cast<size_t>(0), SimArgT::wrong, 0u);
-    }
-}*/
 
 constexpr size_t ARGS_OFFSET = 3;
 constexpr size_t PARAMETER_NUM = 25;
-
-auto args_analyze(std::string const &f) {
-  /*if (start_id <= 0 || end_id <= 0) {
-    std::cout << "task id cannot be smaller than 1!\r\n";
-    exit(0);
-  }
-
-  if (start_id > end_id) {
-    std::swap(start_id, end_id);
-  }
-
-  size_t task_num = end_id - start_id + 1;*/
-
-  size_t thread_num = space::multi_thread::auto_thread;
-
-  return std::make_tuple(1, thread_num);
-}
 
 auto call_ode_int(std::string work_dir, ConcurrentFile output, secular::Controller const &ctrl,
                   std::vector<double> const &init_args) {
@@ -105,7 +43,7 @@ auto call_ode_int(std::string work_dir, ConcurrentFile output, secular::Controll
   std::fstream f_out;
 
   if (secular::is_on(out_dt)) {
-    f_out.open(work_dir + "output_" + std::to_string(task_id) + ".txt", std::fstream::out);
+    f_out.open(work_dir + "secular_" + std::to_string(task_id) + ".txt", std::fstream::out);
     f_out << std::setprecision(12);
   }
 
@@ -174,25 +112,52 @@ void single_thread_job(Controller const &ctrl, std::string work_dir, ConcurrentF
   }
 }
 
+size_t decide_thread_num(std::string const &user_specified_core_num, std::string const &input_file_path) {
+  std::ifstream input_file{input_file_path};
+
+  size_t task_num = std::count(std::istreambuf_iterator<char>(input_file), std::istreambuf_iterator<char>(), '\n');
+
+  size_t cpu_num = space::multi_thread::machine_thread_num;
+
+  if (user_specified_core_num != "auto") {
+    if (secular::is_number(user_specified_core_num)) {
+      cpu_num = std::stoi(user_specified_core_num);
+    } else {
+      std::cout << "wrong format of the first argument(cpu core number)!\n";
+      exit(0);
+    }
+  }
+
+  return std::min(task_num, cpu_num);
+}
+
 int main(int argc, char **argv) {
+  std::cout << logo << std::endl;
   std::ios::sync_with_stdio(false);
   std::string input_file_name;
   std::string cfg_file_name;
   std::string work_dir;
   std::string user_specified_core_num;
 
-  space::tools::read_command_line(argc, argv, user_specified_core_num, cfg_file_name, input_file_name, work_dir);
+  space::tools::read_command_line(argc, argv, cfg_file_name);
 
-  auto [task_num, thread_num] = args_analyze(input_file_name);
+  space::tools::ConfigReader cfg{cfg_file_name};
 
-  if (user_specified_core_num != "auto") {
-    if (secular::is_number(user_specified_core_num)) {
-      thread_num = std::stoi(user_specified_core_num);
-    } else {
-      std::cout << "wrong format of the first argument(cpu core number)!\n";
-      exit(0);
-    }
-  }
+  secular::Controller ctrl{cfg};
+
+  ATOL = cfg.get<double>("absolute_tolerance");
+
+  RTOL = cfg.get<double>("relative_tolerance");
+
+  work_dir = cfg.get<std::string>("output_dir");
+
+  input_file_name = cfg.get<std::string>("input");
+
+  user_specified_core_num = cfg.get<std::string>("cpu_num");
+
+  size_t thread_num = decide_thread_num(user_specified_core_num, input_file_name);
+
+  std::cout << thread_num << " thread(s) will be created for calculation." << std::endl;
 
   const int dir_err = system(("mkdir -p " + work_dir).c_str());
   if (dir_err == -1) {
@@ -207,17 +172,6 @@ int main(int argc, char **argv) {
   auto output_file = make_thread_safe_fstream(work_dir + "last_state.txt", std::fstream::out);
 
   auto log_file = make_thread_safe_fstream(work_dir + "log.txt", std::fstream::out);
-
-  // std::cout << task_num << " tasks in total will be processed.    " << thread_num
-  //         << " threads will be created for computing!" << std::endl;
-
-  space::tools::ConfigReader cfg{cfg_file_name};
-
-  secular::Controller ctrl{cfg};
-
-  ATOL = cfg.get<double>("absolute_tolerance");
-
-  RTOL = cfg.get<double>("relative_tolerance");
 
   log_file << secular::get_log_title(ctrl) + "\r\n";
   log_file.flush();

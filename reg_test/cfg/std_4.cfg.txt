@@ -1,3 +1,8 @@
+#simulation settings
+cpu_num = auto
+output_dir = reg_test/test
+input = reg_test/init4.txt
+
 #averaged method: 'DA' for double average; 'SA' for single average
 LK_method = SA
 
