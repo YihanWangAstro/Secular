@@ -6,11 +6,11 @@
 #include <tuple>
 
 #include "LK.h"
+#include "SpaceHub/src/tools/config-reader.hpp"
 #include "deSitter.h"
 #include "relativistic.h"
+#include "stellar.h"
 #include "tools.h"
-
-#include "SpaceHub/src/tools/config-reader.hpp"
 
 namespace secular {
 
@@ -222,19 +222,27 @@ struct Controller {
 
 class SecularConst {
  public:
-  SecularConst(double _m1, double _m2, double _m3)
-      : basic_{_m1, _m2, _m3},
-        GR_in_{basic_.m12(), basic_.mu_in()},
-        GR_out_{basic_.m_tot(), basic_.mu_out()},
-        SL_{_m1, _m2, _m3} {}
+  SecularConst(double _m1, double _m2, double _m3) : stellar_{_m1, _m2, _m3} { calculate_coef(_m1, _m2, _m3); }
 
   SecularConst() = default;
 
-  READ_GETTER(double, m1, basic_.m1());
+  READ_GETTER(double, m1, stellar_.m1());
 
-  READ_GETTER(double, m2, basic_.m2());
+  READ_GETTER(double, m2, stellar_.m2());
 
-  READ_GETTER(double, m3, basic_.m3());
+  READ_GETTER(double, m3, stellar_.m3());
+
+  READ_GETTER(double, m1_age, stellar_.m1_age());
+
+  READ_GETTER(double, m2_age, stellar_.m2_age());
+
+  READ_GETTER(double, m3_age, stellar_.m3_age());
+
+  READ_GETTER(bool, m1_dead, stellar_.m1_dead());
+
+  READ_GETTER(bool, m2_dead, stellar_.m2_dead());
+
+  READ_GETTER(bool, m3_dead, stellar_.m3_dead());
 
   READ_GETTER(double, m12, basic_.m12());
 
@@ -282,11 +290,34 @@ class SecularConst {
 
   READ_GETTER(double, S2S3, SL_.S2S3());
 
+  void make_m1_exploded() {
+    stellar_.make_m1_exploded();
+    this->calculate_coef(m1(), m2(), m3());
+  }
+
+  void make_m2_exploded() {
+    stellar_.make_m2_exploded();
+    this->calculate_coef(m1(), m2(), m3());
+  }
+
+  void make_m3_exploded() {
+    stellar_.make_m3_exploded();
+    this->calculate_coef(m1(), m2(), m3());
+  }
+
  private:
   BasicConst basic_;
   GRConst GR_in_;
   GRConst GR_out_;
   SLConst SL_;
+  StellarConst stellar_;
+
+  void calculate_coef(double _m1, double _m2, double _m3) {
+    basic_.calculate_coef(_m1, _m2, _m3);
+    GR_in_.calculate_coef(basic_.m12(), basic_.mu_in());
+    GR_out_.calculate_coef(basic_.m_tot(), basic_.mu_out());
+    SL_.calculate_coef(_m1, _m2, _m3);
+  };
 };
 
 template <typename Container>

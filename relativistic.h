@@ -7,14 +7,7 @@ namespace secular {
 
 class GRConst {
  public:
-  GRConst(double M, double Mu) {
-    constexpr double C5 = consts::C * consts::C * consts::C * consts::C * consts::C;
-    constexpr double G3 = consts::G * consts::G * consts::G;
-    GR_coef_ = 3 * consts::G / (consts::C * consts::C) * M / Mu;  // 3 * pow(consts::G*M, 1.5) / (consts::C *
-                                                                  // consts::C);
-    GW_L_coef_ = -6.4 * G3 * Mu * M * M / C5;
-    GW_e_coef_ = -304.0 / 15 * G3 * Mu * M * M / C5;
-  }
+  GRConst(double M, double Mu) { calculate_coef(M, Mu); }
 
   GRConst() = default;
 
@@ -23,6 +16,15 @@ class GRConst {
   READ_GETTER(double, GW_L_coef, GW_L_coef_);
 
   READ_GETTER(double, GW_e_coef, GW_L_coef_);
+
+  void calculate_coef(double M, double Mu) {
+    constexpr double C5 = consts::C * consts::C * consts::C * consts::C * consts::C;
+    constexpr double G3 = consts::G * consts::G * consts::G;
+    GR_coef_ = 3 * consts::G / (consts::C * consts::C) * M / Mu;  // 3 * pow(consts::G*M, 1.5) / (consts::C *
+                                                                  // consts::C);
+    GW_L_coef_ = -6.4 * G3 * Mu * M * M / C5;
+    GW_e_coef_ = -304.0 / 15 * G3 * Mu * M * M / C5;
+  };
 
  private:
   double GR_coef_{0};

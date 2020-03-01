@@ -151,6 +151,10 @@ inline double norm(double x, double y, double z) { return sqrt(norm2(x, y, z)); 
 
 inline double norm(Tup3d const &tup) { return sqrt(norm2(tup)); }
 
+inline double angle(double x, double y, double z, double i, double j, double k) {
+  return acos((x * i + y * j + z * k) / (norm(x, y, z) * norm(i, j, k)));
+}
+
 inline double dot(double x1, double y1, double z1, double x2, double y2, double z2) {
   return x1 * x2 + y1 * y2 + z1 * z2;
 }

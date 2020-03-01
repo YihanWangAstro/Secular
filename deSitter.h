@@ -7,19 +7,7 @@ namespace secular {
 
 class SLConst {
  public:
-  SLConst(double m1, double m2, double m3) {
-    deSiiter_[0] = deSitter_coef(m1, m2);
-    deSiiter_[1] = deSitter_coef(m1 + m2, m3);
-
-    deSiiter_[2] = deSitter_coef(m2, m1);
-    deSiiter_[3] = deSitter_coef(m1 + m2, m3);
-
-    LensThirring_ = 0.5 * consts::G / (consts::C * consts::C);
-
-    deSiiter_[4] = deSitter_coef(m3, m1 + m2);
-
-    LL_ = deSitter_coef(m1 + m2, m3);
-  }
+  SLConst(double m1, double m2, double m3) { calculate_coef(m1, m2, m3); }
 
   SLConst() = default;
 
@@ -42,6 +30,20 @@ class SLConst {
   READ_GETTER(double, S1S3, LensThirring_);
 
   READ_GETTER(double, S2S3, LensThirring_);
+
+  void calculate_coef(double m1, double m2, double m3) {
+    deSiiter_[0] = deSitter_coef(m1, m2);
+    deSiiter_[1] = deSitter_coef(m1 + m2, m3);
+
+    deSiiter_[2] = deSitter_coef(m2, m1);
+    deSiiter_[3] = deSitter_coef(m1 + m2, m3);
+
+    LensThirring_ = 0.5 * consts::G / (consts::C * consts::C);
+
+    deSiiter_[4] = deSitter_coef(m3, m1 + m2);
+
+    LL_ = deSitter_coef(m1 + m2, m3);
+  }
 
  private:
   double deSiiter_[5];

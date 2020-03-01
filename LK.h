@@ -2,6 +2,7 @@
 #define QUAD_LK_H
 
 #include <algorithm>
+
 #include "SpaceHub/src/orbits/orbits.hpp"
 #include "tools.h"
 
@@ -9,25 +10,15 @@ namespace secular {
 
 class BasicConst {
  public:
-  BasicConst(double _m1, double _m2, double _m3)
-      : m1_{_m1},
-        m2_{_m2},
-        m3_{_m3},
-        m12_{_m1 + _m2},
-        m_tot_{_m1 + _m2 + _m3},
-        mu_in_{_m1 * _m2 / (_m1 + _m2)},
-        mu_out_{(_m1 + _m2) * _m3 / (_m1 + _m2 + _m3)},
-        a_in_coef_{calc_a_coef(m12_, mu_in_)},
-        a_out_coef_{calc_a_coef(m_tot_, mu_out_)},
-        SA_acc_coef_{consts::G * _m3 / mu_out_} {}
+  BasicConst(double _m1, double _m2, double _m3) { calculate_coef(_m1, _m2, _m3); }
 
   BasicConst() = default;
 
-  READ_GETTER(double, m1, m1_);
+  /*READ_GETTER(double, m1, m1_);
 
   READ_GETTER(double, m2, m2_);
 
-  READ_GETTER(double, m3, m3_);
+  READ_GETTER(double, m3, m3_);*/
 
   READ_GETTER(double, m12, m12_);
 
@@ -43,10 +34,23 @@ class BasicConst {
 
   READ_GETTER(double, SA_acc_coef, SA_acc_coef_);
 
+  void calculate_coef(double _m1, double _m2, double _m3) {
+    /*m1_ = _m1;
+    m2_ = _m2;
+    m3_ = _m3;*/
+    m12_ = _m1 + _m2;
+    m_tot_ = _m1 + _m2 + _m3;
+    mu_in_ = _m1 * _m2 / (_m1 + _m2);
+    mu_out_ = (_m1 + _m2) * _m3 / (_m1 + _m2 + _m3);
+    a_in_coef_ = calc_a_coef(m12_, mu_in_);
+    a_out_coef_ = calc_a_coef(m_tot_, mu_out_);
+    SA_acc_coef_ = consts::G * _m3 / mu_out_;
+  };
+
  private:
-  double m1_{0};
+  /*double m1_{0};
   double m2_{0};
-  double m3_{0};
+  double m3_{0};*/
   double m12_{0};
   double m_tot_{0};
   double mu_in_{0};
